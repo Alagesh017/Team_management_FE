@@ -9,13 +9,15 @@ import TaskStatusPage from '../features/task-status/pages/TaskStatusPage'
 import ClientPage from '../features/clients/pages/ClientPage'
 import ProjectPage from '../features/projects/pages/ProjectPage'
 import ProjectDetailPage from '../features/projects/pages/ProjectDetailPage'
+import ProjectGroupPage from '../features/projects/pages/ProjectGroupPage'
+import ProjectAllocationPage from '../features/project-allocation/pages/ProjectAllocationPage'
+import ProjectAllocationDetailPage from '../features/project-allocation/pages/ProjectAllocationDetailPage'
+import TaskBoardPage from '../features/tasks/pages/TaskBoardPage'
 import { ProtectedRoute } from '../common/components/ProtectedRoute'
 
 // Dummy components for testing
 const Attendance = () => <div className="text-2xl font-bold">Attendance</div>
-const ProjectAllocation = () => <div className="text-2xl font-bold">Project Allocation</div>
 const Tasks = () => <div className="text-2xl font-bold">Tasks</div>
-const ProjectTasks = () => <div className="text-2xl font-bold">Project Specific Tasks</div>
 const Meetings = () => <div className="text-2xl font-bold">Meetings</div>
 const PermissionRequest = () => <div className="text-2xl font-bold">Permission Request</div>
 
@@ -34,10 +36,12 @@ export default function AppRoutes() {
 				<Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
 				<Route path="/clients" element={<ProtectedRoute><ClientPage /></ProtectedRoute>} />
 				<Route path="/projects" element={<ProtectedRoute><ProjectPage /></ProtectedRoute>} />
+				<Route path="/project-grouping" element={<ProtectedRoute><ProjectGroupPage /></ProtectedRoute>} />
 				<Route path="/projects/:id" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
-				<Route path="/project-allocation" element={<ProtectedRoute><ProjectAllocation /></ProtectedRoute>} />
+				<Route path="/project-allocation" element={<ProtectedRoute><ProjectAllocationPage /></ProtectedRoute>} />
+				<Route path="/project-allocation/:projectId" element={<ProtectedRoute><ProjectAllocationDetailPage /></ProtectedRoute>} />
 				<Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-				<Route path="/tasks/project/:id" element={<ProtectedRoute><ProjectTasks /></ProtectedRoute>} />
+				<Route path="/tasks/project/:id" element={<ProtectedRoute><TaskBoardPage /></ProtectedRoute>} />
 				<Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
 				<Route path="/permission-request" element={<ProtectedRoute><PermissionRequest /></ProtectedRoute>} />
 			</Routes>

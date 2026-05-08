@@ -22,7 +22,7 @@ import {
 import { MoreHorizontal, ArrowUpDown, Plus, Pencil, Trash2, Loader2, Eye } from "lucide-react";
 import AdminForm from "../components/AdminForm";
 import AdminDetails from "../components/AdminDetails";
-import { getFullAvatarUrl } from "../../../core/utils/utils";
+import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
 
 const UserAvatar = ({ url, email, firstName, className = "h-10 w-10" }) => {
   const fullUrl = getFullAvatarUrl(url);
@@ -186,6 +186,11 @@ const AdminPage = () => {
       },
     },
     {
+      accessorKey: "created_at",
+      header: "Joined Date",
+      cell: ({ row }) => formatDate(row.getValue("created_at")),
+    },
+    {
       id: "actions",
       cell: ({ row }) => {
         const admin = row.original;
@@ -216,11 +221,11 @@ const AdminPage = () => {
   ], []);
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Management</h1>
-          <p className="text-slate-500">Manage administrators for the Company.</p>
+    <div className="p-4 md:p-8 space-y-8">
+      <div className="flex flex-row items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight text-slate-900 truncate">Admin Management</h1>
+          <p className="text-slate-500 hidden md:block">Manage administrators for the Company.</p>
         </div>
         <Sheet open={isSheetOpen} onOpenChange={(open) => {
           setIsSheetOpen(open);

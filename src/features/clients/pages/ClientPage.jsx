@@ -180,11 +180,11 @@ const ClientPage = () => {
   ], []);
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Client Management</h1>
-          <p className="text-slate-500">Manage your project clients and their contact information.</p>
+    <div className="p-4 md:p-8 space-y-8">
+      <div className="flex flex-row items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight text-slate-900 truncate">Client Management</h1>
+          <p className="text-slate-500 hidden md:block">Manage your project clients and their contact information.</p>
         </div>
         <Sheet open={isSheetOpen} onOpenChange={(open) => {
           setIsSheetOpen(open);

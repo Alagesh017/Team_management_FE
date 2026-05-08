@@ -13,7 +13,7 @@ import {
   ExternalLink,
   Briefcase
 } from "lucide-react";
-import { getFullAvatarUrl } from "../../../core/utils/utils";
+import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
 import { Badge } from "../../../common/components/ui/badge";
 
 const ProjectDetailPage = () => {
@@ -141,7 +141,7 @@ const ProjectDetailPage = () => {
             </div>
             <p className="text-slate-500 font-medium flex items-center justify-center md:justify-start gap-2">
               <Calendar className="h-4 w-4" />
-              Created on {new Date(project.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}
+              Created on {formatDate(project.created_at)}
             </p>
           </div>
         </div>
@@ -149,26 +149,26 @@ const ProjectDetailPage = () => {
 
       {/* Full Width Meta Stats Banner */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-         <div className="flex items-center gap-5 bg-slate-50 p-6 rounded-[2rem] border border-slate-100 shadow-sm transition-all hover:shadow-md">
-            <div className="h-14 w-14 rounded-2xl bg-white flex items-center justify-center border border-slate-200 shadow-sm shrink-0">
-               <Briefcase className="h-6 w-6 text-slate-900" />
+         <div className="flex items-center gap-5 bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100 shadow-sm transition-all hover:shadow-md hover:bg-indigo-50">
+            <div className="h-14 w-14 rounded-2xl bg-white flex items-center justify-center border border-indigo-200 shadow-sm shrink-0">
+               <Briefcase className="h-6 w-6 text-indigo-600" />
             </div>
             <div className="min-w-0 flex-1">
-               <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Client</p>
+               <p className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-widest mb-1">Client</p>
                <p className="text-base font-bold text-slate-900 truncate">
                   {project.client_name || "Internal Project"}
                </p>
             </div>
          </div>
 
-         <div className="flex items-center gap-5 bg-slate-50 p-6 rounded-[2rem] border border-slate-100 shadow-sm transition-all hover:shadow-md">
-            <div className="h-14 w-14 rounded-2xl bg-white flex items-center justify-center border border-slate-200 shadow-sm shrink-0">
-               <Calendar className="h-6 w-6 text-slate-900" />
+         <div className="flex items-center gap-5 bg-emerald-50/50 p-6 rounded-[2rem] border border-emerald-100 shadow-sm transition-all hover:shadow-md hover:bg-emerald-50">
+            <div className="h-14 w-14 rounded-2xl bg-white flex items-center justify-center border border-emerald-200 shadow-sm shrink-0">
+               <Calendar className="h-6 w-6 text-emerald-600" />
             </div>
             <div className="min-w-0 flex-1">
-               <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Duration</p>
+               <p className="text-[10px] font-extrabold text-emerald-400 uppercase tracking-widest mb-1">Duration</p>
                <p className="text-base font-bold text-slate-900">
-                  {project.start_date} — {project.end_date}
+                  {formatDate(project.start_date)} — {formatDate(project.end_date)}
                </p>
             </div>
          </div>
@@ -182,18 +182,18 @@ const ProjectDetailPage = () => {
                  <div className="h-6 w-1 bg-slate-900 rounded-full" />
                  <h2 className="text-lg font-bold text-slate-900">Project Overview</h2>
               </div>
-              <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 min-h-[200px] text-slate-700 leading-relaxed shadow-inner">
+              <div className="bg-slate-50/50 p-6 rounded-3xl border border-slate-100 min-h-[200px] text-slate-700 leading-relaxed shadow-inner">
                  {project.description || "No detailed description provided for this project."}
               </div>
            </section>
 
            {project.remark && (
              <section className="space-y-4">
-                <div className="flex items-center gap-2 text-slate-500">
+                <div className="flex items-center gap-2 text-amber-600">
                    <MessageSquare className="h-5 w-5" />
                    <h2 className="text-lg font-bold">Admin Remarks</h2>
                 </div>
-                <div className="bg-amber-50/50 p-6 rounded-3xl border border-amber-100 italic text-slate-600">
+                <div className="bg-amber-50/50 p-6 rounded-3xl border border-amber-100 italic text-amber-900 leading-relaxed">
                    "{project.remark}"
                 </div>
              </section>

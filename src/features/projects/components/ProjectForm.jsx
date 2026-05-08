@@ -10,7 +10,8 @@ import { Alert, AlertDescription } from "../../../common/components/ui/alert";
 import { Loader2, Upload, X } from "lucide-react";
 import { SheetFooter, SheetClose } from "../../../common/components/ui/sheet";
 import { clientService } from "../../clients/services/clientService";
-import { getFullAvatarUrl } from "../../../core/utils/utils";
+import { projectGroupService } from "../services/projectGroupService";
+import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
 
 export const projectFormSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -19,13 +20,16 @@ export const projectFormSchema = z.object({
   end_date: z.string().min(1, "End date is required"),
   status: z.enum(["active", "on_hold", "completed", "cancelled"]).default("active"),
   remark: z.string().optional(),
-  client_id: z.union([z.string(), z.number()]).optional().transform(val => val ? Number(val) : null),
+  client_id: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? Number(val) : null),
+  group_id: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? Number(val) : null),
   project_logo: z.string().optional(),
 });
 
 const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
   const [clients, setClients] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [loadingClients, setLoadingClients] = useState(false);
+  const [loadingGroups, setLoadingGroups] = useState(false);
 
   const {
     register,
@@ -43,6 +47,7 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
       status: "active",
       remark: "",
       client_id: "",
+      group_id: "",
       project_logo: "",
     },
   });
@@ -65,18 +70,24 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
   };
 
   useEffect(() => {
-    const fetchClients = async () => {
+    const fetchData = async () => {
       try {
         setLoadingClients(true);
-        const data = await clientService.getAllClients();
-        setClients(data.clients || []);
+        setLoadingGroups(true);
+        const [clientsData, groupsData] = await Promise.all([
+          clientService.getAllClients(),
+          projectGroupService.getAllGroups()
+        ]);
+        setClients(clientsData.clients || []);
+        setGroups(groupsData.groups || []);
       } catch (err) {
-        console.error("Failed to fetch clients:", err);
+        console.error("Failed to fetch form data:", err);
       } finally {
         setLoadingClients(false);
+        setLoadingGroups(false);
       }
     };
-    fetchClients();
+    fetchData();
   }, []);
 
   return (
@@ -217,6 +228,28 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
                 {clients.map((client) => (
                   <SelectItem key={client.id} value={client.id.toString()}>
                     {client.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="group_id" className="font-bold">Project Group</Label>
+            <Select 
+              onValueChange={(val) => setValue("group_id", val)} 
+              value={watch("group_id")?.toString()}
+              disabled={loadingGroups}
+            >
+              <SelectTrigger className="bg-slate-50/50 focus:bg-white transition-all">
+                <SelectValue placeholder={loadingGroups ? "Loading groups..." : "Select group"} />
+              </SelectTrigger>
+              <SelectContent>
+                {groups.map((group) => (
+                  <SelectItem key={group.id} value={group.id.toString()}>
+                    {group.name}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -192,11 +192,11 @@ const TaskStatusPage = () => {
   ], []);
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Task Status Master</h1>
-          <p className="text-slate-500">Configure global workflow stages for professional task management.</p>
+    <div className="p-4 md:p-8 space-y-8">
+      <div className="flex flex-row items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight text-slate-900 truncate">Task Status Master</h1>
+          <p className="text-slate-500 hidden md:block">Configure global workflow stages for professional task management.</p>
         </div>
         <Sheet open={isSheetOpen} onOpenChange={(open) => {
           setIsSheetOpen(open);

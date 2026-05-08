@@ -1,7 +1,7 @@
 import React from "react";
 import { Label } from "../../../common/components/ui/label";
 import { Badge } from "../../../common/components/ui/badge";
-import { Calendar, Briefcase, User, Info, MessageSquare, Image as ImageIcon } from "lucide-react";
+import { Calendar, Briefcase, User, Info, MessageSquare, Image as ImageIcon, LayoutGrid } from "lucide-react";
 import { getFullAvatarUrl } from "../../../core/utils/utils";
 
 const InfoItem = ({ icon: Icon, label, value, className = "" }) => (
@@ -78,6 +78,14 @@ const ProjectDetails = ({ project }) => {
           label="Client Name" 
           value={project.client_name} 
         />
+        <InfoItem 
+          icon={LayoutGrid} 
+          label="Project Group" 
+          value={project.group_name} 
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-6">
         <InfoItem 
           icon={User} 
           label="Created By" 

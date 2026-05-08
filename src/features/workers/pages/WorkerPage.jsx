@@ -22,7 +22,7 @@ import {
 import { MoreHorizontal, ArrowUpDown, Plus, Pencil, Trash2, Loader2, Eye } from "lucide-react";
 import WorkerForm from "../components/WorkerForm";
 import WorkerDetails from "../components/WorkerDetails";
-import { getFullAvatarUrl } from "../../../core/utils/utils";
+import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
 
 const UserAvatar = ({ url, email, firstName, className = "h-10 w-10" }) => {
   const fullUrl = getFullAvatarUrl(url);
@@ -180,6 +180,11 @@ const WorkerPage = () => {
       },
     },
     {
+      accessorKey: "created_at",
+      header: "Joined Date",
+      cell: ({ row }) => formatDate(row.getValue("created_at")),
+    },
+    {
       id: "actions",
       cell: ({ row }) => {
         const worker = row.original;
@@ -210,11 +215,11 @@ const WorkerPage = () => {
   ], []);
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Worker Management</h1>
-          <p className="text-slate-500">Manage your team members and leaders.</p>
+    <div className="p-4 md:p-8 space-y-8">
+      <div className="flex flex-row items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight text-slate-900 truncate">Worker Management</h1>
+          <p className="text-slate-500 hidden md:block">Manage your team members and leaders.</p>
         </div>
         <Sheet open={isSheetOpen} onOpenChange={(open) => {
           setIsSheetOpen(open);
