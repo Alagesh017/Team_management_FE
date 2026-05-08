@@ -16,27 +16,34 @@ import {
   horizontalListSortingStrategy 
 } from "@dnd-kit/sortable";
 import { createPortal } from "react-dom";
-import { 
-  Plus, 
-  MoreHorizontal, 
-  Calendar, 
-  Clock, 
-  User, 
+import {
+  Plus,
+  MoreHorizontal,
+  Calendar,
+  Clock,
+  User,
   Folder,
-  CheckCircle2, 
-  AlertCircle, 
+  CheckCircle2,
+  AlertCircle,
   ArrowUpCircle,
   GripVertical,
   ChevronDown,
   Hash,
   Users as UsersIcon,
-  List,
+  List as ListIcon,
   Kanban,
   CalendarDays,
   GanttChartSquare,
   Search,
   Settings2,
-  Filter
+  Filter,
+  ChevronRight,
+  Star,
+  Share2,
+  Bot,
+  Zap,
+  MessageSquare,
+  LayoutGrid
 } from "lucide-react";
 
 import { taskService } from "../services/taskService";
@@ -73,6 +80,13 @@ import {
 
 import KanbanColumn from "../components/KanbanColumn";
 import TaskCard from "../components/TaskCard";
+
+const TabItem = ({ icon: Icon, label, active = false }) => (
+  <div className={`flex items-center gap-1.5 px-1 py-4 border-b-2 transition-all cursor-pointer group ${active ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-900'}`}>
+    <Icon className={`h-4 w-4 ${active ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-900'}`} />
+    <span className="text-[13px] font-semibold whitespace-nowrap">{label}</span>
+  </div>
+);
 
 export default function TaskBoardPage() {
   const { id: projectId } = useParams();
@@ -120,19 +134,44 @@ export default function TaskBoardPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [projectData, statusData, tasksData, allocationData] = await Promise.all([
+      
+      // Fetch statuses first as they are critical for the board
+      try {
+        const statusData = await taskStatusService.getAllTaskStatuses();
+        const apiStatuses = statusData.task_statuses || [];
+        
+        if (apiStatuses.length > 0) {
+          const sortedStatuses = [...apiStatuses].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+          setStatuses(sortedStatuses);
+        } else {
+          // Fallback if API returns empty array
+          setStatuses([
+            { id: 1, name: 'TO DO', color: '#94A3B8', sort_order: 1 },
+            { id: 2, name: 'IN PROGRESS', color: '#3B82F6', sort_order: 2 },
+            { id: 3, name: 'COMPLETED', color: '#10B981', sort_order: 3 }
+          ]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch statuses:", err);
+        // Fallback default statuses if call fails
+        setStatuses([
+          { id: 1, name: 'TO DO', color: '#94A3B8', sort_order: 1 },
+          { id: 2, name: 'IN PROGRESS', color: '#3B82F6', sort_order: 2 },
+          { id: 3, name: 'COMPLETED', color: '#10B981', sort_order: 3 }
+        ]);
+      }
+
+      // Fetch other data in parallel
+      const [projectRes, tasksRes, allocationRes] = await Promise.allSettled([
         projectService.getProjectById(projectId),
-        taskStatusService.getAllTaskStatuses(),
         taskService.getTasksByProject(projectId),
         allocationService.getAllocationByProjectId(projectId)
       ]);
 
-      setProject(projectData.project);
-      // Sort statuses by sort_order
-      const sortedStatuses = (statusData.task_statuses || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-      setStatuses(sortedStatuses);
-      setTasks(tasksData.tasks);
-      setAllocation(allocationData.allocation);
+      if (projectRes.status === 'fulfilled') setProject(projectRes.value.project);
+      if (tasksRes.status === 'fulfilled') setTasks(tasksRes.value.tasks || []);
+      if (allocationRes.status === 'fulfilled') setAllocation(allocationRes.value.allocation);
+
     } catch (error) {
       console.error("Failed to fetch task board data:", error);
     } finally {
@@ -161,14 +200,18 @@ export default function TaskBoardPage() {
     const taskId = active.id;
     const overId = over.id;
 
-    // If dropped on a column, overId is the status ID
-    // If dropped on another task, overId is that task's ID
-    let newStatusId;
-    if (statuses.some(s => s.id === overId)) {
-      newStatusId = overId;
-    } else {
+    let newStatusId = null;
+
+    // Check if dropped on a column (id format: column-{statusId})
+    if (typeof overId === 'string' && overId.startsWith('column-')) {
+      newStatusId = parseInt(overId.replace('column-', ''));
+    } 
+    // Check if dropped on another task
+    else {
       const overTask = tasks.find(t => t.id === overId);
-      newStatusId = overTask ? overTask.status_id : null;
+      if (overTask) {
+        newStatusId = overTask.status_id;
+      }
     }
 
     if (!newStatusId) return;
@@ -233,78 +276,106 @@ export default function TaskBoardPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#F8FAFC] overflow-hidden">
-      {/* Board Header - Professional & Integrated */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 shrink-0 shadow-sm z-10">
-        <div className="flex items-center gap-6">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded-md bg-slate-900 flex items-center justify-center text-white shadow-sm">
-                <Folder className="h-3.5 w-3.5" />
-              </div>
-              <h1 className="text-sm font-black text-slate-900 uppercase tracking-tight line-clamp-1">
-                {project?.name || "Project Board"}
-              </h1>
-            </div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 ml-8">Task Management Board</p>
+    <div className="flex flex-col h-screen bg-white overflow-hidden font-sans">
+      {/* 1. Top Breadcrumb Bar */}
+      <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-slate-100 shrink-0">
+        <div className="flex items-center gap-2 text-[13px] font-medium text-slate-500">
+          <div className="flex items-center gap-1.5 hover:text-slate-900 cursor-pointer">
+            <LayoutGrid className="h-4 w-4 text-pink-500" />
+            <span>All Projects</span>
           </div>
-
-          <div className="h-8 w-px bg-slate-100 hidden md:block" />
-
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl transition-all cursor-pointer shadow-sm border border-blue-100">
-              <Kanban className="h-3.5 w-3.5" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Board</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-all cursor-pointer group">
-              <CalendarDays className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
-              <span className="text-[11px] font-bold uppercase tracking-tight">Calendar</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-all cursor-pointer group">
-              <GanttChartSquare className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
-              <span className="text-[11px] font-bold uppercase tracking-tight">Gantt</span>
-            </div>
+          <ChevronRight className="h-3 w-3 opacity-30" />
+          <div className="flex items-center gap-1.5 hover:text-slate-900 cursor-pointer">
+            <Folder className="h-4 w-4 text-slate-400" />
+            <span>{project?.name || "Project"}</span>
+          </div>
+          <ChevronRight className="h-3 w-3 opacity-30" />
+          <div className="flex items-center gap-1.5 hover:text-slate-900 cursor-pointer">
+            <ListIcon className="h-4 w-4 text-slate-400" />
+            <span>List</span>
+          </div>
+          <Star className="h-3.5 w-3.5 ml-1 text-slate-300 hover:text-yellow-400 cursor-pointer transition-colors" />
+          <div className="h-5 w-7 rounded flex items-center justify-center hover:bg-slate-100 cursor-pointer ml-1">
+            <ChevronDown className="h-3 w-3" />
           </div>
         </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="relative w-48 hidden lg:block group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
-            <Input 
-              placeholder="Quick search..." 
-              className="h-9 pl-9 rounded-xl bg-slate-50 border-none text-[11px] font-bold text-slate-700 focus-visible:ring-1 focus-visible:ring-slate-200 transition-all"
-            />
-          </div>
-          
-          <div className="flex -space-x-2 overflow-hidden hover:space-x-1 transition-all">
-            {allStaff.slice(0, 5).map((staff, i) => (
-              <div 
-                key={staff.role_id} 
-                className="h-8 w-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-600 shadow-sm cursor-help ring-1 ring-slate-100"
-                title={`${staff.username} (${staff.role})`}
-              >
-                {staff.username[0].toUpperCase()}
-              </div>
-            ))}
-            {allStaff.length > 5 && (
-              <div className="h-8 w-8 rounded-full border-2 border-white bg-slate-900 flex items-center justify-center text-[9px] font-black text-white shadow-sm ring-1 ring-slate-100">
-                +{allStaff.length - 5}
-              </div>
-            )}
-          </div>
 
+        <div className="flex items-center gap-4 text-slate-500">
+          <div className="flex items-center gap-1.5 hover:text-slate-900 cursor-pointer text-[12px] font-semibold">
+            <MessageSquare className="h-4 w-4" />
+            <span>Agents</span>
+          </div>
+          <div className="flex items-center gap-1.5 hover:text-slate-900 cursor-pointer text-[12px] font-semibold">
+            <Zap className="h-4 w-4" />
+            <span>Automate</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-purple-600 hover:text-purple-700 cursor-pointer text-[12px] font-bold">
+            <Bot className="h-4 w-4" />
+            <span>Ask AI</span>
+          </div>
+          <div className="flex items-center gap-1.5 hover:text-slate-900 cursor-pointer text-[12px] font-semibold">
+            <Share2 className="h-4 w-4" />
+            <span>Share</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Secondary Navigation Tabs */}
+      <div className="flex items-center px-4 py-1.5 bg-white border-b border-slate-100 shrink-0 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center gap-6">
+          <TabItem icon={Hash} label="Channel" />
+          <TabItem icon={UsersIcon} label="Team" />
+          <TabItem icon={ListIcon} label="List" />
+          <TabItem icon={Kanban} label="Board" active />
+          <TabItem icon={CalendarDays} label="Calendar" />
+          <TabItem icon={GanttChartSquare} label="Gantt" />
+          <div className="flex items-center gap-1 text-slate-400 hover:text-slate-900 cursor-pointer transition-colors ml-2">
+            <Plus className="h-3.5 w-3.5" />
+            <span className="text-[12px] font-semibold">View</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Utility Toolbar */}
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100 shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg cursor-pointer hover:bg-indigo-100 transition-all border border-indigo-100/50 group shadow-sm">
+            <LayoutGrid className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-[12px] font-black uppercase tracking-wider">Status</span>
+            <ChevronDown className="h-3 w-3 opacity-50" />
+          </div>
+          <div className="h-4 w-px bg-slate-100" />
+          <div className="flex items-center gap-1 text-slate-400 cursor-pointer hover:text-slate-900">
+            <Filter className="h-4 w-4" />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4 text-slate-400 mr-2">
+            <Settings2 className="h-4 w-4 hover:text-slate-900 cursor-pointer" />
+            <Filter className="h-4 w-4 hover:text-slate-900 cursor-pointer" />
+            <CheckCircle2 className="h-4 w-4 hover:text-slate-900 cursor-pointer" />
+            <UsersIcon className="h-4 w-4 hover:text-slate-900 cursor-pointer" />
+            <div className="h-6 w-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-black text-white shadow-sm ring-2 ring-white">
+              JD
+            </div>
+            <Search className="h-4 w-4 hover:text-slate-900 cursor-pointer" />
+          </div>
+          <div className="h-8 w-px bg-slate-100" />
           <Button 
             onClick={() => openCreateDialog()}
-            className="h-9 bg-slate-900 hover:bg-slate-800 text-white font-black text-[11px] uppercase tracking-widest rounded-xl px-5 shadow-lg shadow-slate-200 transition-all active:scale-95 gap-2"
+            className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] uppercase tracking-widest rounded-lg px-4 shadow-md shadow-indigo-200 transition-all active:scale-95 flex items-center gap-1.5"
           >
-            <Plus className="h-4 w-4" /> New Task
+            <Plus className="h-4 w-4 stroke-[3px]" /> Task
+            <div className="h-4 w-px bg-white/20 mx-0.5" />
+            <ChevronDown className="h-3 w-3" />
           </Button>
         </div>
       </div>
 
-      {/* Board Area - Scrollable Container */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden bg-[#F8FAFC]">
-        <div className="h-full inline-flex p-6 gap-6 min-w-full">
+      {/* 4. Kanban Board Area */}
+      <div className="flex-1 overflow-x-auto overflow-y-hidden bg-slate-50/30">
+        <div className="h-full inline-flex p-4 gap-4 min-w-full">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
