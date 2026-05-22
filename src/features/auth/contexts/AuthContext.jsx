@@ -22,6 +22,8 @@ export const AuthProvider = ({ children }) => {
         const userData = {
           email: data.email,
           role: data.role,
+          userId: data.user_id,
+          roleId: data.role_id,
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
         };
@@ -42,6 +44,8 @@ export const AuthProvider = ({ children }) => {
         const userData = {
           email: data.email,
           role: data.role,
+          userId: data.user_id,
+          roleId: data.role_id,
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
         };

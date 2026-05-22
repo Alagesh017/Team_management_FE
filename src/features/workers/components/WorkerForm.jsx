@@ -19,7 +19,13 @@ export const workerFormSchema = z.object({
   role_type: z.enum(["team_leader", "worker"]),
   job_title: z.string().optional(),
   department: z.string().optional(),
-  experience_years: z.union([z.string(), z.number()]).optional().transform(val => val?.toString() || ""),
+  experience_years: z.union([z.string(), z.number()]).optional().transform(val => {
+    if (val === "" || val === null || val === undefined) {
+      return null;
+    }
+    const num = Number(val);
+    return isNaN(num) ? null : num;
+  }),
   working_hours: z.string().optional(),
   work_mode: z.string().optional(),
   office_location: z.string().optional(),

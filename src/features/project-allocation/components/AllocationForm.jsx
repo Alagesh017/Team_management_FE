@@ -409,7 +409,7 @@ const AllocationForm = ({ onSubmit, initialData, submitting, error, onCancel, mo
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmitInternal)} className="h-full flex flex-col gap-2">
+    <form onSubmit={handleSubmit(onSubmitInternal)} className="h-full flex flex-col gap-4">
       {error && (
         <Alert variant="destructive" className="py-2">
           <AlertDescription>{error}</AlertDescription>
@@ -418,6 +418,38 @@ const AllocationForm = ({ onSubmit, initialData, submitting, error, onCancel, mo
 
       {mode !== "members" && renderShellFields()}
       {mode !== "shell" && selectedProjectId && renderHierarchyFields()}
+      
+      {mode !== "members" && (
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+          {onCancel && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onCancel}
+              disabled={submitting}
+              className="text-slate-600"
+            >
+              Cancel
+            </Button>
+          )}
+          <Button
+            type="submit"
+            disabled={submitting || !watch("project_id") || !watch("start_date")}
+            className="bg-slate-900 hover:bg-slate-800 text-white font-bold gap-2"
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                {initialData ? "Update Allocation" : "Create Allocation"}
+              </>
+            )}
+          </Button>
+        </div>
+      )}
     </form>
   );
 };

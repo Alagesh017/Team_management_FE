@@ -17,7 +17,13 @@ export const adminFormSchema = z.object({
   email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
   role_type: z.enum(["superadmin", "admin", "scrum"]),
-  experience_years: z.union([z.string(), z.number()]).optional().transform(val => val?.toString() || ""),
+  experience_years: z.union([z.string(), z.number()]).optional().transform(val => {
+    if (val === "" || val === null || val === undefined) {
+      return null;
+    }
+    const num = Number(val);
+    return isNaN(num) ? null : num;
+  }),
   working_hours: z.string().optional(),
   work_mode: z.string().optional(),
   office_location: z.string().optional(),

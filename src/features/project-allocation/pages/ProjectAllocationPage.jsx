@@ -26,6 +26,7 @@ import FolderIcon from "../../projects/components/FolderIcon";
 import { ContextMenu, ContextMenuItem } from "../../../common/components/ui/context-menu";
 import { formatDate } from "../../../core/utils/utils";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/contexts/AuthContext";
 
 const AllocationCard = ({ allocation, onEdit, onDelete }) => {
   const navigate = useNavigate();
@@ -86,6 +87,7 @@ const AllocationCard = ({ allocation, onEdit, onDelete }) => {
 };
 
 const ProjectAllocationPage = () => {
+  const { user } = useAuth();
   const { 
     allocations, 
     loading, 
@@ -129,10 +131,16 @@ const ProjectAllocationPage = () => {
     setSubmitting(true);
     setError("");
     try {
+      const dataWithAllocatedBy = {
+        ...data,
+        allocated_by: user?.userId,
+        members: data.members || []
+      };
+      
       if (editingAllocation) {
-        await updateAllocation(editingAllocation.id, data);
+        await updateAllocation(editingAllocation.id, dataWithAllocatedBy);
       } else {
-        await addAllocation(data);
+        await addAllocation(dataWithAllocatedBy);
       }
       
       setIsSheetOpen(false);
@@ -243,6 +251,10 @@ const ProjectAllocationPage = () => {
             initialData={editingAllocation} 
             submitting={submitting}
             error={error}
+            onCancel={() => {
+              setIsSheetOpen(false);
+              setEditingAllocation(null);
+            }}
           />
         </SheetContent>
       </Sheet>

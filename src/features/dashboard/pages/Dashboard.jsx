@@ -47,7 +47,7 @@ const Dashboard = () => {
   const { user } = useAuth();
 
   return (
-    <div className="space-y-8 bg-slate-50/50 p-6 min-h-screen">
+    <div className="space-y-6 bg-slate-50/50 p-4">
       {/* Header Section */}
       <div className="flex flex-col space-y-4">
         <div className="flex items-center gap-4">
