@@ -42,6 +42,17 @@ const ProjectAllocationDetailPage = () => {
     setSubmitting(true);
     setError("");
     try {
+      // Get user data from localStorage
+      let userData = null;
+      try {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          userData = JSON.parse(storedUser);
+        }
+      } catch (e) {
+        console.error("Failed to parse user from localStorage:", e);
+      }
+      
       if (existingAllocation) {
         // Only update members
         await updateAllocationMembers(existingAllocation.id, data.members);
@@ -49,7 +60,9 @@ const ProjectAllocationDetailPage = () => {
         // Shell must exist, but if not we create it (fallback)
         await addAllocation({
           ...data,
-          project_id: Number(projectId)
+          project_id: Number(projectId),
+          role_id: userData?.roleId,
+          role: userData?.role
         });
       }
       // Stay on page or show success message if needed

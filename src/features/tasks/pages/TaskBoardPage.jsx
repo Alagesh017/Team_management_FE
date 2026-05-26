@@ -6,7 +6,7 @@ import { projectTaskService } from "../services/projectTaskService";
 import { useAuth } from "../../auth/contexts/AuthContext";
 import {
   Loader2, AlertCircle, Clock, Calendar, Plus, X, Check, User, Save,
-  ChevronRight, Flame, MoreHorizontal, Trash2
+  ChevronRight, Flame, MoreHorizontal, Trash2, Search
 } from "lucide-react";
 import { Button } from "../../../common/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../common/components/ui/dialog";
@@ -33,12 +33,29 @@ const TaskBoardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [project, setProject]               = useState(null);
+  const [searchQuery, setSearchQuery]       = useState("");
+  const [meMode, setMeMode]                 = useState(false);
+
+  const canAddEditDelete = useMemo(() => {
+    if (!project) return false;
+    if (project.high_access) return true;
+    if (project.moderate_access && user?.role === "team_leader") return true;
+    return false;
+  }, [project, user?.role]);
+
+  const canMoveCards = useMemo(() => {
+    if (!project) return false;
+    if (project.high_access) return true;
+    if (project.moderate_access) return true;
+    return false;
+  }, [project]);
   const [allocation, setAllocation]         = useState(null);
   const [statuses, setStatuses]             = useState([]);
   const [allocatedMembers, setAllocatedMembers] = useState([]);
   const [allAdmins, setAllAdmins]           = useState([]);
   const [loading, setLoading]               = useState(true);
   const [draggedTask, setDraggedTask]       = useState(null);
+  const columnRefs = React.useRef({});
 
   /* per-column "add task" state */
   const [activeColumn, setActiveColumn]     = useState(null); // status_id of open add-panel
@@ -46,6 +63,8 @@ const TaskBoardPage = () => {
   const [newTaskStartDate, setNewTaskStartDate] = useState("");
   const [newTaskDueDate, setNewTaskDueDate] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState("medium");
+  const [newTaskEstimatedHours, setNewTaskEstimatedHours] = useState("");
+  const [newTaskActualHours, setNewTaskActualHours] = useState("");
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [isSaving, setIsSaving]             = useState(false);
 
@@ -114,6 +133,12 @@ const TaskBoardPage = () => {
 
   useEffect(() => { if (id) fetchData(); }, [id]);
 
+  useEffect(() => {
+    if (newTaskEstimatedHours) {
+      setNewTaskActualHours(newTaskEstimatedHours);
+    }
+  }, [newTaskEstimatedHours]);
+
   /* ── helpers ── */
   const formatDate = (d) => {
     if (!d) return "";
@@ -133,6 +158,13 @@ const TaskBoardPage = () => {
     setNewTaskDueDate("");
     setNewTaskPriority("medium");
     setSelectedMembers([]);
+    
+    setTimeout(() => {
+      const columnRef = columnRefs.current[statusId];
+      if (columnRef) {
+        columnRef.scrollTop = columnRef.scrollHeight;
+      }
+    }, 50);
   };
 
   const closeAddPanel = () => {
@@ -141,6 +173,8 @@ const TaskBoardPage = () => {
     setNewTaskStartDate("");
     setNewTaskDueDate("");
     setNewTaskPriority("medium");
+    setNewTaskEstimatedHours("");
+    setNewTaskActualHours("");
     setSelectedMembers([]);
   };
 
@@ -180,6 +214,8 @@ const TaskBoardPage = () => {
         priority: newTaskPriority,
         start_date: newTaskStartDate || null,
         due_date: newTaskDueDate || null,
+        estimated_hours: newTaskEstimatedHours ? parseFloat(newTaskEstimatedHours) : null,
+        actual_hours: newTaskActualHours ? parseFloat(newTaskActualHours) : null,
       });
       closeAddPanel();
       fetchData();
@@ -314,11 +350,11 @@ const TaskBoardPage = () => {
 
   return (
     <div
-      className="flex flex-col h-[calc(100vh-80px)] w-[calc(100vw-5px)] lg:w-[calc(100vw-300px)] overflow-hidden"
+      className="flex flex-col h-[calc(100vh-80px)] w-[calc(100vw-5px)] lg:w-[calc(100vw-320px)] overflow-hidden"
       style={{ background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)" }}
     >
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white/70 backdrop-blur shrink-0">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-white/70 backdrop-blur shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <div>
             <div className="flex items-center gap-2">
@@ -334,9 +370,29 @@ const TaskBoardPage = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
+          {/* search input */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <Input 
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 w-64 bg-slate-50/50 focus:bg-white transition-all"
+            />
+          </div>
+          {/* me mode toggle */}
+          <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
+            <label className="text-xs font-semibold text-slate-600 select-none cursor-pointer flex items-center gap-2">
+              Me Mode
+              <Checkbox 
+                checked={meMode} 
+                onCheckedChange={(checked) => setMeMode(checked)} 
+              />
+            </label>
+          </div>
           {/* member pile */}
-          <div className="flex -space-x-2 mr-2">
+          <div className="flex -space-x-2">
             {availableMembers.slice(0, 5).map((m) => (
               <div
                 key={m.user_id}
@@ -358,20 +414,32 @@ const TaskBoardPage = () => {
 
       {/* ── Columns ── */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <div className="flex gap-4 overflow-x-auto h-full px-6 py-5 pb-6">
+        <div className="flex gap-3 overflow-x-auto h-full px-5 py-4 pb-4">
           {statuses.map((status) => {
-            const statusTasks = status.tasks || [];
+            let statusTasks = status.tasks || [];
+            if (searchQuery) {
+              statusTasks = statusTasks.filter(task =>
+                task.title.toLowerCase().includes(searchQuery.toLowerCase())
+              );
+            }
+            if (meMode && user?.roleId) {
+              statusTasks = statusTasks.filter(task =>
+                (task.assigned_workers || []).some(m => m.user_id === user.roleId)
+              );
+            }
             const color = status.color || "#6366f1";
             const isAddOpen = activeColumn === status.status_id;
 
             return (
               <div
                 key={status.status_id}
-                className="flex-shrink-0 w-72 flex flex-col h-full rounded-2xl overflow-hidden"
+                className={`flex-shrink-0 w-72 flex flex-col h-full rounded-lg overflow-hidden transition-all duration-200 ${
+                  draggedTask ? 'ring-2 ring-indigo-200 ring-offset-2' : ''
+                }`}
                 style={{ background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)" }}
               >
                 {/* Column header */}
-                <div className="px-4 pt-4 pb-3 shrink-0">
+                <div className="px-3 pt-3 pb-2.5 shrink-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
@@ -386,9 +454,14 @@ const TaskBoardPage = () => {
                       >
                         {statusTasks.length}
                       </span>
-                      <button className="h-6 w-6 rounded-md flex items-center justify-center text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </button>
+                      {canAddEditDelete && (
+                        <button 
+                          onClick={() => openAddPanel(status.status_id)}
+                          className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                   {/* color bar */}
@@ -397,7 +470,8 @@ const TaskBoardPage = () => {
 
                 {/* Tasks */}
                 <div 
-                  className="flex-1 overflow-y-auto px-3 pb-3 space-y-2.5"
+                  ref={(el) => (columnRefs.current[status.status_id] = el)}
+                  className="flex-1 overflow-y-auto px-3 pb-3 space-y-2"
                   style={{ scrollbarWidth: "thin", scrollbarColor: "#e2e8f0 transparent" }}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => handleDrop(status.status_id)}
@@ -407,24 +481,33 @@ const TaskBoardPage = () => {
                     return (
                       <div
                         key={task.task_id}
-                        className="group rounded-xl p-3.5 border border-slate-100 cursor-pointer transition-all duration-150"
+                        className={`group relative rounded-xl p-3 cursor-pointer transition-all duration-200 ${
+                          draggedTask?.task_id === task.task_id ? 'opacity-50 scale-95' : ''
+                        }`}
                         style={{
-                          background: "#fafafa",
-                          boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                          background: "#ffffff",
+                          border: "1px solid #e2e8f0",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
                         }}
-                        draggable
-                        onDragStart={() => handleDragStart(task)}
+                        draggable={canMoveCards}
+                        onDragStart={canMoveCards ? () => handleDragStart(task) : undefined}
                         onDragEnd={handleDragEnd}
                         onClick={(e) => openTaskDetails(task, e)}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "#fff";
-                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
-                          e.currentTarget.style.transform = "translateY(-1px)";
+                          if (draggedTask?.task_id !== task.task_id) {
+                            e.currentTarget.style.background = "#ffffff";
+                            e.currentTarget.style.border = "1px solid #cbd5e1";
+                            e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06)";
+                            e.currentTarget.style.transform = "translateY(-2px)";
+                          }
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "#fafafa";
-                          e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)";
-                          e.currentTarget.style.transform = "translateY(0)";
+                          if (draggedTask?.task_id !== task.task_id) {
+                            e.currentTarget.style.background = "#ffffff";
+                            e.currentTarget.style.border = "1px solid #e2e8f0";
+                            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)";
+                            e.currentTarget.style.transform = "translateY(0)";
+                          }
                         }}
                       >
                         {/* priority + title */}
@@ -440,16 +523,18 @@ const TaskBoardPage = () => {
                                 {p.label}
                               </span>
                             )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setTaskToDelete(task);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                              className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                            {canAddEditDelete && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTaskToDelete(task);
+                                  setIsDeleteDialogOpen(true);
+                                }}
+                                className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -464,19 +549,19 @@ const TaskBoardPage = () => {
                         {(task.start_date || task.due_date || task.estimated_hours) && (
                           <div className="flex items-center gap-3 flex-wrap">
                             {task.start_date && (
-                              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400">
+                              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600">
                                 <Calendar className="h-3 w-3" />
                                 <span>Start: {formatDate(task.start_date)}</span>
                               </div>
                             )}
                             {task.due_date && (
-                              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400">
+                              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600">
                                 <Calendar className="h-3 w-3" />
                                 <span>Due: {formatDate(task.due_date)}</span>
                               </div>
                             )}
                             {task.estimated_hours && (
-                              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400">
+                              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600">
                                 <Clock className="h-3 w-3" />
                                 <span>{task.estimated_hours}h</span>
                               </div>
@@ -543,7 +628,7 @@ const TaskBoardPage = () => {
                             type="date"
                             value={newTaskStartDate}
                             onChange={(e) => setNewTaskStartDate(e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-8 text-xs px-2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:ml-1"
                           />
                         </div>
                         <div>
@@ -552,9 +637,22 @@ const TaskBoardPage = () => {
                             type="date"
                             value={newTaskDueDate}
                             onChange={(e) => setNewTaskDueDate(e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-8 text-xs px-2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:ml-1"
                           />
                         </div>
+                      </div>
+
+                      {/* Hours input */}
+                      <div>
+                        <label className="text-[10px] font-medium text-slate-500 mb-1 block">Estimated Hours</label>
+                        <Input
+                          type="number"
+                          step="0.5"
+                          value={newTaskEstimatedHours}
+                          onChange={(e) => setNewTaskEstimatedHours(e.target.value)}
+                          className="h-7 text-xs"
+                          placeholder="e.g., 4"
+                        />
                       </div>
 
                       {/* assigned members mini-row */}
@@ -731,7 +829,7 @@ const TaskBoardPage = () => {
                   <DialogTitle className="text-lg font-semibold text-slate-800">
                     {isEditingTask ? "Edit Task" : "Task Details"}
                   </DialogTitle>
-                  {!isEditingTask && (
+                  {!isEditingTask && canAddEditDelete && (
                     <Button
                       variant="ghost"
                       size="sm"

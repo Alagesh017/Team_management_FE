@@ -18,10 +18,12 @@ import { Button } from "../../../common/components/ui/button";
 import { Input } from "../../../common/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../common/components/ui/select";
 import { Label } from "../../../common/components/ui/label";
+import { Badge } from "../../../common/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "../../../common/components/ui/sheet";
 import { taskService } from "../services/taskService";
 import { subTaskService } from "../services/subTaskService";
 import { projectTaskService } from "../services/projectTaskService";
+import { projectService } from "../../projects/services/projectService";
 
 const PRIORITY = {
   high:   { label: "High",   bg: "#fef2f2", text: "#ef4444", dot: "#ef4444" },
@@ -43,6 +45,7 @@ const TaskDetailPage = () => {
   const { user } = useAuth();
 
   const [task, setTask] = useState(null);
+  const [project, setProject] = useState(null);
   const [subTasks, setSubTasks] = useState([]);
   const [statuses, setStatuses] = useState([]);
   const [availableMembers, setAvailableMembers] = useState([]);
@@ -58,10 +61,12 @@ const TaskDetailPage = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [taskData, projectTaskData] = await Promise.all([
+      const [taskData, projectTaskData, projectData] = await Promise.all([
         taskService.getTaskById(taskId),
         projectTaskService.getProjectTaskData(projectId),
+        projectService.getProjectById(projectId),
       ]);
+      setProject(projectData.project || projectData);
       
       const taskObj = taskData.task || taskData;
       setTask(taskObj);
@@ -546,6 +551,24 @@ const TaskDetailPage = () => {
                   </Label>
                   <div className="text-slate-700">
                     {task?.remark || <span className="text-slate-400 italic">No remarks</span>}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    Project Access Flags
+                  </Label>
+                  <div className="flex gap-2 flex-wrap">
+                    {project?.moderate_access ? (
+                      <Badge className="bg-amber-100 text-amber-700 border-amber-200">Moderate Access</Badge>
+                    ) : null}
+                    {project?.high_access ? (
+                      <Badge className="bg-red-100 text-red-700 border-red-200">High Access</Badge>
+                    ) : null}
+                    {!project?.moderate_access && !project?.high_access ? (
+                      <span className="text-slate-400 italic font-normal text-sm">No access flags set</span>
+                    ) : null}
                   </div>
                 </div>
               </>

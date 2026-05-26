@@ -1,8 +1,8 @@
 import api from "../../../core/interceptors/axiosInterceptor";
 
-const getAllProjects = async () => {
+const getAllProjects = async (params = {}) => {
   try {
-    const response = await api.get("/projects/");
+    const response = await api.get("/projects/", { params });
     return response.data;
   } catch (error) {
     throw error.response ? error.response.data : new Error("Network error");

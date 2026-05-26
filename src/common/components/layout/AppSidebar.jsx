@@ -24,7 +24,8 @@ import {
   ListTodo,
   Share2,
   MoreHorizontal,
-  GripVertical
+  GripVertical,
+  Search
 } from "lucide-react";
 
 import {
@@ -65,6 +66,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "../ui/sheet";
+import { Input } from "../ui/input";
 import {
   DndContext,
   DragOverlay,
@@ -87,6 +89,7 @@ const DraggableProject = ({ project, isActive }) => {
     id: `project-${project.id}`,
     data: { project },
   });
+  const { state } = useSidebar();
 
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
@@ -102,7 +105,7 @@ const DraggableProject = ({ project, isActive }) => {
         isDragging ? 'opacity-40 grayscale-[0.5]' : 'opacity-100'
       }`}
     >
-      <SidebarMenuSubItem className="list-none">
+      <SidebarMenuSubItem className="list-none group-data-[collapsible=icon]:hidden">
         <SidebarMenuSubButton 
           asChild 
           isActive={isActive}
@@ -126,43 +129,59 @@ const DraggableProject = ({ project, isActive }) => {
 };
 
 // Droppable Group Component
-const DroppableGroup = ({ group, projects, currentPath }) => {
+const DroppableGroup = ({ group, projects, currentPath, searchQuery }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: group ? group.id.toString() : "uncategorized",
   });
+  const { state } = useSidebar();
 
   const groupedProjects = projects.filter(p => group ? p.group_id === group.id : !p.group_id);
+  const hasMatchingProjects = searchQuery && groupedProjects.some(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   const isActiveGroup = groupedProjects.some(p => currentPath === `/tasks/project/${p.id}`);
 
+  const [open, setOpen] = useState(isActiveGroup || isOver);
+
+  React.useEffect(() => {
+    if (hasMatchingProjects) {
+      setOpen(true);
+    }
+  }, [hasMatchingProjects]);
+
   return (
-    <SidebarMenuItem ref={setNodeRef}>
-      <Collapsible defaultOpen={isActiveGroup || isOver} className="group/group-collapsible">
+    <SidebarMenuItem ref={setNodeRef} className="mb-1">
+      <Collapsible open={open} onOpenChange={setOpen} className="group/group-collapsible">
         <CollapsibleTrigger asChild>
           <SidebarMenuButton 
             tooltip={group ? group.name : "Uncategorized"} 
-            className={`font-medium transition-all duration-300 py-6 px-4 rounded-xl ${
+            className={`font-medium transition-all duration-300 py-3 px-4 rounded-xl ${
               isOver ? 'text-blue-600 bg-blue-50/20 shadow-sm' : 'text-slate-600 hover:bg-slate-100/50'
             }`}
           >
-            <div className={`h-8 w-8 rounded-xl ${group ? getGroupColor(group.name) : 'bg-slate-900'} flex items-center justify-center text-[12px] font-black text-white mr-1 shadow-lg group-hover/group-collapsible:scale-110 group-hover/group-collapsible:rotate-3 transition-all duration-300`}>
+            <div className={`h-8 w-8 rounded-xl ${group ? getGroupColor(group.name) : 'bg-slate-900'} flex items-center justify-center text-[12px] font-black text-white shadow-lg group-hover/group-collapsible:scale-110 group-hover/group-collapsible:rotate-3 transition-all duration-300`}>
               {group ? group.name[0].toUpperCase() : 'U'}
             </div>
-            <span className={`font-bold tracking-tight ${isOver ? 'scale-105' : ''} transition-transform`}>
+            <span className={`font-bold tracking-tight ${isOver ? 'scale-105' : ''} transition-transform group-data-[collapsible=icon]:hidden`}>
               {group ? group.name : "Uncategorized"}
             </span>
-            <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-300 group-data-[state=open]/group-collapsible:rotate-90" />
+            <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-300 group-data-[state=open]/group-collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
           </SidebarMenuButton>
         </CollapsibleTrigger>
-        <CollapsibleContent>
+        <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
           <SidebarMenuSub className="ml-4 border-l-2 border-slate-200/50 pl-4 py-2 space-y-1">
             {groupedProjects.length > 0 ? (
-              groupedProjects.map((project) => (
-                <DraggableProject 
-                  key={project.id} 
-                  project={project} 
-                  isActive={currentPath === `/tasks/project/${project.id}`}
-                />
-              ))
+              groupedProjects
+                .filter(p => 
+                  !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((project) => (
+                  <DraggableProject 
+                    key={project.id} 
+                    project={project} 
+                    isActive={currentPath === `/tasks/project/${project.id}`}
+                  />
+                ))
             ) : (
               <div className="text-[11px] font-medium text-slate-400 italic px-3 py-4 bg-slate-50/50 rounded-lg border border-dashed border-slate-200 flex items-center justify-center">
                 {isOver ? 'Drop here' : 'Empty group'}
@@ -194,15 +213,20 @@ const getGroupColor = (name) => {
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { setOpenMobile, isMobile } = useSidebar();
   const [projects, setProjects] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [isNewGroupSheetOpen, setIsNewGroupSheetOpen] = useState(false);
   const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
   const [groupError, setGroupError] = useState("");
   const [activeProject, setActiveProject] = useState(null);
+
+  const filteredProjects = projects.filter(project =>
+    project.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -220,8 +244,12 @@ export function AppSidebar() {
 
   const fetchData = async () => {
     try {
+      const params = {};
+      if (user?.role) params.role = user.role;
+      if (user?.roleId) params.role_id = user.roleId;
+      
       const [projectsData, groupsData] = await Promise.all([
-        projectService.getAllProjects(),
+        projectService.getAllProjects(params),
         projectGroupService.getAllGroups()
       ]);
       setProjects(Array.isArray(projectsData) ? projectsData : projectsData.projects || []);
@@ -232,8 +260,10 @@ export function AppSidebar() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
   const handleCreateGroup = async (data) => {
     try {
@@ -334,33 +364,65 @@ export function AppSidebar() {
                   {menuItems.map((item) => {
                     if (item.title === "Groups") {
                       return (
-                        <div key="groups-section" className="mt-2 mb-4">
-                          <div className="flex items-center justify-between px-4 py-2 mb-1 group-data-[collapsible=icon]:hidden">
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Groups</span>
-                            <button 
-                              onClick={() => setIsNewGroupSheetOpen(true)}
-                              className="h-5 w-5 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors"
-                            >
-                              <Plus className="h-3 w-3 text-slate-500" />
-                            </button>
+                        <div key="groups-section" className="mt-2 mb-4 group-data-[collapsible=icon]:mt-0">
+                          <div className="px-4 py-2 mb-3 group-data-[collapsible=icon]:hidden">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Groups</span>
+                              <button 
+                                onClick={() => setIsNewGroupSheetOpen(true)}
+                                className="h-5 w-5 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors"
+                              >
+                                <Plus className="h-3 w-3 text-slate-500" />
+                              </button>
+                            </div>
+                            <div className="relative">
+                              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                              <Input 
+                                placeholder="Search projects..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-8 bg-slate-50/50 focus:bg-white transition-all"
+                              />
+                            </div>
                           </div>
                           
                           {/* Grouped Projects */}
-                          {groups.map((group) => (
-                            <DroppableGroup 
-                              key={group.id}
-                              group={group} 
-                              projects={projects} 
-                              currentPath={location.pathname}
-                            />
-                          ))}
+                          {groups
+                            .filter((group) => {
+                              if (!searchQuery) return true;
+                              const groupProjects = projects.filter(p => p.group_id === group.id);
+                              return groupProjects.some(p => 
+                                p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                              );
+                            })
+                            .map((group) => (
+                              <DroppableGroup 
+                                key={group.id}
+                                group={group} 
+                                projects={projects} 
+                                currentPath={location.pathname}
+                                searchQuery={searchQuery}
+                              />
+                            ))}
 
                           {/* Uncategorized Projects */}
-                          <DroppableGroup 
-                            group={null} 
-                            projects={projects} 
-                            currentPath={location.pathname}
-                          />
+                          {(() => {
+                            const uncategorizedProjects = projects.filter(p => !p.group_id);
+                            if (searchQuery) {
+                              const hasMatching = uncategorizedProjects.some(p => 
+                                p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                              );
+                              if (!hasMatching) return null;
+                            }
+                            return (
+                              <DroppableGroup 
+                                group={null} 
+                                projects={projects} 
+                                currentPath={location.pathname}
+                                searchQuery={searchQuery}
+                              />
+                            );
+                          })()}
                         </div>
                       );
                     }

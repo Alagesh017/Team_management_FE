@@ -7,6 +7,7 @@ import { Input } from "../../../common/components/ui/input";
 import { Label } from "../../../common/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../common/components/ui/select";
 import { Alert, AlertDescription } from "../../../common/components/ui/alert";
+import { Checkbox } from "../../../common/components/ui/checkbox";
 import { Loader2, Upload, X } from "lucide-react";
 import { SheetFooter, SheetClose } from "../../../common/components/ui/sheet";
 import { clientService } from "../../clients/services/clientService";
@@ -23,6 +24,8 @@ export const projectFormSchema = z.object({
   client_id: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? Number(val) : null),
   group_id: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? Number(val) : null),
   project_logo: z.string().optional(),
+  moderate_access: z.boolean().default(false),
+  high_access: z.boolean().default(false),
 });
 
 const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
@@ -49,6 +52,8 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
       client_id: "",
       group_id: "",
       project_logo: "",
+      moderate_access: false,
+      high_access: false,
     },
   });
 
@@ -265,6 +270,25 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
             placeholder="Any additional notes"
             className="bg-slate-50/50 focus:bg-white transition-all" 
           />
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <div className="flex items-center gap-3 bg-slate-50/50 p-3 rounded-lg border border-slate-200">
+            <Checkbox 
+              id="moderate_access" 
+              checked={watch("moderate_access")}
+              onCheckedChange={(checked) => setValue("moderate_access", checked)}
+            />
+            <Label htmlFor="moderate_access" className="font-bold cursor-pointer">Moderate Access</Label>
+          </div>
+          <div className="flex items-center gap-3 bg-slate-50/50 p-3 rounded-lg border border-slate-200">
+            <Checkbox 
+              id="high_access" 
+              checked={watch("high_access")}
+              onCheckedChange={(checked) => setValue("high_access", checked)}
+            />
+            <Label htmlFor="high_access" className="font-bold cursor-pointer">High Access</Label>
+          </div>
         </div>
       </div>
 

@@ -91,6 +91,23 @@ const ProjectDetails = ({ project }) => {
           label="Created By" 
           value={project.creator_email} 
         />
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 text-slate-500">
+            <Info className="h-4 w-4" />
+            <span className="text-xs font-bold uppercase tracking-wider">Access Flags</span>
+          </div>
+          <div className="flex gap-2 flex-wrap bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+            {project.moderate_access ? (
+              <Badge className="bg-amber-100 text-amber-700 border-amber-200">Moderate Access</Badge>
+            ) : null}
+            {project.high_access ? (
+              <Badge className="bg-red-100 text-red-700 border-red-200">High Access</Badge>
+            ) : null}
+            {!project.moderate_access && !project.high_access ? (
+              <span className="text-slate-400 italic font-normal text-sm">No flags set</span>
+            ) : null}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">

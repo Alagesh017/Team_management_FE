@@ -131,16 +131,28 @@ const ProjectAllocationPage = () => {
     setSubmitting(true);
     setError("");
     try {
-      const dataWithAllocatedBy = {
+      // Get user data from localStorage
+      let userData = null;
+      try {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          userData = JSON.parse(storedUser);
+        }
+      } catch (e) {
+        console.error("Failed to parse user from localStorage:", e);
+      }
+      
+      const dataWithRole = {
         ...data,
-        allocated_by: user?.userId,
+        role_id: userData?.roleId,
+        role: userData?.role,
         members: data.members || []
       };
       
       if (editingAllocation) {
-        await updateAllocation(editingAllocation.id, dataWithAllocatedBy);
+        await updateAllocation(editingAllocation.id, dataWithRole);
       } else {
-        await addAllocation(dataWithAllocatedBy);
+        await addAllocation(dataWithRole);
       }
       
       setIsSheetOpen(false);

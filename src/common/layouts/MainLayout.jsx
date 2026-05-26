@@ -33,8 +33,8 @@ export function MainLayout({ children }) {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center justify-between border-b px-6 sticky top-0 bg-white/80 backdrop-blur-md z-50">
+      <SidebarInset className="h-svh flex flex-col overflow-hidden">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b px-6 bg-white z-50">
           <div className="flex items-center gap-4 flex-1">
             <SidebarTrigger className="-ml-1 text-slate-900 hover:bg-slate-100 transition-colors h-10 w-10" />
             <div className="relative w-full max-w-md group hidden md:block">
@@ -110,7 +110,7 @@ export function MainLayout({ children }) {
             </DropdownMenu>
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-auto bg-slate-50/50">
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-y-auto bg-slate-50/50">
           {children}
         </div>
       </SidebarInset>
