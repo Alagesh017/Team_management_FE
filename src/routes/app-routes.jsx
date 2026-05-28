@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { HashRouter as Router, Routes, Route } from 'react-router-dom'
 
 import Login from '../features/auth/pages/login'
 import Register from '../features/auth/pages/register'
@@ -24,7 +24,7 @@ const PermissionRequest = () => <div className="text-2xl font-bold">Permission R
 
 export default function AppRoutes() {
 	return (
-		<Router basename="/">
+		<Router>
 			<Routes>
 				<Route path="/" element={<Login />} />
 				<Route path="/register" element={<Register />} />
