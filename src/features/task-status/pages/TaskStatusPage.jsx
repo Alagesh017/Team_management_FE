@@ -152,6 +152,21 @@ const TaskStatusPage = () => {
       ),
     },
     {
+      accessorKey: "is_confidential",
+      header: "Confidential",
+      cell: ({ row }) => {
+        const isConfidential = row.getValue("is_confidential");
+        return (
+          <div className="flex items-center gap-1.5">
+            <div className={`h-2 w-2 rounded-full ${isConfidential ? 'bg-red-500' : 'bg-slate-300'}`} />
+            <span className={`text-xs font-bold ${isConfidential ? 'text-red-600' : 'text-slate-400'}`}>
+              {isConfidential ? 'YES' : 'NO'}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "status",
       header: "Status",
       cell: () => (

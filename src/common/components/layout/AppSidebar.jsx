@@ -84,10 +84,11 @@ import { useAuth } from "../../../features/auth/contexts/AuthContext";
 import ProjectGroupForm from "../../../features/projects/components/ProjectGroupForm";
 
 // Draggable Project Component
-const DraggableProject = ({ project, isActive }) => {
+const DraggableProject = ({ project, isActive, isRestricted }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `project-${project.id}`,
     data: { project },
+    disabled: isRestricted,
   });
   const { state } = useSidebar();
 
@@ -99,8 +100,8 @@ const DraggableProject = ({ project, isActive }) => {
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
+      {...(isRestricted ? {} : listeners)}
+      {...(isRestricted ? {} : attributes)}
       className={`group/project-item transition-all duration-200 ${
         isDragging ? 'opacity-40 grayscale-[0.5]' : 'opacity-100'
       }`}
@@ -109,7 +110,7 @@ const DraggableProject = ({ project, isActive }) => {
         <SidebarMenuSubButton 
           asChild 
           isActive={isActive}
-          className="group/project-link flex items-center gap-2.5 py-2 px-3 rounded-xl hover:bg-slate-50 border-2 border-transparent transition-all duration-200"
+          className="group/project-link flex items-center gap-2.5 py-2 px-3 rounded-xl hover:bg-slate-50 border-2 border-transparent transition-all duration-200 relative pr-6"
         >
           <Link to={`/tasks/project/${project.id}`}>
             <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -120,7 +121,14 @@ const DraggableProject = ({ project, isActive }) => {
                 {project.name}
               </span>
             </div>
-            <GripVertical className="h-4 w-4 ml-auto opacity-0 group-hover/project-link:opacity-40 text-slate-300 transition-opacity" />
+            {isActive && (
+              <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-600">
+                <ChevronRight className="h-3 w-3" />
+              </div>
+            )}
+            {!isRestricted && (
+              <GripVertical className="h-4 w-4 ml-auto opacity-0 group-hover/project-link:opacity-40 text-slate-300 transition-opacity" />
+            )}
           </Link>
         </SidebarMenuSubButton>
       </SidebarMenuSubItem>
@@ -129,9 +137,10 @@ const DraggableProject = ({ project, isActive }) => {
 };
 
 // Droppable Group Component
-const DroppableGroup = ({ group, projects, currentPath, searchQuery }) => {
+const DroppableGroup = ({ group, projects, currentPath, searchQuery, isRestricted }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: group ? group.id.toString() : "uncategorized",
+    disabled: isRestricted,
   });
   const { state } = useSidebar();
 
@@ -180,6 +189,7 @@ const DroppableGroup = ({ group, projects, currentPath, searchQuery }) => {
                     key={project.id} 
                     project={project} 
                     isActive={currentPath === `/tasks/project/${project.id}`}
+                    isRestricted={isRestricted}
                   />
                 ))
             ) : (
@@ -316,25 +326,29 @@ export function AppSidebar() {
     navigate("/login");
   };
 
+  const isRestrictedRole = user?.role === "team_leader" || user?.role === "worker";
+  
   const menuItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    {
-      title: "Master",
-      icon: Settings,
-      subItems: [
-        { title: "Admin", url: "/admin", icon: UserCog },
-        { title: "Workers", url: "/workers", icon: HardHat },
-        { title: "Task Status", url: "/task-status", icon: ClipboardList },
-        { title: "Project Grouping", url: "/project-grouping", icon: LayoutGrid },
-      ],
-    },
-    { title: "Groups", url: "/groups", icon: Calendar },
-    { title: "Attendance", url: "/attendance", icon: Calendar },
-    { title: "Clients", url: "/clients", icon: Users },
-    { title: "Projects", url: "/projects", icon: FolderKanban },
-    { title: "Project Allocation", url: "/project-allocation", icon: UserPlus },
-    { title: "Meetings", url: "/meetings", icon: MessageSquare },
-    { title: "Permission Request", url: "/permission-request", icon: ShieldAlert },
+    ...(isRestrictedRole ? [] : [
+      {
+        title: "Master",
+        icon: Settings,
+        subItems: [
+          { title: "Admin", url: "/admin", icon: UserCog },
+          { title: "Workers", url: "/workers", icon: HardHat },
+          { title: "Task Status", url: "/task-status", icon: ClipboardList },
+          { title: "Project Grouping", url: "/project-grouping", icon: LayoutGrid },
+        ],
+      },
+      { title: "Groups", url: "/groups", icon: Calendar },
+      { title: "Attendance", url: "/attendance", icon: Calendar },
+      { title: "Clients", url: "/clients", icon: Users },
+      { title: "Projects", url: "/projects", icon: FolderKanban },
+      { title: "Project Allocation", url: "/project-allocation", icon: UserPlus },
+      { title: "Meetings", url: "/meetings", icon: MessageSquare },
+      { title: "Permission Request", url: "/permission-request", icon: ShieldAlert },
+    ]),
   ];
 
   return (
@@ -361,72 +375,133 @@ export function AppSidebar() {
               <SidebarGroupLabel>Menu</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu className="gap-2">
-                  {menuItems.map((item) => {
-                    if (item.title === "Groups") {
+                  {/* Render Dashboard first */}
+                  {menuItems.find(item => item.title === "Dashboard") && (
+                    <SidebarMenuItem key="dashboard">
+                      <SidebarMenuButton asChild tooltip="Dashboard" isActive={location.pathname === "/dashboard"} className="relative pr-6">
+                        <Link to="/dashboard" onClick={closeSidebarOnMobile}>
+                          <LayoutDashboard />
+                          <span>Dashboard</span>
+                          {location.pathname === "/dashboard" && (
+                            <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-600">
+                              <ChevronRight className="h-3 w-3" />
+                            </div>
+                          )}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+
+                  {/* Render Master menu next */}
+                  {!isRestrictedRole && menuItems.find(item => item.title === "Master") && (
+                    <SidebarMenuItem key="master">
+                      <Collapsible defaultOpen className="group/collapsible">
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton tooltip="Master">
+                            <Settings />
+                            <span>Master</span>
+                            <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {[
+                              { title: "Admin", url: "/admin", icon: UserCog },
+                              { title: "Workers", url: "/workers", icon: HardHat },
+                              { title: "Task Status", url: "/task-status", icon: ClipboardList },
+                              { title: "Project Grouping", url: "/project-grouping", icon: LayoutGrid },
+                            ].map((subItem) => {
+                              const isActive = location.pathname === subItem.url;
+                              return (
+                                <SidebarMenuSubItem key={subItem.title}>
+                                  <SidebarMenuSubButton asChild isActive={isActive} className="relative pr-6">
+                                    <Link to={subItem.url} onClick={closeSidebarOnMobile} className="w-full flex items-center">
+                                      {subItem.icon && <subItem.icon className="h-4 w-4" />}
+                                      <span>{subItem.title}</span>
+                                      {isActive && (
+                                        <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-600">
+                                          <ChevronRight className="h-3 w-3" />
+                                        </div>
+                                      )}
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              );
+                            })}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </SidebarMenuItem>
+                  )}
+
+                  {/* Always show Project Groups section here */}
+                  <div key="groups-section" className="mt-2 mb-4 group-data-[collapsible=icon]:mt-0">
+                    <div className="px-4 py-2 mb-3 group-data-[collapsible=icon]:hidden">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Groups</span>
+                        {!isRestrictedRole && (
+                          <button 
+                            onClick={() => setIsNewGroupSheetOpen(true)}
+                            className="h-5 w-5 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors"
+                          >
+                            <Plus className="h-3 w-3 text-slate-500" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                        <Input 
+                          placeholder="Search projects..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-8 bg-slate-50/50 focus:bg-white transition-all"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Grouped Projects */}
+                    {groups
+                      .filter((group) => {
+                        if (!searchQuery) return true;
+                        const groupProjects = projects.filter(p => p.group_id === group.id);
+                        return groupProjects.some(p => 
+                          p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                        );
+                      })
+                      .map((group) => (
+                        <DroppableGroup 
+                          key={group.id}
+                          group={group} 
+                          projects={projects} 
+                          currentPath={location.pathname}
+                          searchQuery={searchQuery}
+                          isRestricted={isRestrictedRole}
+                        />
+                      ))}
+
+                    {/* Uncategorized Projects */}
+                    {(() => {
+                      const uncategorizedProjects = projects.filter(p => !p.group_id);
+                      if (searchQuery) {
+                        const hasMatching = uncategorizedProjects.some(p => 
+                          p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                        );
+                        if (!hasMatching) return null;
+                      }
                       return (
-                        <div key="groups-section" className="mt-2 mb-4 group-data-[collapsible=icon]:mt-0">
-                          <div className="px-4 py-2 mb-3 group-data-[collapsible=icon]:hidden">
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Groups</span>
-                              <button 
-                                onClick={() => setIsNewGroupSheetOpen(true)}
-                                className="h-5 w-5 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors"
-                              >
-                                <Plus className="h-3 w-3 text-slate-500" />
-                              </button>
-                            </div>
-                            <div className="relative">
-                              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                              <Input 
-                                placeholder="Search projects..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-8 bg-slate-50/50 focus:bg-white transition-all"
-                              />
-                            </div>
-                          </div>
-                          
-                          {/* Grouped Projects */}
-                          {groups
-                            .filter((group) => {
-                              if (!searchQuery) return true;
-                              const groupProjects = projects.filter(p => p.group_id === group.id);
-                              return groupProjects.some(p => 
-                                p.name.toLowerCase().includes(searchQuery.toLowerCase())
-                              );
-                            })
-                            .map((group) => (
-                              <DroppableGroup 
-                                key={group.id}
-                                group={group} 
-                                projects={projects} 
-                                currentPath={location.pathname}
-                                searchQuery={searchQuery}
-                              />
-                            ))}
-
-                          {/* Uncategorized Projects */}
-                          {(() => {
-                            const uncategorizedProjects = projects.filter(p => !p.group_id);
-                            if (searchQuery) {
-                              const hasMatching = uncategorizedProjects.some(p => 
-                                p.name.toLowerCase().includes(searchQuery.toLowerCase())
-                              );
-                              if (!hasMatching) return null;
-                            }
-                            return (
-                              <DroppableGroup 
-                                group={null} 
-                                projects={projects} 
-                                currentPath={location.pathname}
-                                searchQuery={searchQuery}
-                              />
-                            );
-                          })()}
-                        </div>
+                        <DroppableGroup 
+                          group={null} 
+                          projects={projects} 
+                          currentPath={location.pathname}
+                          searchQuery={searchQuery}
+                          isRestricted={isRestrictedRole}
+                        />
                       );
-                    }
+                    })()}
+                  </div>
 
+                  {/* Render remaining menu items (exclude Groups since we show project groups) */}
+                  {menuItems.filter(item => item.title !== "Dashboard" && item.title !== "Master" && item.title !== "Groups").map((item) => {
                     return (
                       <SidebarMenuItem key={item.title}>
                         {item.subItems ? (
@@ -440,24 +515,37 @@ export function AppSidebar() {
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                               <SidebarMenuSub>
-                                {item.subItems.map((subItem) => (
-                                  <SidebarMenuSubItem key={subItem.title}>
-                                    <SidebarMenuSubButton asChild isActive={location.pathname === subItem.url}>
-                                      <Link to={subItem.url} onClick={closeSidebarOnMobile}>
-                                        {subItem.icon && <subItem.icon className="h-4 w-4" />}
-                                        <span>{subItem.title}</span>
-                                      </Link>
-                                    </SidebarMenuSubButton>
-                                  </SidebarMenuSubItem>
-                                ))}
+                                {item.subItems.map((subItem) => {
+                                  const isActive = location.pathname === subItem.url;
+                                  return (
+                                    <SidebarMenuSubItem key={subItem.title}>
+                                      <SidebarMenuSubButton asChild isActive={isActive} className="relative pr-6">
+                                        <Link to={subItem.url} onClick={closeSidebarOnMobile} className="w-full flex items-center">
+                                          {subItem.icon && <subItem.icon className="h-4 w-4" />}
+                                          <span>{subItem.title}</span>
+                                          {isActive && (
+                                            <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-600">
+                                              <ChevronRight className="h-3 w-3" />
+                                            </div>
+                                          )}
+                                        </Link>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  );
+                                })}
                               </SidebarMenuSub>
                             </CollapsibleContent>
                           </Collapsible>
                         ) : (
-                          <SidebarMenuButton asChild tooltip={item.title} isActive={location.pathname === item.url}>
+                          <SidebarMenuButton asChild tooltip={item.title} isActive={location.pathname === item.url} className="relative pr-6">
                             <Link to={item.url} onClick={closeSidebarOnMobile}>
                               <item.icon />
                               <span>{item.title}</span>
+                              {location.pathname === item.url && (
+                                <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-600">
+                                  <ChevronRight className="h-3 w-3" />
+                                </div>
+                              )}
                             </Link>
                           </SidebarMenuButton>
                         )}

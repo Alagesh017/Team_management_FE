@@ -5,6 +5,7 @@ import * as z from "zod";
 import { Button } from "../../../common/components/ui/button";
 import { Input } from "../../../common/components/ui/input";
 import { Label } from "../../../common/components/ui/label";
+import { Checkbox } from "../../../common/components/ui/checkbox";
 import { Alert, AlertDescription } from "../../../common/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { SheetFooter, SheetClose } from "../../../common/components/ui/sheet";
@@ -14,6 +15,7 @@ export const taskStatusFormSchema = z.object({
   color: z.string().optional().default("#000000"),
   sort_order: z.preprocess((val) => parseInt(val, 10), z.number().int().nonnegative().default(0)),
   remark: z.string().optional(),
+  is_confidential: z.boolean().optional().default(false),
 });
 
 const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
@@ -30,6 +32,7 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
       color: "#000000",
       sort_order: 0,
       remark: "",
+      is_confidential: false,
     },
   });
 
@@ -112,6 +115,18 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
             placeholder="Optional description for this workflow stage"
             className="bg-slate-50/50 focus:bg-white transition-all"
           />
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="is_confidential"
+              checked={watch("is_confidential")}
+              onCheckedChange={(checked) => setValue("is_confidential", checked)}
+            />
+            <Label htmlFor="is_confidential" className="font-bold">Is Confidential</Label>
+          </div>
+          <p className="text-xs text-slate-500">Mark this status as confidential</p>
         </div>
       </div>
 

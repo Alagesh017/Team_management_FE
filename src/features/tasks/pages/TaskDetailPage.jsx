@@ -58,6 +58,25 @@ const TaskDetailPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingSubTask, setIsSavingSubTask] = useState(false);
 
+  const canAddEditDelete = () => {
+    if (!project) return false;
+    const userRole = user?.role?.toLowerCase() || "";
+    
+    // Grant full access to any role except team_leader and worker
+    if (userRole !== "team_leader" && userRole !== "worker") {
+      return true;
+    }
+    
+    if (project.company_managed === true) {
+      return false; // Company Managed: Restrict add/edit/delete for everyone
+    } else if (project.by_tl_managed === true) {
+      return userRole === "team_leader"; // By TL Managed: Only team leader can add/edit/delete
+    } else if (project.team_managed === true) {
+      return true; // Team Managed: Everyone can do everything
+    }
+    return false;
+  };
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -261,10 +280,12 @@ const TaskDetailPage = () => {
           </div>
         </div>
         {!isEditing ? (
-          <Button onClick={startEdit} className="bg-slate-900 hover:bg-slate-800">
-            <Edit3 className="h-4 w-4 mr-2" />
-            Edit Task
-          </Button>
+          canAddEditDelete() && (
+            <Button onClick={startEdit} className="bg-slate-900 hover:bg-slate-800">
+              <Edit3 className="h-4 w-4 mr-2" />
+              Edit Task
+            </Button>
+          )
         ) : (
           <div className="flex gap-2">
             <Button onClick={() => setIsEditing(false)} variant="ghost">
@@ -560,15 +581,33 @@ const TaskDetailPage = () => {
                     Project Access Flags
                   </Label>
                   <div className="flex gap-2 flex-wrap">
-                    {project?.moderate_access ? (
-                      <Badge className="bg-amber-100 text-amber-700 border-amber-200">Moderate Access</Badge>
+                    {project?.company_managed ? (
+                      <Badge className="bg-blue-100 text-blue-700 border-blue-200">Company Managed</Badge>
                     ) : null}
-                    {project?.high_access ? (
-                      <Badge className="bg-red-100 text-red-700 border-red-200">High Access</Badge>
+                    {project?.team_managed ? (
+                      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Team Managed</Badge>
                     ) : null}
-                    {!project?.moderate_access && !project?.high_access ? (
+                    {project?.by_tl_managed ? (
+                      <Badge className="bg-amber-100 text-amber-700 border-amber-200">By TL Managed</Badge>
+                    ) : null}
+                    {!project?.company_managed && !project?.team_managed && !project?.by_tl_managed ? (
                       <span className="text-slate-400 italic font-normal text-sm">No access flags set</span>
                     ) : null}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    Status Flags
+                  </Label>
+                  <div className="flex gap-2 flex-wrap">
+                    {(() => {
+                      const status = statuses.find(s => s.status_id === task?.status_id);
+                      return status?.is_confidential ? (
+                        <Badge className="bg-red-100 text-red-700 border-red-200">Confidential</Badge>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
               </>
@@ -580,10 +619,12 @@ const TaskDetailPage = () => {
           <div className="px-6 py-4 border-b border-slate-200 bg-white shrink-0">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Subtasks</h2>
-              <Button onClick={openAddSubTask} className="bg-slate-900 hover:bg-slate-800">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Subtask
-              </Button>
+              {canAddEditDelete() && (
+                <Button onClick={openAddSubTask} className="bg-slate-900 hover:bg-slate-800">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Subtask
+                </Button>
+              )}
             </div>
           </div>
 
@@ -609,20 +650,22 @@ const TaskDetailPage = () => {
                         <div className="text-xs text-slate-500 mt-1 line-clamp-2">{subTask.description}</div>
                       )}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => openEditSubTask(subTask)}
-                        className="text-slate-400 hover:text-indigo-500 transition-colors p-1"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSubTask(subTask.id)}
-                        className="text-slate-400 hover:text-red-500 transition-colors p-1"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    {canAddEditDelete() && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => openEditSubTask(subTask)}
+                          className="text-slate-400 hover:text-indigo-500 transition-colors p-1"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSubTask(subTask.id)}
+                          className="text-slate-400 hover:text-red-500 transition-colors p-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))

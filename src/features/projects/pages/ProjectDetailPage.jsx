@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
 import { Badge } from "../../../common/components/ui/badge";
+import ProjectDetails from "../components/ProjectDetails";
 
 const ProjectDetailPage = () => {
   const { id } = useParams();
@@ -174,7 +175,10 @@ const ProjectDetailPage = () => {
          </div>
       </div>
 
-      {/* Details Grid */}
+      {/* Project Details */}
+      <ProjectDetails project={project} />
+
+      {/* Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-8 border-t">
         <div className="lg:col-span-2 space-y-8">
            <section className="space-y-4">

@@ -74,6 +74,16 @@ const TaskStatusDetails = ({ status, open, onOpenChange }) => {
                 </p>
               </div>
 
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Is Confidential</p>
+                <div className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full ${status.is_confidential ? 'bg-red-500' : 'bg-slate-300'}`} />
+                  <p className="text-sm font-bold text-slate-900">
+                    {status.is_confidential ? "Yes" : "No"}
+                  </p>
+                </div>
+              </div>
+
               <div className="col-span-2 space-y-1">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Created At</p>
                 <p className="text-sm font-bold text-slate-900">

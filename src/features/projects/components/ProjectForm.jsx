@@ -24,8 +24,9 @@ export const projectFormSchema = z.object({
   client_id: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? Number(val) : null),
   group_id: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? Number(val) : null),
   project_logo: z.string().optional(),
-  moderate_access: z.boolean().default(false),
-  high_access: z.boolean().default(false),
+  by_tl_managed: z.boolean().default(false),
+  team_managed: z.boolean().default(false),
+  company_managed: z.boolean().default(false),
 });
 
 const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
@@ -52,8 +53,9 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
       client_id: "",
       group_id: "",
       project_logo: "",
-      moderate_access: false,
-      high_access: false,
+      by_tl_managed: false,
+      team_managed: false,
+      company_managed: false,
     },
   });
 
@@ -272,23 +274,48 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <div className="flex items-center gap-3 bg-slate-50/50 p-3 rounded-lg border border-slate-200">
-            <Checkbox 
-              id="moderate_access" 
-              checked={watch("moderate_access")}
-              onCheckedChange={(checked) => setValue("moderate_access", checked)}
-            />
-            <Label htmlFor="moderate_access" className="font-bold cursor-pointer">Moderate Access</Label>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center gap-3 bg-slate-50/50 p-3 rounded-lg border border-slate-200">
+              <Checkbox 
+                id="team_managed" 
+                checked={watch("team_managed")}
+                onCheckedChange={(checked) => {
+                  setValue("team_managed", checked);
+                  if (checked) {
+                    setValue("company_managed", false);
+                  } else {
+                    setValue("by_tl_managed", false);
+                  }
+                }}
+              />
+              <Label htmlFor="team_managed" className="font-bold cursor-pointer">Team Managed</Label>
+            </div>
+            <div className="flex items-center gap-3 bg-slate-50/50 p-3 rounded-lg border border-slate-200">
+              <Checkbox 
+                id="company_managed" 
+                checked={watch("company_managed")}
+                onCheckedChange={(checked) => {
+                  setValue("company_managed", checked);
+                  if (checked) {
+                    setValue("team_managed", false);
+                    setValue("by_tl_managed", false);
+                  }
+                }}
+              />
+              <Label htmlFor="company_managed" className="font-bold cursor-pointer">Company Managed</Label>
+            </div>
           </div>
-          <div className="flex items-center gap-3 bg-slate-50/50 p-3 rounded-lg border border-slate-200">
-            <Checkbox 
-              id="high_access" 
-              checked={watch("high_access")}
-              onCheckedChange={(checked) => setValue("high_access", checked)}
-            />
-            <Label htmlFor="high_access" className="font-bold cursor-pointer">High Access</Label>
-          </div>
+          {watch("team_managed") && (
+            <div className="flex items-center gap-3 bg-amber-50/50 p-3 rounded-lg border border-amber-200">
+              <Checkbox 
+                id="by_tl_managed" 
+                checked={watch("by_tl_managed")}
+                onCheckedChange={(checked) => setValue("by_tl_managed", checked)}
+              />
+              <Label htmlFor="by_tl_managed" className="font-bold cursor-pointer">By TL Managed</Label>
+            </div>
+          )}
         </div>
       </div>
 

@@ -11,19 +11,24 @@ import { Loader2, Upload, X } from "lucide-react";
 import { SheetFooter, SheetClose } from "../../../common/components/ui/sheet";
 import { getFullAvatarUrl } from "../../../core/utils/utils";
 
+const phoneRegex = /^[0-9]{10}$/;
+
 export const adminFormSchema = z.object({
   first_name: z.string().optional(),
   last_name: z.string().optional(),
   email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
-  role_type: z.enum(["superadmin", "admin", "scrum"]),
-  experience_years: z.union([z.string(), z.number()]).optional().transform(val => {
-    if (val === "" || val === null || val === undefined) {
-      return null;
-    }
-    const num = Number(val);
-    return isNaN(num) ? null : num;
+  phone: z.string().optional().refine((val) => !val || phoneRegex.test(val), {
+    message: "Phone number must be 10 digits",
   }),
+  role_type: z.enum(["superadmin", "admin", "scrum"]),
+  experience_years: z.preprocess(
+    (val) => {
+      if (val === "" || val === null || val === undefined) return 0;
+      const num = Number(val);
+      return isNaN(num) ? 0 : Math.max(0, num);
+    },
+    z.number().min(0, "Experience must be at least 0").default(0)
+  ),
   working_hours: z.string().optional(),
   work_mode: z.string().optional(),
   office_location: z.string().optional(),
@@ -33,7 +38,9 @@ export const adminFormSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   country: z.string().optional(),
-  pincode: z.string().optional(),
+  pincode: z.string().optional().refine((val) => !val || /^[0-9]{6}$/.test(val), {
+    message: "Pincode must be 6 digits",
+  }),
   status: z.string().default("ACTIVE"),
   joining_date: z.string().optional(),
   remark: z.string().optional(),
@@ -55,7 +62,7 @@ const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
       email: "",
       phone: "",
       role_type: "admin",
-      experience_years: "",
+      experience_years: 0,
       working_hours: "",
       work_mode: "OFFICE",
       office_location: "",
@@ -185,7 +192,16 @@ const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
         <div className="grid grid-cols-2 gap-6 items-end">
           <div className="space-y-2">
             <Label htmlFor="phone">Phone Number</Label>
-            <Input id="phone" {...register("phone")} placeholder="1234567890" />
+            <Input 
+              id="phone" 
+              {...register("phone")} 
+              placeholder="1234567890"
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                e.target.value = val;
+              }}
+            />
+            {errors.phone && <p className="text-xs text-red-500 font-medium">{errors.phone.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="joining_date">Joining Date</Label>
@@ -196,7 +212,24 @@ const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="experience_years">Experience (Years)</Label>
-            <Input id="experience_years" {...register("experience_years")} type="number" />
+            <Input 
+              id="experience_years" 
+              {...register("experience_years")} 
+              type="number"
+              min="0"
+              step="0.1"
+              onChange={(e) => {
+                let val = e.target.value;
+                if (val === "") {
+                  setValue("experience_years", 0);
+                } else {
+                  const num = Number(val);
+                  if (!isNaN(num) && num >= 0) {
+                    setValue("experience_years", num);
+                  }
+                }
+              }}
+            />
             {errors.experience_years && <p className="text-xs text-red-500 font-medium">{errors.experience_years.message}</p>}
           </div>
           <div className="space-y-2">
@@ -269,7 +302,15 @@ const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="pincode">Pincode</Label>
-            <Input id="pincode" {...register("pincode")} />
+            <Input 
+              id="pincode" 
+              {...register("pincode")} 
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                e.target.value = val;
+              }}
+            />
+            {errors.pincode && <p className="text-xs text-red-500 font-medium">{errors.pincode.message}</p>}
           </div>
         </div>
 

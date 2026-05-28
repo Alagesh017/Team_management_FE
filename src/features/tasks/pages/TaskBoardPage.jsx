@@ -38,17 +38,41 @@ const TaskBoardPage = () => {
 
   const canAddEditDelete = useMemo(() => {
     if (!project) return false;
-    if (project.high_access) return true;
-    if (project.moderate_access && user?.role === "team_leader") return true;
+    const userRole = user?.role?.toLowerCase() || "";
+    
+    // Grant full access to any role except team_leader and worker
+    if (userRole !== "team_leader" && userRole !== "worker") {
+      return true;
+    }
+    
+    if (project.company_managed === true) {
+      return false; // Company Managed: Restrict add/edit/delete for everyone
+    } else if (project.by_tl_managed === true) {
+      return userRole === "team_leader"; // By TL Managed: Only team leader can add/edit/delete
+    } else if (project.team_managed === true) {
+      return true; // Team Managed: Everyone can do everything
+    }
     return false;
   }, [project, user?.role]);
 
   const canMoveCards = useMemo(() => {
     if (!project) return false;
-    if (project.high_access) return true;
-    if (project.moderate_access) return true;
+    const userRole = user?.role?.toLowerCase() || "";
+    
+    // Grant full access to any role except team_leader and worker
+    if (userRole !== "team_leader" && userRole !== "worker") {
+      return true;
+    }
+    
+    if (project.company_managed === true) {
+      return true; // Company Managed: Everyone can move cards
+    } else if (project.by_tl_managed === true) {
+      return true; // By TL Managed: Both team leader AND worker can move cards
+    } else if (project.team_managed === true) {
+      return true; // Team Managed: Everyone can move cards
+    }
     return false;
-  }, [project]);
+  }, [project, user?.role]);
   const [allocation, setAllocation]         = useState(null);
   const [statuses, setStatuses]             = useState([]);
   const [allocatedMembers, setAllocatedMembers] = useState([]);
@@ -119,7 +143,13 @@ const TaskBoardPage = () => {
         projectService.getProjectById(id),
         projectTaskService.getProjectTaskData(id),
       ]);
-      setProject(projectData.project || projectData);
+      const project = projectData.project || projectData;
+      console.log("=== FETCHED PROJECT DATA ===");
+      console.log("project:", project);
+      console.log("project.company_managed:", project?.company_managed);
+      console.log("project.team_managed:", project?.team_managed);
+      console.log("project.by_tl_managed:", project?.by_tl_managed);
+      setProject(project);
       setAllocation(projectTaskData.allocation);
       setStatuses(projectTaskData.statuses || []);
       setAllocatedMembers(projectTaskData.allocated_members || []);
@@ -286,15 +316,39 @@ const TaskBoardPage = () => {
       return;
     }
 
+    const targetStatus = statuses.find(s => s.status_id === statusId);
+    const userRole = user?.role?.toLowerCase() || "";
+
+    if (userRole === "worker" && targetStatus?.is_confidential) {
+      setDraggedTask(null);
+      return;
+    }
+
+    const oldStatusId = draggedTask.status_id;
+    
+    setStatuses(prevStatuses => {
+      const newStatuses = prevStatuses.map(status => ({
+        ...status,
+        tasks: status.tasks ? status.tasks.filter(task => task.task_id !== draggedTask.task_id) : []
+      }));
+      
+      const targetStatus = newStatuses.find(s => s.status_id === statusId);
+      if (targetStatus) {
+        targetStatus.tasks = [...(targetStatus.tasks || []), { ...draggedTask, status_id: statusId }];
+      }
+      
+      return newStatuses;
+    });
+
+    setDraggedTask(null);
+
     try {
       await taskService.updateTask(draggedTask.task_id, {
         status_id: statusId
       });
-      await fetchData();
     } catch (err) {
       console.error("Failed to update task status:", err);
-    } finally {
-      setDraggedTask(null);
+      await fetchData();
     }
   };
 
@@ -430,13 +484,19 @@ const TaskBoardPage = () => {
             const color = status.color || "#6366f1";
             const isAddOpen = activeColumn === status.status_id;
 
+            const userRole = user?.role?.toLowerCase() || "";
+            const isWorker = userRole === "worker";
+            const isConfidentialStatus = status.is_confidential;
+            const cantDropHere = isWorker && isConfidentialStatus && draggedTask;
+
             return (
               <div
                 key={status.status_id}
                 className={`flex-shrink-0 w-72 flex flex-col h-full rounded-lg overflow-hidden transition-all duration-200 ${
+                  cantDropHere ? 'ring-2 ring-red-300 opacity-60' : 
                   draggedTask ? 'ring-2 ring-indigo-200 ring-offset-2' : ''
                 }`}
-                style={{ background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)" }}
+                style={{ background: cantDropHere ? "#fef2f2" : "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)" }}
               >
                 {/* Column header */}
                 <div className="px-3 pt-3 pb-2.5 shrink-0">
@@ -446,6 +506,11 @@ const TaskBoardPage = () => {
                       <span className="font-semibold text-slate-700 text-sm tracking-wide uppercase" style={{ letterSpacing: "0.04em" }}>
                         {status.name}
                       </span>
+                      {status.is_confidential && (
+                        <span className="text-[9px] font-bold text-red-600 uppercase bg-red-50 px-1.5 py-0.5 rounded">
+                          CONFIDENTIAL
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span
@@ -473,7 +538,13 @@ const TaskBoardPage = () => {
                   ref={(el) => (columnRefs.current[status.status_id] = el)}
                   className="flex-1 overflow-y-auto px-3 pb-3 space-y-2"
                   style={{ scrollbarWidth: "thin", scrollbarColor: "#e2e8f0 transparent" }}
-                  onDragOver={(e) => e.preventDefault()}
+                  onDragOver={(e) => {
+                    if (cantDropHere) {
+                      e.dataTransfer.dropEffect = "none";
+                    } else {
+                      e.preventDefault();
+                    }
+                  }}
                   onDrop={() => handleDrop(status.status_id)}
                 >
                   {statusTasks.map((task) => {
@@ -512,7 +583,9 @@ const TaskBoardPage = () => {
                       >
                         {/* priority + title */}
                         <div className="flex items-start justify-between gap-2 mb-2.5">
-                          <h4 className="font-medium text-slate-800 text-sm leading-snug flex-1">{task.title}</h4>
+                          <div className="flex items-start gap-2 flex-1">
+                            <h4 className="font-medium text-slate-800 text-sm leading-snug flex-1">{task.title}</h4>
+                          </div>
                           <div className="flex items-center gap-1 shrink-0">
                             {task.priority && (
                               <span
@@ -694,15 +767,17 @@ const TaskBoardPage = () => {
                       </div>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => openAddPanel(status.status_id)}
-                      className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all text-sm font-medium border-2 border-dashed border-slate-100 hover:border-slate-200 group"
-                    >
-                      <div className="h-5 w-5 rounded-md bg-slate-100 group-hover:bg-indigo-50 flex items-center justify-center transition-colors">
-                        <Plus className="h-3 w-3 group-hover:text-indigo-500 transition-colors" />
-                      </div>
-                      Add task
-                    </button>
+                    canAddEditDelete && (
+                      <button
+                        onClick={() => openAddPanel(status.status_id)}
+                        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all text-sm font-medium border-2 border-dashed border-slate-100 hover:border-slate-200 group"
+                      >
+                        <div className="h-5 w-5 rounded-md bg-slate-100 group-hover:bg-indigo-50 flex items-center justify-center transition-colors">
+                          <Plus className="h-3 w-3 group-hover:text-indigo-500 transition-colors" />
+                        </div>
+                        Add task
+                      </button>
+                    )
                   )}
                 </div>
               </div>
