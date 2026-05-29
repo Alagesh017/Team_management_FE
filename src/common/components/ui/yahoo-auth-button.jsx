@@ -4,6 +4,7 @@ export const YahooAuthButton = ({ onSuccess, onError, text = "Continue with Yaho
   const handleLogin = () => {
     try {
       const clientId = import.meta.env.VITE_YAHOO_CLIENT_ID;
+      console.log(import.meta.env.VITE_YAHOO_CLIENT_ID);
       const redirectUri = import.meta.env.VITE_YAHOO_REDIRECT_URI;
       
       const authUrl = 
