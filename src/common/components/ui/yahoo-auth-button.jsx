@@ -1,5 +1,7 @@
 import { Button } from "./button";
 
+console.log("Yahoo Client ID:", import.meta.env.VITE_YAHOO_CLIENT_ID);
+
 export const YahooAuthButton = ({ onSuccess, onError, text = "Continue with Yahoo" }) => {
   const handleLogin = () => {
     try {
