@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 
 import Login from '../features/auth/pages/login'
 import Register from '../features/auth/pages/register'
+import Callback from '../features/auth/pages/Callback'
 import Dashboard from '../features/dashboard/pages/Dashboard'
 import AdminPage from '../features/admin/pages/AdminPage'
 import WorkerPage from '../features/workers/pages/WorkerPage'
@@ -28,6 +29,7 @@ export default function AppRoutes() {
 			<Routes>
 				<Route path="/" element={<Login />} />
 				<Route path="/register" element={<Register />} />
+				<Route path="/callback" element={<Callback />} />
 				
 				{/* Protected Routes */}
 				<Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
