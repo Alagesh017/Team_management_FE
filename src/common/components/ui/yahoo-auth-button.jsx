@@ -1,18 +1,20 @@
-import { auth, provider, signInWithPopup } from "../../../features/auth/config/firebaseConfig";
 import { Button } from "./button";
 
 export const YahooAuthButton = ({ onSuccess, onError, text = "Continue with Yahoo" }) => {
-  const handleLogin = async () => {
+  const handleLogin = () => {
     try {
-      const result = await signInWithPopup(auth, provider);
-      console.log(result);
-      console.log(result.user);
-      console.log(result.user.providerData);
-      alert(JSON.stringify(result.user.providerData, null, 2));
+      const clientId = import.meta.env.VITE_YAHOO_CLIENT_ID;
+      const redirectUri = import.meta.env.VITE_YAHOO_REDIRECT_URI;
       
-      if (result.user && result.user.email) {
-        onSuccess(result.user.email);
-      }
+      const authUrl = 
+        `https://api.login.yahoo.com/oauth2/request_auth?` +
+        `client_id=${encodeURIComponent(clientId)}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&response_type=id_token` +
+        `&scope=openid email profile` +
+        `&nonce=12345`;
+      
+      window.location.href = authUrl;
     } catch (error) {
       console.log(error);
       alert(error.message);

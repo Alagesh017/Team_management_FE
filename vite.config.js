@@ -8,7 +8,6 @@ export default defineConfig({
   base: './',
   server: {
     force: true,
-    https: true // Force Vite to clear its cache
   },
   cacheDir: '.vite-cache', // Change cache dir to force fresh start
 })
