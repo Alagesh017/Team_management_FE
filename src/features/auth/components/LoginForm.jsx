@@ -9,6 +9,7 @@ import { Input } from "../../../common/components/ui/input";
 import { Label } from "../../../common/components/ui/label";
 import { Loader2, Eye, EyeOff, CheckCircle2, Info } from "lucide-react";
 import { GoogleAuthButton } from "../../../common/components/ui/google-auth-button";
+import { YahooAuthButton } from "../../../common/components/ui/yahoo-auth-button";
 import { Alert, AlertDescription, AlertTitle } from "../../../common/components/ui/alert";
 import axios from "axios";
 
@@ -18,7 +19,7 @@ const loginSchema = z.object({
 });
 
 export const LoginForm = () => {
-  const { login, googleLogin } = useAuth();
+  const { login, googleLogin, yahooLogin } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -73,6 +74,23 @@ export const LoginForm = () => {
 
   const handleGoogleError = () => {
     setError("Google Login failed. Please try again.");
+  };
+
+  const handleYahooSuccess = async (email) => {
+    setError("");
+    setIsLoading(true);
+    try {
+      await yahooLogin(email);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message || "Yahoo Login failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleYahooError = () => {
+    setError("Yahoo Login failed. Please try again.");
   };
 
   return (
@@ -159,6 +177,13 @@ export const LoginForm = () => {
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
               text="Sign in with Google"
+            />
+          </div>
+          <div className="flex justify-center w-full">
+            <YahooAuthButton
+              onSuccess={handleYahooSuccess}
+              onError={handleYahooError}
+              text="Sign in with Yahoo"
             />
           </div>
         </div>

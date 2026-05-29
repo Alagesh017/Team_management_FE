@@ -6,4 +6,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(),  tailwindcss(),],
   base: './',
+  server: {
+    force: true,
+    https: true // Force Vite to clear its cache
+  },
+  cacheDir: '.vite-cache', // Change cache dir to force fresh start
 })

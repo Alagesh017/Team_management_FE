@@ -18,6 +18,15 @@ const googleLogin = async (email) => {
   }
 };
 
+const yahooLogin = async (email) => {
+  try {
+    const response = await api.post("/auth/yahoo-login", { email });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
 const register = async (userData) => {
   try {
     const response = await api.post("/auth/register", userData);
@@ -43,6 +52,7 @@ const refreshToken = async (token) => {
 export const authService = {
   login,
   googleLogin,
+  yahooLogin,
   register,
   refreshToken,
 };

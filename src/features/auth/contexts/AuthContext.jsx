@@ -59,13 +59,35 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const yahooLogin = async (email) => {
+    try {
+      const data = await authService.yahooLogin(email);
+      if (data.status === 1) {
+        const userData = {
+          email: data.email,
+          role: data.role,
+          userId: data.user_id,
+          roleId: data.role_id,
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+        };
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
+        return data;
+      }
+      throw new Error(data.message || "Yahoo Login failed");
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, googleLogin, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, googleLogin, yahooLogin, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
