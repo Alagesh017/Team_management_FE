@@ -8,8 +8,15 @@ function Callback() {
   const { yahooLogin } = useAuth();
 
   useEffect(() => {
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.substring(1));
+    let hash = window.location.hash;
+    
+    // If using HashRouter, check if the hash starts with /callback
+    // and then get the rest of the hash for Yahoo parameters
+    if (hash.startsWith("#/callback")) {
+      hash = hash.substring("#/callback".length);
+    }
+    
+    const params = new URLSearchParams(hash.startsWith("#") ? hash.substring(1) : hash);
     const idToken = params.get("id_token");
 
     if (idToken) {
