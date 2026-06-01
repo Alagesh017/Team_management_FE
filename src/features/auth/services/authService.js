@@ -18,9 +18,9 @@ const googleLogin = async (email) => {
   }
 };
 
-const yahooLogin = async (email) => {
+const microsoftLogin = async (email) => {
   try {
-    const response = await api.post("/auth/yahoo-login", { email });
+    const response = await api.post("/auth/microsoft-login", { email });
     return response.data;
   } catch (error) {
     throw error.response ? error.response.data : new Error("Network error");
@@ -52,7 +52,7 @@ const refreshToken = async (token) => {
 export const authService = {
   login,
   googleLogin,
-  yahooLogin,
+  microsoftLogin,
   register,
   refreshToken,
 };

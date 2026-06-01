@@ -59,9 +59,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const yahooLogin = async (email) => {
+  const microsoftLogin = async (email) => {
     try {
-      const data = await authService.yahooLogin(email);
+      const data = await authService.microsoftLogin(email);
       if (data.status === 1) {
         const userData = {
           email: data.email,
@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem("user", JSON.stringify(userData));
         return data;
       }
-      throw new Error(data.message || "Yahoo Login failed");
+      throw new Error(data.message || "Microsoft Login failed");
     } catch (error) {
       throw error;
     }
@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, googleLogin, yahooLogin, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, googleLogin, microsoftLogin, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
