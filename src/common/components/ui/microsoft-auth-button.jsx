@@ -3,29 +3,34 @@ import { useMsal } from "@azure/msal-react";
 import { Button } from "./button";
 import { Loader2 } from "lucide-react";
 
-export const MicrosoftAuthButton = ({ onSuccess, onError, text = "Sign in with Microsoft" }) => {
+export const MicrosoftAuthButton = ({ onSuccess, onError, text = "Continue with Microsoft", onClick, isRegister = false }) => {
   const { instance } = useMsal();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (isLoading) return;
-    
+    console.log("Microsoft login button clicked!");
     setIsLoading(true);
     try {
-      const response = await instance.loginPopup({
+      // If custom onClick is provided, use it
+      if (onClick) {
+        await onClick();
+        return;
+      }
+      
+      // For register mode, set the flag
+      if (isRegister) {
+        sessionStorage.setItem("microsoftAuthFromRegister", "true");
+      }
+      
+      console.log("Starting Microsoft login with redirect...");
+      await instance.loginRedirect({
         scopes: ["User.Read"],
       });
-      console.log("Microsoft login response:", response);
-      
-      if (response.account && response.account.username) {
-        onSuccess(response.account.username);
-      }
     } catch (error) {
       console.error("Microsoft login error:", error);
-      if (error.errorCode !== "interaction_in_progress") {
-        onError(error);
-      }
+      onError && onError(error);
     } finally {
+      // Since loginRedirect navigates away, this might not fire, but just in case
       setIsLoading(false);
     }
   };
@@ -45,13 +50,11 @@ export const MicrosoftAuthButton = ({ onSuccess, onError, text = "Sign in with M
           {isLoading ? (
             <Loader2 className="w-5 h-5 text-[#0078d4] animate-spin" />
           ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              className="w-5 h-5"
-              fill="#0078d4"
-            >
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm-1.5 5.5h3v4h-3v-4z"/>
+            <svg viewBox="0 0 23 23" className="w-5 h-5">
+              <rect fill="#f25022" x="0" y="0" width="11" height="11"/>
+              <rect fill="#7fba00" x="12" y="0" width="11" height="11"/>
+              <rect fill="#00a4ef" x="0" y="12" width="11" height="11"/>
+              <rect fill="#ffb900" x="12" y="12" width="11" height="11"/>
             </svg>
           )}
           {isLoading ? "Signing in..." : text}

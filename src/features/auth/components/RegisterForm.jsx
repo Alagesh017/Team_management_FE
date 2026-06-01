@@ -1,70 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { authService } from "../services/authService";
 import { Button } from "../../../common/components/ui/button";
 import { Input } from "../../../common/components/ui/input";
 import { Label } from "../../../common/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../common/components/ui/select";
-import { Loader2, Eye, EyeOff, CheckCircle2, Info, X } from "lucide-react";
+import { Loader2, CheckCircle2, Info } from "lucide-react";
 import { GoogleAuthButton } from "../../../common/components/ui/google-auth-button";
+import { MicrosoftAuthButton } from "../../../common/components/ui/microsoft-auth-button";
 import { Alert, AlertDescription, AlertTitle } from "../../../common/components/ui/alert";
 import axios from "axios";
 
-const registerSchema = z
-  .object({
-    first_name: z
-      .string()
-      .min(2, { message: "First name must be at least 2 characters" })
-      .max(50, { message: "First name must be less than 50 characters" })
-      .regex(/^[a-zA-Z\s]*$/, { message: "First name can only contain letters" }),
-    last_name: z
-      .string()
-      .min(1, { message: "Last name is required" })
-      .max(50, { message: "Last name must be less than 50 characters" })
-      .regex(/^[a-zA-Z\s]*$/, { message: "Last name can only contain letters" }),
-    email: z.string().email({ message: "Invalid email address" }).toLowerCase().trim(),
-    phone: z
-      .string()
-      .optional()
-      .refine((val) => !val || /^\d{10}$/.test(val), {
-        message: "Phone number must be exactly 10 digits",
-      }),
-    role: z.enum(["superadmin", "admin", "scrum", "team_leader", "worker"], {
-      errorMap: () => ({ message: "Please select a valid role" }),
+const registerSchema = z.object({
+  first_name: z
+    .string()
+    .min(2, { message: "First name must be at least 2 characters" })
+    .max(50, { message: "First name must be less than 50 characters" })
+    .regex(/^[a-zA-Z\s]*$/, { message: "First name can only contain letters" }),
+  last_name: z
+    .string()
+    .min(1, { message: "Last name is required" })
+    .max(50, { message: "Last name must be less than 50 characters" })
+    .regex(/^[a-zA-Z\s]*$/, { message: "Last name can only contain letters" }),
+  email: z.string().email({ message: "Invalid email address" }).toLowerCase().trim(),
+  phone: z
+    .string()
+    .optional()
+    .refine((val) => !val || /^\d{10}$/.test(val), {
+      message: "Phone number must be exactly 10 digits",
     }),
-    password: z
-      .string()
-      .min(8, { message: "Password must be at least 8 characters" })
-      .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter" })
-      .regex(/[a-z]/, { message: "Password must contain at least one lowercase letter" })
-      .regex(/[0-9]/, { message: "Password must contain at least one number" })
-      .regex(/[^A-Za-z0-9]/, { message: "Password must contain at least one special character" }),
-    confirmPassword: z.string().min(1, { message: "Please confirm your password" }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
+});
 
 export const RegisterForm = () => {
-  const { googleLogin } = useAuth();
+  const { googleLogin, microsoftLogin } = useAuth();
+  const navigate = useNavigate();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isGooglePrefilled, setIsGooglePrefilled] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
-    resetField,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(registerSchema),
@@ -73,24 +52,60 @@ export const RegisterForm = () => {
       last_name: "",
       email: "",
       phone: "",
-      role: "worker",
-      password: "",
-      confirmPassword: "",
     },
   });
 
-  const selectedRole = watch("role");
-  const emailValue = watch("email");
+  // Check for Microsoft prefill data on component mount and auto-register
+  useEffect(() => {
+    const microsoftPrefill = localStorage.getItem("microsoftRegisterPrefill");
+    if (microsoftPrefill) {
+      try {
+        const accountData = JSON.parse(microsoftPrefill);
+        autoRegisterWithMicrosoft(accountData);
+        localStorage.removeItem("microsoftRegisterPrefill");
+      } catch (err) {
+        console.error("Error parsing Microsoft prefill data:", err);
+        localStorage.removeItem("microsoftRegisterPrefill");
+      }
+    }
+  }, []);
+
+  const autoRegisterWithMicrosoft = async (accountData) => {
+    setIsLoading(true);
+    try {
+      // First, try to log in directly
+      await microsoftLogin(accountData.email);
+      navigate("/dashboard");
+    } catch (loginErr) {
+      // If login fails, try to register
+      try {
+        await authService.register({
+          first_name: accountData.first_name || "",
+          last_name: accountData.last_name || "",
+          email: accountData.email,
+          phone: "",
+          role: "superadmin",
+        });
+        // After registration, log in
+        await microsoftLogin(accountData.email);
+        navigate("/dashboard");
+      } catch (registerErr) {
+        setError(registerErr.msg || registerErr.error || "Registration failed. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const onSubmit = async (data) => {
     setError("");
     setSuccess("");
     setIsLoading(true);
     try {
-      // Remove confirmPassword before sending to API
-      const { confirmPassword, ...registerData } = data;
-      await authService.register(registerData);
-      setSuccess("Account created successfully! You can now login.");
+      // Register with role = superadmin
+      await authService.register({ ...data, role: "superadmin" });
+      setSuccess("Account created successfully!");
+      navigate("/login");
     } catch (err) {
       setError(err.msg || err.error || "Registration failed. Please try again.");
     } finally {
@@ -108,26 +123,31 @@ export const RegisterForm = () => {
       });
 
       if (res.data && res.data.email) {
-        // Instead of logging in, we prefill the details for registration
-        setValue("email", res.data.email);
-        if (res.data.given_name) setValue("first_name", res.data.given_name);
-        if (res.data.family_name) setValue("last_name", res.data.family_name);
-        setIsGooglePrefilled(true);
-        setSuccess("Details prefilled from Google. Please complete your registration.");
+        // First, try to log in directly
+        try {
+          await googleLogin(res.data.email);
+          navigate("/dashboard");
+        } catch (loginErr) {
+          // If login fails, try to register first
+          await authService.register({
+            first_name: res.data.given_name || "",
+            last_name: res.data.family_name || "",
+            email: res.data.email,
+            phone: "",
+            role: "superadmin",
+          });
+          // Then log in
+          await googleLogin(res.data.email);
+          navigate("/dashboard");
+        }
       } else {
         throw new Error("Could not retrieve email from Google");
       }
     } catch (err) {
-      setError(err.message || "Google fetch failed. Please try again.");
+      setError(err.message || "Google Signup failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const clearGoogleEmail = () => {
-    resetField("email");
-    setIsGooglePrefilled(false);
-    setSuccess("");
   };
 
   const handleGoogleError = () => {
@@ -172,26 +192,13 @@ export const RegisterForm = () => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="email" className="text-slate-700">Email</Label>
-            <div className="relative">
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                {...register("email")}
-                disabled={isGooglePrefilled}
-                className={`bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-400 pr-10 ${errors.email ? "border-destructive" : ""} ${isGooglePrefilled ? "bg-slate-50 cursor-not-allowed" : ""}`}
-              />
-              {isGooglePrefilled && (
-                <button
-                  type="button"
-                  onClick={clearGoogleEmail}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                  title="Clear Google Email"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+            <Input
+              id="email"
+              type="email"
+              placeholder="name@example.com"
+              {...register("email")}
+              className={`bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-400 ${errors.email ? "border-destructive" : ""}`}
+            />
             {errors.email && (
               <p className="text-sm text-destructive">{errors.email.message}</p>
             )}
@@ -206,75 +213,6 @@ export const RegisterForm = () => {
             />
             {errors.phone && (
               <p className="text-sm text-destructive">{errors.phone.message}</p>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="password" title="Password must be at least 8 characters, include uppercase, lowercase, number and special character" className="text-slate-700 flex items-center gap-1">
-                Password <Info className="h-3 w-3 text-slate-400" />
-              </Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  {...register("password")}
-                  className={`bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-400 pr-10 ${errors.password ? "border-destructive" : ""}`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-slate-700">Confirm Password</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  {...register("confirmPassword")}
-                  className={`bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:ring-slate-400 pr-10 ${errors.confirmPassword ? "border-destructive" : ""}`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
-              )}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="role" className="text-slate-700">Role</Label>
-            <Select
-              onValueChange={(value) => setValue("role", value)}
-              defaultValue={selectedRole}
-            >
-              <SelectTrigger className="bg-white border-slate-200 text-slate-900 focus:ring-slate-400">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-slate-200 text-slate-900">
-                <SelectItem value="superadmin">Super Admin</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="scrum">Scrum Master</SelectItem>
-                <SelectItem value="team_leader">Team Leader</SelectItem>
-                <SelectItem value="worker">Worker</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.role && (
-              <p className="text-sm text-destructive">{errors.role.message}</p>
             )}
           </div>
           {error && (
@@ -321,6 +259,10 @@ export const RegisterForm = () => {
               onError={handleGoogleError}
               text="Sign up with Google"
             />
+          </div>
+
+          <div className="flex justify-center w-full">
+            <MicrosoftAuthButton text="Sign up with Microsoft" isRegister={true} />
           </div>
 
           <div className="text-sm text-center text-slate-500">

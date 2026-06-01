@@ -20,9 +20,12 @@ const googleLogin = async (email) => {
 
 const microsoftLogin = async (email) => {
   try {
+    console.log("Making API call to /auth/microsoft-login with email:", email);
     const response = await api.post("/auth/microsoft-login", { email });
+    console.log("API call successful, received response:", response.data);
     return response.data;
   } catch (error) {
+    console.error("API call failed:", error);
     throw error.response ? error.response.data : new Error("Network error");
   }
 };

@@ -1,4 +1,7 @@
 import {
+  require_react_dom
+} from "./chunk-ZDAKOBSL.js";
+import {
   CSS,
   add,
   canUseDOM,
@@ -22,9 +25,6 @@ import {
   usePrevious,
   useUniqueId
 } from "./chunk-W67QQFZQ.js";
-import {
-  require_react_dom
-} from "./chunk-ZDAKOBSL.js";
 import {
   require_react
 } from "./chunk-MQ4DZOKW.js";

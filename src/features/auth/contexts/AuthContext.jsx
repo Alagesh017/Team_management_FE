@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useContext } from "react";
+import { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { authService } from "../services/authService";
 
 const AuthContext = createContext();
@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     try {
       const data = await authService.login(email, password);
       if (data.status === 1) {
@@ -35,9 +35,9 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       throw error;
     }
-  };
+  }, []);
 
-  const googleLogin = async (email) => {
+  const googleLogin = useCallback(async (email) => {
     try {
       const data = await authService.googleLogin(email);
       if (data.status === 1) {
@@ -57,9 +57,9 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       throw error;
     }
-  };
+  }, []);
 
-  const microsoftLogin = async (email) => {
+  const microsoftLogin = useCallback(async (email) => {
     try {
       const data = await authService.microsoftLogin(email);
       if (data.status === 1) {
@@ -79,12 +79,12 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       throw error;
     }
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem("user");
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, login, googleLogin, microsoftLogin, logout, loading }}>

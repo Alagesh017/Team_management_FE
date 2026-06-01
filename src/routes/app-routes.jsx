@@ -1,5 +1,4 @@
-import { HashRouter as Router, Routes, Route } from 'react-router-dom'
-
+import { Routes, Route } from 'react-router-dom'
 import Login from '../features/auth/pages/login'
 import Register from '../features/auth/pages/register'
 import Dashboard from '../features/dashboard/pages/Dashboard'
@@ -24,29 +23,27 @@ const PermissionRequest = () => <div className="text-2xl font-bold">Permission R
 
 export default function AppRoutes() {
 	return (
-		<Router>
-			<Routes>
-				<Route path="/" element={<Login />} />
-				<Route path="/register" element={<Register />} />
-				
-				{/* Protected Routes */}
-				<Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-				<Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-				<Route path="/workers" element={<ProtectedRoute><WorkerPage /></ProtectedRoute>} />
-				<Route path="/task-status" element={<ProtectedRoute><TaskStatusPage /></ProtectedRoute>} />
-				<Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
-				<Route path="/clients" element={<ProtectedRoute><ClientPage /></ProtectedRoute>} />
-				<Route path="/projects" element={<ProtectedRoute><ProjectPage /></ProtectedRoute>} />
-				<Route path="/project-grouping" element={<ProtectedRoute><ProjectGroupPage /></ProtectedRoute>} />
-				<Route path="/projects/:id" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
-				<Route path="/project-allocation" element={<ProtectedRoute><ProjectAllocationPage /></ProtectedRoute>} />
-				<Route path="/project-allocation/:projectId" element={<ProtectedRoute><ProjectAllocationDetailPage /></ProtectedRoute>} />
-				<Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-				<Route path="/tasks/project/:id" element={<ProtectedRoute><TaskBoardPage /></ProtectedRoute>} />
-				<Route path="/tasks/project/:projectId/task/:taskId" element={<ProtectedRoute><TaskDetailPage /></ProtectedRoute>} />
-				<Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
-				<Route path="/permission-request" element={<ProtectedRoute><PermissionRequest /></ProtectedRoute>} />
-			</Routes>
-		</Router>
+		<Routes>
+			<Route path="/" element={<Login />} />
+			<Route path="/register" element={<Register />} />
+			
+			{/* Protected Routes */}
+			<Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+			<Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+			<Route path="/workers" element={<ProtectedRoute><WorkerPage /></ProtectedRoute>} />
+			<Route path="/task-status" element={<ProtectedRoute><TaskStatusPage /></ProtectedRoute>} />
+			<Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
+			<Route path="/clients" element={<ProtectedRoute><ClientPage /></ProtectedRoute>} />
+			<Route path="/projects" element={<ProtectedRoute><ProjectPage /></ProtectedRoute>} />
+			<Route path="/project-grouping" element={<ProtectedRoute><ProjectGroupPage /></ProtectedRoute>} />
+			<Route path="/projects/:id" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
+			<Route path="/project-allocation" element={<ProtectedRoute><ProjectAllocationPage /></ProtectedRoute>} />
+			<Route path="/project-allocation/:projectId" element={<ProtectedRoute><ProjectAllocationDetailPage /></ProtectedRoute>} />
+			<Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+			<Route path="/tasks/project/:id" element={<ProtectedRoute><TaskBoardPage /></ProtectedRoute>} />
+			<Route path="/tasks/project/:projectId/task/:taskId" element={<ProtectedRoute><TaskDetailPage /></ProtectedRoute>} />
+			<Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
+			<Route path="/permission-request" element={<ProtectedRoute><PermissionRequest /></ProtectedRoute>} />
+		</Routes>
 	)
 }

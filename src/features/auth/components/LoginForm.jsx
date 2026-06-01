@@ -7,7 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Button } from "../../../common/components/ui/button";
 import { Input } from "../../../common/components/ui/input";
 import { Label } from "../../../common/components/ui/label";
-import { Loader2, Eye, EyeOff, CheckCircle2, Info } from "lucide-react";
+import { Loader2, Eye, EyeOff, Info } from "lucide-react";
 import { GoogleAuthButton } from "../../../common/components/ui/google-auth-button";
 import { MicrosoftAuthButton } from "../../../common/components/ui/microsoft-auth-button";
 import { Alert, AlertDescription, AlertTitle } from "../../../common/components/ui/alert";
@@ -19,7 +19,7 @@ const loginSchema = z.object({
 });
 
 export const LoginForm = () => {
-  const { login, googleLogin, microsoftLogin } = useAuth();
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -54,7 +54,6 @@ export const LoginForm = () => {
     setError("");
     setIsLoading(true);
     try {
-      // Fetch user info from Google using the access token
       const res = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
         headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
       });
@@ -74,23 +73,6 @@ export const LoginForm = () => {
 
   const handleGoogleError = () => {
     setError("Google Login failed. Please try again.");
-  };
-
-  const handleMicrosoftSuccess = async (email) => {
-    setError("");
-    setIsLoading(true);
-    try {
-      await microsoftLogin(email);
-      navigate("/dashboard");
-    } catch (err) {
-      setError(err.message || "Microsoft Login failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleMicrosoftError = () => {
-    setError("Microsoft Login failed. Please try again.");
   };
 
   return (
@@ -180,11 +162,7 @@ export const LoginForm = () => {
             />
           </div>
           <div className="flex justify-center w-full">
-            <MicrosoftAuthButton
-              onSuccess={handleMicrosoftSuccess}
-              onError={handleMicrosoftError}
-              text="Sign in with Microsoft"
-            />
+            <MicrosoftAuthButton text="Sign in with Microsoft" />
           </div>
         </div>
       </form>
