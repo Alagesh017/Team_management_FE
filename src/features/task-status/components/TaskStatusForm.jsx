@@ -12,10 +12,10 @@ import { SheetFooter, SheetClose } from "../../../common/components/ui/sheet";
 
 export const taskStatusFormSchema = z.object({
   name: z.string().min(1, "Status name is required"),
-  color: z.string().optional().default("#000000"),
-  sort_order: z.preprocess((val) => parseInt(val, 10), z.number().int().nonnegative().default(0)),
-  remark: z.string().optional(),
-  is_confidential: z.boolean().optional().default(false),
+  color: z.string().default("#000000"),
+  sort_order: z.coerce.number().int().nonnegative().default(0),
+  remark: z.string().default(""),
+  is_confidential: z.boolean().default(false),
 });
 
 const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
@@ -24,6 +24,7 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(taskStatusFormSchema),
@@ -36,10 +37,38 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
     },
   });
 
+  React.useEffect(() => {
+    if (initialData) {
+      reset({
+        ...initialData,
+        is_confidential: Boolean(initialData.is_confidential),
+        sort_order: initialData.sort_order || 0,
+        color: initialData.color || "#000000",
+        remark: initialData.remark || "",
+      });
+    } else {
+      reset({
+        name: "",
+        color: "#000000",
+        sort_order: 0,
+        remark: "",
+        is_confidential: false,
+      });
+    }
+  }, [initialData, reset]);
+
   const currentColor = watch("color");
+  
+  console.log("Form errors:", errors);
+  console.log("Form values:", watch());
+  console.log("Submitting prop:", submitting);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 py-8">
+    <form onSubmit={(e) => {
+      console.log("Form submitted!");
+      e.preventDefault();
+      handleSubmit(onSubmit)(e);
+    }} className="space-y-8 py-8">
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>

@@ -241,6 +241,8 @@ const TaskBoardPage = () => {
         title: newTaskTitle,
         worker_ids: workerIdsWithType,
         assigned_by: user?.userId || 1,
+        assigned_by_role_id: user?.roleId,
+        assigned_by_role: user?.role,
         priority: newTaskPriority,
         start_date: newTaskStartDate || null,
         due_date: newTaskDueDate || null,

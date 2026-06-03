@@ -81,12 +81,16 @@ const TaskStatusPage = () => {
   };
 
   const onSubmit = async (data) => {
+    console.log("Submitting data:", data);
+    console.log("Editing status:", editingStatus);
     setSubmitting(true);
     setError("");
     try {
       if (editingStatus) {
+        console.log("Updating status with ID:", editingStatus.id);
         await taskStatusService.updateTaskStatus(editingStatus.id, data);
       } else {
+        console.log("Creating new status");
         await taskStatusService.createTaskStatus(data);
       }
       
@@ -94,6 +98,7 @@ const TaskStatusPage = () => {
       setEditingStatus(null);
       fetchStatuses();
     } catch (err) {
+      console.error("Error submitting:", err);
       setError(err.msg || err.error || "Operation failed. Please try again.");
     } finally {
       setSubmitting(false);

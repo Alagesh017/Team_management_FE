@@ -438,7 +438,20 @@ export function AppSidebar() {
                   <div key="groups-section" className="mt-2 mb-4 group-data-[collapsible=icon]:mt-0">
                     <div className="px-4 py-2 mb-3 group-data-[collapsible=icon]:hidden">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Groups</span>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => navigate("/tasks-dashboard")}
+                            className={`p-1.5 rounded-md transition-all ${
+                              location.pathname === "/tasks-dashboard" 
+                                ? "bg-blue-100 text-blue-600" 
+                                : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                            }`}
+                            title="Task Dashboard"
+                          >
+                            <LayoutDashboard className="h-4 w-4" />
+                          </button>
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Groups</span>
+                        </div>
                         {!isRestrictedRole && (
                           <button 
                             onClick={() => setIsNewGroupSheetOpen(true)}

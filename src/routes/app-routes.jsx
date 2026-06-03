@@ -13,6 +13,7 @@ import ProjectAllocationPage from '../features/project-allocation/pages/ProjectA
 import ProjectAllocationDetailPage from '../features/project-allocation/pages/ProjectAllocationDetailPage'
 import TaskBoardPage from '../features/tasks/pages/TaskBoardPage'
 import TaskDetailPage from '../features/tasks/pages/TaskDetailPage'
+import TaskDashboardPage from '../features/tasks/pages/TaskDashboardPage'
 import { ProtectedRoute } from '../common/components/ProtectedRoute'
 
 // Dummy components for testing
@@ -42,6 +43,7 @@ export default function AppRoutes() {
 			<Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
 			<Route path="/tasks/project/:id" element={<ProtectedRoute><TaskBoardPage /></ProtectedRoute>} />
 			<Route path="/tasks/project/:projectId/task/:taskId" element={<ProtectedRoute><TaskDetailPage /></ProtectedRoute>} />
+			<Route path="/tasks-dashboard" element={<ProtectedRoute><TaskDashboardPage /></ProtectedRoute>} />
 			<Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
 			<Route path="/permission-request" element={<ProtectedRoute><PermissionRequest /></ProtectedRoute>} />
 		</Routes>

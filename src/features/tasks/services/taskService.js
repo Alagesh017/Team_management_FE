@@ -54,6 +54,15 @@ const deleteTask = async (id) => {
   }
 };
 
+const getDashboardTasks = async () => {
+  try {
+    const response = await api.get("/tasks/dashboard");
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
 export const taskService = {
   getAllTasks,
   getTasksByProjectId,
@@ -61,4 +70,5 @@ export const taskService = {
   createTask,
   updateTask,
   deleteTask,
+  getDashboardTasks,
 };
