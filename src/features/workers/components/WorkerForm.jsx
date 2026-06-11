@@ -7,7 +7,7 @@ import { Input } from "../../../common/components/ui/input";
 import { Label } from "../../../common/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../common/components/ui/select";
 import { Alert, AlertDescription } from "../../../common/components/ui/alert";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Loader2 } from "lucide-react";
 import { SheetFooter, SheetClose } from "../../../common/components/ui/sheet";
 import { getFullAvatarUrl } from "../../../core/utils/utils";
 

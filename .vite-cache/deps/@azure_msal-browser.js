@@ -49,11 +49,11 @@ import {
   loadExternalTokens,
   stubbedPublicClientApplication,
   version
-} from "./chunk-RBO4M7U7.js";
+} from "./chunk-SZWTCCCJ.js";
 import {
   BrowserPerformanceMeasurement
 } from "./chunk-JR2R32O7.js";
-import "./chunk-DC5AMYBS.js";
+import "./chunk-2TUXWMP5.js";
 export {
   ApiId,
   AuthError,

@@ -25,7 +25,8 @@ import {
   Share2,
   MoreHorizontal,
   GripVertical,
-  Search
+  Search,
+  BarChart3
 } from "lucide-react";
 
 import {
@@ -330,6 +331,7 @@ export function AppSidebar() {
   
   const menuItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "Reports", url: "/reports", icon: BarChart3 },
     ...(isRestrictedRole ? [] : [
       {
         title: "Master",

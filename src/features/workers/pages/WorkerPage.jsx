@@ -153,6 +153,11 @@ const WorkerPage = () => {
       },
     },
     {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => row.getValue("email") || "-",
+    },
+    {
       accessorKey: "job_title",
       header: "Designation",
       cell: ({ row }) => row.getValue("job_title") || "-",

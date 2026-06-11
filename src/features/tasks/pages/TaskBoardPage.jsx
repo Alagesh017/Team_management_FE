@@ -1,373 +1,73 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { projectService } from "../../projects/services/projectService";
-import { taskService } from "../services/taskService";
-import { projectTaskService } from "../services/projectTaskService";
-import { useAuth } from "../../auth/contexts/AuthContext";
-import {
-  Loader2, AlertCircle, Clock, Calendar, Plus, X, Check, User, Save,
-  ChevronRight, Flame, MoreHorizontal, Trash2, Search
-} from "lucide-react";
-import { Button } from "../../../common/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../common/components/ui/dialog";
-import { Input } from "../../../common/components/ui/input";
-import { Checkbox } from "../../../common/components/ui/checkbox";
-
-/* ─── Avatar colours cycling through a palette ─── */
-const AVATAR_COLORS = [
-  "#6366f1", "#8b5cf6", "#ec4899", "#f59e0b",
-  "#10b981", "#3b82f6", "#ef4444", "#14b8a6",
-];
-const avatarColor = (userId) =>
-  AVATAR_COLORS[(userId || 0) % AVATAR_COLORS.length];
-
-/* ─── Priority badge config ─── */
-const PRIORITY = {
-  high:   { label: "High",   bg: "#fef2f2", text: "#ef4444", dot: "#ef4444" },
-  medium: { label: "Medium", bg: "#fffbeb", text: "#f59e0b", dot: "#f59e0b" },
-  low:    { label: "Low",    bg: "#f0fdf4", text: "#22c55e", dot: "#22c55e" },
-};
+import React from "react";
+import { Loader2, Plus } from "lucide-react";
+import { useTaskBoard } from "../hooks/useTaskBoard";
+import BoardHeader from "../components/board/BoardHeader";
+import BoardColumn from "../components/board/BoardColumn";
+import AssignMemberDialog from "../components/board/AssignMemberDialog";
+import TaskDetailsDialog from "../components/board/TaskDetailsDialog";
+import DeleteTaskDialog from "../components/board/DeleteTaskDialog";
 
 const TaskBoardPage = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const [project, setProject]               = useState(null);
-  const [searchQuery, setSearchQuery]       = useState("");
-  const [meMode, setMeMode]                 = useState(false);
-
-  const canAddEditDelete = useMemo(() => {
-    if (!project) return false;
-    const userRole = user?.role?.toLowerCase() || "";
-    
-    // Grant full access to any role except team_leader and worker
-    if (userRole !== "team_leader" && userRole !== "worker") {
-      return true;
-    }
-    
-    if (project.company_managed === true) {
-      return false; // Company Managed: Restrict add/edit/delete for everyone
-    } else if (project.by_tl_managed === true) {
-      return userRole === "team_leader"; // By TL Managed: Only team leader can add/edit/delete
-    } else if (project.team_managed === true) {
-      return true; // Team Managed: Everyone can do everything
-    }
-    return false;
-  }, [project, user?.role]);
-
-  const canMoveCards = useMemo(() => {
-    if (!project) return false;
-    const userRole = user?.role?.toLowerCase() || "";
-    
-    // Grant full access to any role except team_leader and worker
-    if (userRole !== "team_leader" && userRole !== "worker") {
-      return true;
-    }
-    
-    if (project.company_managed === true) {
-      return true; // Company Managed: Everyone can move cards
-    } else if (project.by_tl_managed === true) {
-      return true; // By TL Managed: Both team leader AND worker can move cards
-    } else if (project.team_managed === true) {
-      return true; // Team Managed: Everyone can move cards
-    }
-    return false;
-  }, [project, user?.role]);
-  const [allocation, setAllocation]         = useState(null);
-  const [statuses, setStatuses]             = useState([]);
-  const [allocatedMembers, setAllocatedMembers] = useState([]);
-  const [allAdmins, setAllAdmins]           = useState([]);
-  const [loading, setLoading]               = useState(true);
-  const [draggedTask, setDraggedTask]       = useState(null);
-  const columnRefs = React.useRef({});
-
-  /* per-column "add task" state */
-  const [activeColumn, setActiveColumn]     = useState(null); // status_id of open add-panel
-  const [newTaskTitle, setNewTaskTitle]     = useState("");
-  const [newTaskStartDate, setNewTaskStartDate] = useState("");
-  const [newTaskDueDate, setNewTaskDueDate] = useState("");
-  const [newTaskPriority, setNewTaskPriority] = useState("medium");
-  const [newTaskEstimatedHours, setNewTaskEstimatedHours] = useState("");
-  const [newTaskActualHours, setNewTaskActualHours] = useState("");
-  const [selectedMembers, setSelectedMembers] = useState([]);
-  const [isSaving, setIsSaving]             = useState(false);
-
-  /* member dialog */
-  const [isMemberDialogOpen, setIsMemberDialogOpen] = useState(false);
-  const [memberSearch, setMemberSearch]     = useState("");
-  
-  /* task details dialog */
-  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [isEditingTask, setIsEditingTask] = useState(false);
-  const [editTaskData, setEditTaskData] = useState({});
-  const [editSelectedMembers, setEditSelectedMembers] = useState([]);
-  
-  /* delete task dialog */
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [taskToDelete, setTaskToDelete] = useState(null);
-
-  /* ── derived ── */
-  const availableMembers = useMemo(() => {
-    const seen = new Set();
-    const combined = [];
-    
-    const allMembers = [...allAdmins, ...allocatedMembers];
-    
-    allMembers.forEach((m) => {
-      const memberType = m.type || (m.is_admin || m.is_superadmin ? "admin" : "worker");
-      const uniqueKey = `${memberType}-${m.user_id}`;
-      
-      if (!seen.has(uniqueKey)) {
-        seen.add(uniqueKey);
-        combined.push({
-          ...m,
-          type: memberType
-        });
-      }
-    });
-    return combined;
-  }, [allAdmins, allocatedMembers]);
-
-  const filteredMembers = useMemo(() =>
-    availableMembers.filter((m) =>
-      `${m.first_name} ${m.last_name} ${m.email}`
-        .toLowerCase().includes(memberSearch.toLowerCase())
-    ), [availableMembers, memberSearch]);
-
-  /* ── data ── */
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [projectData, projectTaskData] = await Promise.all([
-        projectService.getProjectById(id),
-        projectTaskService.getProjectTaskData(id),
-      ]);
-      const project = projectData.project || projectData;
-      console.log("=== FETCHED PROJECT DATA ===");
-      console.log("project:", project);
-      console.log("project.company_managed:", project?.company_managed);
-      console.log("project.team_managed:", project?.team_managed);
-      console.log("project.by_tl_managed:", project?.by_tl_managed);
-      setProject(project);
-      setAllocation(projectTaskData.allocation);
-      setStatuses(projectTaskData.statuses || []);
-      setAllocatedMembers(projectTaskData.allocated_members || []);
-      setAllAdmins(projectTaskData.all_admins || []);
-    } catch (err) {
-      console.error("Failed to fetch data:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { if (id) fetchData(); }, [id]);
-
-  useEffect(() => {
-    if (newTaskEstimatedHours) {
-      setNewTaskActualHours(newTaskEstimatedHours);
-    }
-  }, [newTaskEstimatedHours]);
-
-  /* ── helpers ── */
-  const formatDate = (d) => {
-    if (!d) return "";
-    return new Date(d).toLocaleDateString("en-GB", {
-      day: "2-digit", month: "short", year: "numeric",
-    });
-  };
-
-  const getMemberInitials = (m) =>
-    `${m.first_name.charAt(0)}${m.last_name ? m.last_name.charAt(0) : ""}`.toUpperCase();
-
-  /* ── actions ── */
-  const openAddPanel = (statusId) => {
-    setActiveColumn(statusId);
-    setNewTaskTitle("");
-    setNewTaskStartDate("");
-    setNewTaskDueDate("");
-    setNewTaskPriority("medium");
-    setSelectedMembers([]);
-    
-    setTimeout(() => {
-      const columnRef = columnRefs.current[statusId];
-      if (columnRef) {
-        columnRef.scrollTop = columnRef.scrollHeight;
-      }
-    }, 50);
-  };
-
-  const closeAddPanel = () => {
-    setActiveColumn(null);
-    setNewTaskTitle("");
-    setNewTaskStartDate("");
-    setNewTaskDueDate("");
-    setNewTaskPriority("medium");
-    setNewTaskEstimatedHours("");
-    setNewTaskActualHours("");
-    setSelectedMembers([]);
-  };
-
-  const getMemberKey = (member) => `${member.type}-${member.user_id}`;
-
-  const getMemberKeyFromItem = (item) => {
-    if (typeof item === "object" && item !== null) {
-      return `${item.type || "worker"}-${item.user_id}`;
-    }
-    return `worker-${item}`;
-  };
-
-  const openTaskDetails = (task, e) => {
-    if (e && e.target.closest('button')) {
-      return;
-    }
-    navigate(`/tasks/project/${id}/task/${task.task_id || task.id}`);
-  };
-
-  const handleAddTask = async (statusId) => {
-    if (!newTaskTitle.trim()) return;
-    try {
-      setIsSaving(true);
-      const workerIdsWithType = selectedMembers.length > 0 
-        ? selectedMembers.map(key => {
-            const member = availableMembers.find(m => getMemberKey(m) === key);
-            return { user_id: member?.user_id, type: member?.type || "worker" };
-          })
-        : null;
-      await taskService.createTask({
-        project_id: parseInt(id),
-        allocation_id: allocation?.allocation_id || null,
-        status_id: statusId,
-        title: newTaskTitle,
-        worker_ids: workerIdsWithType,
-        assigned_by: user?.userId || 1,
-        assigned_by_role_id: user?.roleId,
-        assigned_by_role: user?.role,
-        priority: newTaskPriority,
-        start_date: newTaskStartDate || null,
-        due_date: newTaskDueDate || null,
-        estimated_hours: newTaskEstimatedHours ? parseFloat(newTaskEstimatedHours) : null,
-        actual_hours: newTaskActualHours ? parseFloat(newTaskActualHours) : null,
-      });
-      closeAddPanel();
-      fetchData();
-    } catch (err) {
-      console.error("Failed to create task:", err);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleEditTask = async () => {
-    if (!editTaskData.title.trim()) return;
-    try {
-      setIsSaving(true);
-      const workerIdsWithType = editSelectedMembers.length > 0 
-        ? editSelectedMembers.map(key => {
-            const member = availableMembers.find(m => getMemberKey(m) === key);
-            return { user_id: member?.user_id, type: member?.type || "worker" };
-          })
-        : null;
-      await taskService.updateTask(selectedTask.task_id, {
-        ...editTaskData,
-        worker_ids: workerIdsWithType,
-        estimated_hours: editTaskData.estimated_hours ? parseFloat(editTaskData.estimated_hours) : null,
-        actual_hours: editTaskData.actual_hours ? parseFloat(editTaskData.actual_hours) : null,
-      });
-      await fetchData();
-      setIsTaskDetailsOpen(false);
-    } catch (err) {
-      console.error("Failed to update task:", err);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const toggleMember = (member) => {
-    const key = getMemberKey(member);
-    setSelectedMembers((prev) =>
-      prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]
-    );
-  };
-
-  const toggleEditMember = (member) => {
-    const key = getMemberKey(member);
-    setEditSelectedMembers((prev) =>
-      prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]
-    );
-  };
-
-  const getSelectedMembersData = () =>
-    availableMembers.filter((m) => selectedMembers.includes(getMemberKey(m)));
-
-  const getEditSelectedMembersData = () =>
-    availableMembers.filter((m) => editSelectedMembers.includes(getMemberKey(m)));
-
-  /* ── drag and drop ── */
-  const handleDragStart = (task) => {
-    setDraggedTask(task);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedTask(null);
-  };
-
-  const handleDrop = async (statusId) => {
-    if (!draggedTask || draggedTask.status_id === statusId) {
-      setDraggedTask(null);
-      return;
-    }
-
-    const targetStatus = statuses.find(s => s.status_id === statusId);
-    const userRole = user?.role?.toLowerCase() || "";
-
-    if (userRole === "worker" && targetStatus?.is_confidential) {
-      setDraggedTask(null);
-      return;
-    }
-
-    const oldStatusId = draggedTask.status_id;
-    
-    setStatuses(prevStatuses => {
-      const newStatuses = prevStatuses.map(status => ({
-        ...status,
-        tasks: status.tasks ? status.tasks.filter(task => task.task_id !== draggedTask.task_id) : []
-      }));
-      
-      const targetStatus = newStatuses.find(s => s.status_id === statusId);
-      if (targetStatus) {
-        targetStatus.tasks = [...(targetStatus.tasks || []), { ...draggedTask, status_id: statusId }];
-      }
-      
-      return newStatuses;
-    });
-
-    setDraggedTask(null);
-
-    try {
-      await taskService.updateTask(draggedTask.task_id, {
-        status_id: statusId
-      });
-    } catch (err) {
-      console.error("Failed to update task status:", err);
-      await fetchData();
-    }
-  };
-
-  const handleDeleteTask = async () => {
-    if (!taskToDelete) return;
-    try {
-      setIsSaving(true);
-      await taskService.deleteTask(taskToDelete.task_id);
-      await fetchData();
-      setIsDeleteDialogOpen(false);
-      setTaskToDelete(null);
-    } catch (err) {
-      console.error("Failed to delete task:", err);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  const {
+    project,
+    searchQuery,
+    setSearchQuery,
+    meMode,
+    setMeMode,
+    availableMembers,
+    statuses,
+    loading,
+    draggedTask,
+    canAddEditDelete,
+    canMoveCards,
+    activeColumn,
+    newTaskTitle,
+    setNewTaskTitle,
+    newTaskStartDate,
+    setNewTaskStartDate,
+    newTaskDueDate,
+    setNewTaskDueDate,
+    newTaskPriority,
+    setNewTaskPriority,
+    newTaskEstimatedHours,
+    setNewTaskEstimatedHours,
+    selectedMembers,
+    getSelectedMembersData,
+    isSaving,
+    columnRefs,
+    openAddPanel,
+    closeAddPanel,
+    handleAddTask,
+    isMemberDialogOpen,
+    setIsMemberDialogOpen,
+    filteredMembers,
+    memberSearch,
+    setMemberSearch,
+    toggleMember,
+    handleDragStart,
+    handleDragEnd,
+    handleDrop,
+    openTaskDetails,
+    setTaskToDelete,
+    setIsDeleteDialogOpen,
+    isTaskDetailsOpen,
+    setIsTaskDetailsOpen,
+    selectedTask,
+    setSelectedTask,
+    isEditingTask,
+    setIsEditingTask,
+    editTaskData,
+    setEditTaskData,
+    editSelectedMembers,
+    setEditSelectedMembers,
+    handleEditTask,
+    toggleEditMember,
+    isDeleteDialogOpen,
+    setTaskToDelete: setTaskToDeleteFn,
+    taskToDelete,
+    handleDeleteTask,
+    user
+  } = useTaskBoard();
 
   /* ── loading ── */
   if (loading) {
@@ -381,408 +81,76 @@ const TaskBoardPage = () => {
     );
   }
 
-  /* ── Avatar stack component ── */
-  const AvatarStack = ({ workers, size = 8, border = "border-white" }) => (
-    <div className="flex -space-x-2">
-      {workers.slice(0, 3).map((w, i) => (
-        <div
-          key={w.user_id}
-          title={`${w.first_name} ${w.last_name}`}
-          className={`h-${size} w-${size} rounded-full flex items-center justify-center text-white text-xs font-bold border-2 ${border} shadow-sm`}
-          style={{ backgroundColor: avatarColor(w.user_id), zIndex: workers.length - i }}
-        >
-          {getMemberInitials(w)}
-        </div>
-      ))}
-      {workers.length > 3 && (
-        <div
-          className={`h-${size} w-${size} rounded-full bg-slate-200 flex items-center justify-center text-slate-600 text-xs font-bold border-2 ${border}`}
-        >
-          +{workers.length - 3}
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div
       className="flex flex-col h-[calc(100vh-80px)] w-[calc(100vw-5px)] lg:w-[calc(100vw-320px)] overflow-hidden"
       style={{ background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)" }}
     >
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-white/70 backdrop-blur shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 truncate">
-                {project ? project.name : "Project Tasks"}
-              </h1>
-              <ChevronRight className="h-4 w-4 text-slate-300" />
-              <span className="text-sm text-slate-400 font-medium">Board</span>
-            </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {statuses.reduce((acc, s) => acc + (s.tasks?.length || 0), 0)} tasks across {statuses.length} columns
-            </p>
-          </div>
-        </div>
+      {/* Header */}
+      <BoardHeader
+        project={project}
+        statuses={statuses}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        meMode={meMode}
+        setMeMode={setMeMode}
+        availableMembers={availableMembers}
+      />
 
-        <div className="flex items-center gap-3 shrink-0">
-          {/* search input */}
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <Input 
-              placeholder="Search tasks..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 w-64 bg-slate-50/50 focus:bg-white transition-all"
-            />
-          </div>
-          {/* me mode toggle */}
-          <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
-            <label className="text-xs font-semibold text-slate-600 select-none cursor-pointer flex items-center gap-2">
-              Me Mode
-              <Checkbox 
-                checked={meMode} 
-                onCheckedChange={(checked) => setMeMode(checked)} 
-              />
-            </label>
-          </div>
-          {/* member pile */}
-          <div className="flex -space-x-2">
-            {availableMembers.slice(0, 5).map((m) => (
-              <div
-                key={m.user_id}
-                title={`${m.first_name} ${m.last_name}`}
-                className="h-8 w-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow"
-                style={{ backgroundColor: avatarColor(m.user_id) }}
-              >
-                {getMemberInitials(m)}
-              </div>
-            ))}
-            {availableMembers.length > 5 && (
-              <div className="h-8 w-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-slate-500 text-xs font-bold">
-                +{availableMembers.length - 5}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Columns ── */}
+      {/* Columns */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <div className="flex gap-3 overflow-x-auto h-full px-5 py-4 pb-4">
           {statuses.map((status) => {
             let statusTasks = status.tasks || [];
             if (searchQuery) {
-              statusTasks = statusTasks.filter(task =>
-                task.title.toLowerCase().includes(searchQuery.toLowerCase())
+              statusTasks = statusTasks.filter((t) =>
+                t.title.toLowerCase().includes(searchQuery.toLowerCase())
               );
             }
             if (meMode && user?.roleId) {
-              statusTasks = statusTasks.filter(task =>
-                (task.assigned_workers || []).some(m => m.user_id === user.roleId)
+              statusTasks = statusTasks.filter((t) =>
+                (t.assigned_workers || []).some((m) => m.user_id === user.roleId)
               );
             }
-            const color = status.color || "#6366f1";
-            const isAddOpen = activeColumn === status.status_id;
-
-            const userRole = user?.role?.toLowerCase() || "";
-            const isWorker = userRole === "worker";
-            const isConfidentialStatus = status.is_confidential;
-            const cantDropHere = isWorker && isConfidentialStatus && draggedTask;
 
             return (
-              <div
+              <BoardColumn
                 key={status.status_id}
-                className={`flex-shrink-0 w-72 flex flex-col h-full rounded-lg overflow-hidden transition-all duration-200 ${
-                  cantDropHere ? 'ring-2 ring-red-300 opacity-60' : 
-                  draggedTask ? 'ring-2 ring-indigo-200 ring-offset-2' : ''
-                }`}
-                style={{ background: cantDropHere ? "#fef2f2" : "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)" }}
-              >
-                {/* Column header */}
-                <div className="px-3 pt-3 pb-2.5 shrink-0">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-                      <span className="font-semibold text-slate-700 text-sm tracking-wide uppercase" style={{ letterSpacing: "0.04em" }}>
-                        {status.name}
-                      </span>
-                      {status.is_confidential && (
-                        <span className="text-[9px] font-bold text-red-600 uppercase bg-red-50 px-1.5 py-0.5 rounded">
-                          CONFIDENTIAL
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="text-xs font-bold px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: `${color}18`, color }}
-                      >
-                        {statusTasks.length}
-                      </span>
-                      {canAddEditDelete && (
-                        <button 
-                          onClick={() => openAddPanel(status.status_id)}
-                          className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  {/* color bar */}
-                  <div className="h-0.5 rounded-full mt-3" style={{ backgroundColor: color, opacity: 0.3 }} />
-                </div>
-
-                {/* Tasks */}
-                <div 
-                  ref={(el) => (columnRefs.current[status.status_id] = el)}
-                  className="flex-1 overflow-y-auto px-3 pb-3 space-y-2"
-                  style={{ scrollbarWidth: "thin", scrollbarColor: "#e2e8f0 transparent" }}
-                  onDragOver={(e) => {
-                    if (cantDropHere) {
-                      e.dataTransfer.dropEffect = "none";
-                    } else {
-                      e.preventDefault();
-                    }
-                  }}
-                  onDrop={() => handleDrop(status.status_id)}
-                >
-                  {statusTasks.map((task) => {
-                    const p = PRIORITY[task.priority] || PRIORITY.medium;
-                    return (
-                      <div
-                        key={task.task_id}
-                        className={`group relative rounded-xl p-3 cursor-pointer transition-all duration-200 ${
-                          draggedTask?.task_id === task.task_id ? 'opacity-50 scale-95' : ''
-                        }`}
-                        style={{
-                          background: "#ffffff",
-                          border: "1px solid #e2e8f0",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
-                        }}
-                        draggable={canMoveCards}
-                        onDragStart={canMoveCards ? () => handleDragStart(task) : undefined}
-                        onDragEnd={handleDragEnd}
-                        onClick={(e) => openTaskDetails(task, e)}
-                        onMouseEnter={(e) => {
-                          if (draggedTask?.task_id !== task.task_id) {
-                            e.currentTarget.style.background = "#ffffff";
-                            e.currentTarget.style.border = "1px solid #cbd5e1";
-                            e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06)";
-                            e.currentTarget.style.transform = "translateY(-2px)";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (draggedTask?.task_id !== task.task_id) {
-                            e.currentTarget.style.background = "#ffffff";
-                            e.currentTarget.style.border = "1px solid #e2e8f0";
-                            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)";
-                            e.currentTarget.style.transform = "translateY(0)";
-                          }
-                        }}
-                      >
-                        {/* priority + title */}
-                        <div className="flex items-start justify-between gap-2 mb-2.5">
-                          <div className="flex items-start gap-2 flex-1">
-                            <h4 className="font-medium text-slate-800 text-sm leading-snug flex-1">{task.title}</h4>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {task.priority && (
-                              <span
-                                className="flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
-                                style={{ background: p.bg, color: p.text }}
-                              >
-                                {task.priority === "high" && <Flame className="h-2.5 w-2.5" />}
-                                {p.label}
-                              </span>
-                            )}
-                            {canAddEditDelete && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setTaskToDelete(task);
-                                  setIsDeleteDialogOpen(true);
-                                }}
-                                className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* workers */}
-                        {task.assigned_workers?.length > 0 && (
-                          <div className="mb-2.5">
-                            <AvatarStack workers={task.assigned_workers} size={7} />
-                          </div>
-                        )}
-
-                        {/* meta */}
-                        {(task.start_date || task.due_date || task.estimated_hours) && (
-                          <div className="flex items-center gap-3 flex-wrap">
-                            {task.start_date && (
-                              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600">
-                                <Calendar className="h-3 w-3" />
-                                <span>Start: {formatDate(task.start_date)}</span>
-                              </div>
-                            )}
-                            {task.due_date && (
-                              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600">
-                                <Calendar className="h-3 w-3" />
-                                <span>Due: {formatDate(task.due_date)}</span>
-                              </div>
-                            )}
-                            {task.estimated_hours && (
-                              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600">
-                                <Clock className="h-3 w-3" />
-                                <span>{task.estimated_hours}h</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* left accent bar on hover */}
-                        <div
-                          className="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-xl opacity-0 group-hover:opacity-100 transition-opacity"
-                          style={{ backgroundColor: color }}
-                        />
-                      </div>
-                    );
-                  })}
-
-                  {/* ── Add task panel ── */}
-                  {isAddOpen ? (
-                    <div
-                      className="rounded-xl border border-indigo-200 bg-white p-3 space-y-3"
-                      style={{ boxShadow: "0 0 0 3px rgba(99,102,241,0.08)" }}
-                    >
-                      <Input
-                        autoFocus
-                        placeholder="Task name…"
-                        value={newTaskTitle}
-                        onChange={(e) => setNewTaskTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleAddTask(status.status_id);
-                          if (e.key === "Escape") closeAddPanel();
-                        }}
-                        className="border-0 shadow-none focus-visible:ring-0 p-0 h-auto text-sm font-medium placeholder:text-slate-300"
-                      />
-
-                      {/* Priority selector */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-slate-500">Priority:</span>
-                        <div className="flex gap-1">
-                          {["high", "medium", "low"].map((p) => {
-                            const prio = PRIORITY[p];
-                            return (
-                              <button
-                                key={p}
-                                onClick={() => setNewTaskPriority(p)}
-                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-all ${
-                                  newTaskPriority === p
-                                    ? ""
-                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                                }`}
-                                style={newTaskPriority === p ? { background: prio.bg, color: prio.text } : {}}
-                              >
-                                {p.charAt(0).toUpperCase() + p.slice(1)}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Date inputs */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-[10px] font-medium text-slate-500 mb-1 block">Start date</label>
-                          <Input
-                            type="date"
-                            value={newTaskStartDate}
-                            onChange={(e) => setNewTaskStartDate(e.target.value)}
-                            className="h-8 text-xs px-2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:ml-1"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-medium text-slate-500 mb-1 block">Due date</label>
-                          <Input
-                            type="date"
-                            value={newTaskDueDate}
-                            onChange={(e) => setNewTaskDueDate(e.target.value)}
-                            className="h-8 text-xs px-2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:ml-1"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Hours input */}
-                      <div>
-                        <label className="text-[10px] font-medium text-slate-500 mb-1 block">Estimated Hours</label>
-                        <Input
-                          type="number"
-                          step="0.5"
-                          value={newTaskEstimatedHours}
-                          onChange={(e) => setNewTaskEstimatedHours(e.target.value)}
-                          className="h-7 text-xs"
-                          placeholder="e.g., 4"
-                        />
-                      </div>
-
-                      {/* assigned members mini-row */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <button
-                          onClick={() => setIsMemberDialogOpen(true)}
-                          className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-indigo-600 transition-colors px-2 py-1 rounded-lg hover:bg-indigo-50"
-                        >
-                          {selectedMembers.length === 0 ? (
-                            <>
-                              <User className="h-3.5 w-3.5" />
-                              <span>Assign</span>
-                            </>
-                          ) : (
-                            <>
-                              <AvatarStack workers={getSelectedMembersData()} size={5} />
-                              <span className="ml-1">{selectedMembers.length} assigned</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-
-                      {/* actions */}
-                      <div className="flex items-center justify-between pt-1">
-                        <button
-                          onClick={closeAddPanel}
-                          className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          disabled={!newTaskTitle.trim() || isSaving}
-                          onClick={() => handleAddTask(status.status_id)}
-                          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
-                          Save task
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    canAddEditDelete && (
-                      <button
-                        onClick={() => openAddPanel(status.status_id)}
-                        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all text-sm font-medium border-2 border-dashed border-slate-100 hover:border-slate-200 group"
-                      >
-                        <div className="h-5 w-5 rounded-md bg-slate-100 group-hover:bg-indigo-50 flex items-center justify-center transition-colors">
-                          <Plus className="h-3 w-3 group-hover:text-indigo-500 transition-colors" />
-                        </div>
-                        Add task
-                      </button>
-                    )
-                  )}
-                </div>
-              </div>
+                status={status}
+                statusTasks={statusTasks}
+                draggedTask={draggedTask}
+                canAddEditDelete={canAddEditDelete}
+                canMoveCards={canMoveCards}
+                isAddOpen={activeColumn === status.status_id}
+                columnRef={(el) => (columnRefs.current[status.status_id] = el)}
+                // add task props
+                newTaskTitle={newTaskTitle}
+                setNewTaskTitle={setNewTaskTitle}
+                newTaskStartDate={newTaskStartDate}
+                setNewTaskStartDate={setNewTaskStartDate}
+                newTaskDueDate={newTaskDueDate}
+                setNewTaskDueDate={setNewTaskDueDate}
+                newTaskPriority={newTaskPriority}
+                setNewTaskPriority={setNewTaskPriority}
+                newTaskEstimatedHours={newTaskEstimatedHours}
+                setNewTaskEstimatedHours={setNewTaskEstimatedHours}
+                selectedMembers={selectedMembers}
+                getSelectedMembersData={getSelectedMembersData}
+                isSaving={isSaving}
+                // handlers
+                onOpenAddPanel={openAddPanel}
+                onCloseAddPanel={closeAddPanel}
+                onAddTask={handleAddTask}
+                onOpenMemberDialog={() => setIsMemberDialogOpen(true)}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDrop={handleDrop}
+                onTaskClick={openTaskDetails}
+                onDeleteClick={(task) => {
+                  setTaskToDeleteFn(task);
+                  setIsDeleteDialogOpen(true);
+                }}
+              />
             );
           })}
 
@@ -801,469 +169,44 @@ const TaskBoardPage = () => {
         </div>
       </div>
 
-      {/* ── Assign People Dialog ── */}
-      <Dialog open={isMemberDialogOpen} onOpenChange={setIsMemberDialogOpen}>
-        <DialogContent className="sm:max-w-sm rounded-2xl p-0 overflow-hidden gap-0">
-          <DialogHeader className="px-5 pt-5 pb-4 border-b border-slate-100">
-            <DialogTitle className="text-base font-semibold text-slate-800">Assign people</DialogTitle>
-          </DialogHeader>
+      {/* Dialogs */}
+      <AssignMemberDialog
+        open={isMemberDialogOpen}
+        onOpenChange={setIsMemberDialogOpen}
+        filteredMembers={filteredMembers}
+        selectedMembers={selectedMembers}
+        memberSearch={memberSearch}
+        setMemberSearch={setMemberSearch}
+        onToggleMember={toggleMember}
+        onClose={() => { setIsMemberDialogOpen(false); setMemberSearch(""); }}
+      />
 
-          <div className="px-4 py-3 border-b border-slate-100">
-            <Input
-              placeholder="Search by name or email…"
-              value={memberSearch}
-              onChange={(e) => setMemberSearch(e.target.value)}
-              className="h-9 text-sm border-slate-200 focus-visible:ring-indigo-500"
-            />
-          </div>
+      <TaskDetailsDialog
+        open={isTaskDetailsOpen}
+        onOpenChange={setIsTaskDetailsOpen}
+        selectedTask={selectedTask}
+        isEditingTask={isEditingTask}
+        setIsEditingTask={setIsEditingTask}
+        editTaskData={editTaskData}
+        setEditTaskData={setEditTaskData}
+        editSelectedMembers={editSelectedMembers}
+        setEditSelectedMembers={setEditSelectedMembers}
+        availableMembers={availableMembers}
+        statuses={statuses}
+        canAddEditDelete={canAddEditDelete}
+        isSaving={isSaving}
+        onSave={handleEditTask}
+        onToggleEditMember={toggleEditMember}
+      />
 
-          <div className="max-h-64 overflow-y-auto px-2 py-2 space-y-0.5">
-            {filteredMembers.length === 0 ? (
-              <p className="text-center text-sm text-slate-400 py-6">No members found</p>
-            ) : (
-              filteredMembers.map((member) => {
-                const key = getMemberKey(member);
-                const selected = selectedMembers.includes(key);
-                return (
-                  <div
-                    key={key}
-                    onClick={() => toggleMember(member)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
-                      selected ? "bg-indigo-50" : "hover:bg-slate-50"
-                    }`}
-                  >
-                    <div
-                      className="h-9 w-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm"
-                      style={{ backgroundColor: avatarColor(member.user_id) }}
-                    >
-                      {getMemberInitials(member)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${selected ? "text-indigo-700" : "text-slate-800"}`}>
-                        {member.first_name} {member.last_name}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${
-                            member.type === "admin" 
-                              ? "bg-purple-100 text-purple-700" 
-                              : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {member.type === "admin" ? "Admin" : "Worker"}
-                        </span>
-                        <span className="text-xs text-slate-400 truncate">{member.email}</span>
-                      </div>
-                    </div>
-                    <div
-                      className={`h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                        selected
-                          ? "bg-indigo-600 border-indigo-600"
-                          : "border-slate-200 bg-white"
-                      }`}
-                    >
-                      {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/50">
-            <span className="text-xs text-slate-400">
-              {selectedMembers.length > 0 ? `${selectedMembers.length} selected` : "No one selected"}
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={() => { setIsMemberDialogOpen(false); setMemberSearch(""); }}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
-                onClick={() => { setIsMemberDialogOpen(false); setMemberSearch(""); }}
-              >
-                <Check className="h-3.5 w-3.5 mr-1" />
-                Done
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Task Details Dialog ── */}
-      <Dialog open={isTaskDetailsOpen} onOpenChange={setIsTaskDetailsOpen}>
-        <DialogContent className="sm:max-w-lg rounded-2xl p-0 overflow-hidden gap-0">
-          {selectedTask && (
-            <>
-              <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-100">
-                <div className="flex items-center justify-between">
-                  <DialogTitle className="text-lg font-semibold text-slate-800">
-                    {isEditingTask ? "Edit Task" : "Task Details"}
-                  </DialogTitle>
-                  {!isEditingTask && canAddEditDelete && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsEditingTask(true)}
-                      className="h-8 text-xs"
-                    >
-                      Edit
-                    </Button>
-                  )}
-                </div>
-              </DialogHeader>
-
-              <div className="px-6 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
-                {/* Title */}
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">Title</label>
-                  {isEditingTask ? (
-                    <Input
-                      value={editTaskData.title}
-                      onChange={(e) => setEditTaskData({ ...editTaskData, title: e.target.value })}
-                      className="text-sm"
-                    />
-                  ) : (
-                    <p className="text-sm font-medium text-slate-800">{selectedTask.title}</p>
-                  )}
-                </div>
-
-                {/* Status */}
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">Status</label>
-                  {isEditingTask ? (
-                    <select
-                      value={editTaskData.status_id}
-                      onChange={(e) => setEditTaskData({ ...editTaskData, status_id: parseInt(e.target.value) })}
-                      className="w-full h-9 px-3 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      {statuses.map((status) => (
-                        <option key={status.status_id} value={status.status_id}>
-                          {status.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="text-sm text-slate-700">
-                      {statuses.find(s => s.status_id === selectedTask.status_id)?.name}
-                    </p>
-                  )}
-                </div>
-
-                {/* Priority */}
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">Priority</label>
-                  {isEditingTask ? (
-                    <div className="flex gap-2">
-                      {["high", "medium", "low"].map((p) => {
-                        const prio = PRIORITY[p];
-                        return (
-                          <button
-                            key={p}
-                            onClick={() => setEditTaskData({ ...editTaskData, priority: p })}
-                            className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-all ${
-                              editTaskData.priority === p
-                                ? ""
-                                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                            }`}
-                            style={editTaskData.priority === p ? { background: prio.bg, color: prio.text } : {}}
-                          >
-                            {p.charAt(0).toUpperCase() + p.slice(1)}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <span
-                      className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md"
-                      style={{ background: PRIORITY[selectedTask.priority]?.bg, color: PRIORITY[selectedTask.priority]?.text }}
-                    >
-                      {selectedTask.priority === "high" && <Flame className="h-3 w-3" />}
-                      {PRIORITY[selectedTask.priority]?.label}
-                    </span>
-                  )}
-                </div>
-
-                {/* Dates */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1 block">Start Date</label>
-                    {isEditingTask ? (
-                      <Input
-                        type="date"
-                        value={editTaskData.start_date}
-                        onChange={(e) => setEditTaskData({ ...editTaskData, start_date: e.target.value })}
-                        className="text-sm"
-                      />
-                    ) : (
-                      <p className="text-sm text-slate-700">{selectedTask.start_date ? formatDate(selectedTask.start_date) : "-"}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1 block">Due Date</label>
-                    {isEditingTask ? (
-                      <Input
-                        type="date"
-                        value={editTaskData.due_date}
-                        onChange={(e) => setEditTaskData({ ...editTaskData, due_date: e.target.value })}
-                        className="text-sm"
-                      />
-                    ) : (
-                      <p className="text-sm text-slate-700">{selectedTask.due_date ? formatDate(selectedTask.due_date) : "-"}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Estimated & Actual Hours */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1 block">Estimated Hours</label>
-                    {isEditingTask ? (
-                      <Input
-                        type="number"
-                        step="0.5"
-                        value={editTaskData.estimated_hours}
-                        onChange={(e) => setEditTaskData({ ...editTaskData, estimated_hours: e.target.value })}
-                        className="text-sm"
-                      />
-                    ) : (
-                      <p className="text-sm text-slate-700">{selectedTask.estimated_hours ? `${selectedTask.estimated_hours}h` : "-"}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1 block">Actual Hours</label>
-                    {isEditingTask ? (
-                      <Input
-                        type="number"
-                        step="0.5"
-                        value={editTaskData.actual_hours}
-                        onChange={(e) => setEditTaskData({ ...editTaskData, actual_hours: e.target.value })}
-                        className="text-sm"
-                      />
-                    ) : (
-                      <p className="text-sm text-slate-700">{selectedTask.actual_hours ? `${selectedTask.actual_hours}h` : "-"}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Assigned Members */}
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-2 block">Assigned Members</label>
-                  {isEditingTask ? (
-                    <div className="space-y-1">
-                      {availableMembers.map((member) => {
-                        const key = getMemberKey(member);
-                        const selected = editSelectedMembers.includes(key);
-                        return (
-                          <div
-                            key={key}
-                            onClick={() => toggleEditMember(member)}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                              selected ? "bg-indigo-50" : "hover:bg-slate-50"
-                            }`}
-                          >
-                            <div
-                              className="h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm"
-                              style={{ backgroundColor: avatarColor(member.user_id) }}
-                            >
-                              {getMemberInitials(member)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className={`text-sm font-medium truncate ${selected ? "text-indigo-700" : "text-slate-800"}`}>
-                                {member.first_name} {member.last_name}
-                              </p>
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${
-                                    member.type === "admin" 
-                                      ? "bg-purple-100 text-purple-700" 
-                                      : "bg-blue-100 text-blue-700"
-                                  }`}
-                                >
-                                  {member.type === "admin" ? "Admin" : "Worker"}
-                                </span>
-                                <span className="text-xs text-slate-400 truncate">{member.email}</span>
-                              </div>
-                            </div>
-                            <div
-                              className={`h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                                selected
-                                  ? "bg-indigo-600 border-indigo-600"
-                                  : "border-slate-200 bg-white"
-                              }`}
-                            >
-                              {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div>
-                      {selectedTask.assigned_workers && selectedTask.assigned_workers.length > 0 ? (
-                        <div className="flex -space-x-2">
-                          {selectedTask.assigned_workers.map((w, i) => (
-                            <div
-                              key={w.user_id}
-                              title={`${w.first_name} ${w.last_name}`}
-                              className="h-8 w-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow"
-                              style={{ backgroundColor: avatarColor(w.user_id), zIndex: selectedTask.assigned_workers.length - i }}
-                            >
-                              {`${w.first_name.charAt(0)}${w.last_name ? w.last_name.charAt(0) : ""}`.toUpperCase()}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-slate-400">No members assigned</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">Description</label>
-                  {isEditingTask ? (
-                    <textarea
-                      value={editTaskData.description}
-                      onChange={(e) => setEditTaskData({ ...editTaskData, description: e.target.value })}
-                      rows={3}
-                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                      placeholder="Add a description..."
-                    />
-                  ) : (
-                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedTask.description || "-"}</p>
-                  )}
-                </div>
-
-                {/* Goal */}
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">Goal</label>
-                  {isEditingTask ? (
-                    <textarea
-                      value={editTaskData.goal}
-                      onChange={(e) => setEditTaskData({ ...editTaskData, goal: e.target.value })}
-                      rows={2}
-                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                      placeholder="Add a goal..."
-                    />
-                  ) : (
-                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedTask.goal || "-"}</p>
-                  )}
-                </div>
-
-                {/* Remark */}
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">Remark</label>
-                  {isEditingTask ? (
-                    <textarea
-                      value={editTaskData.remark}
-                      onChange={(e) => setEditTaskData({ ...editTaskData, remark: e.target.value })}
-                      rows={2}
-                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                      placeholder="Add a remark..."
-                    />
-                  ) : (
-                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedTask.remark || "-"}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-                {isEditingTask ? (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setIsEditingTask(false);
-                        setEditTaskData({
-                          title: selectedTask.title,
-                          description: selectedTask.description || "",
-                          goal: selectedTask.goal || "",
-                          priority: selectedTask.priority,
-                          start_date: selectedTask.start_date ? selectedTask.start_date.split("T")[0] : "",
-                          due_date: selectedTask.due_date ? selectedTask.due_date.split("T")[0] : "",
-                          estimated_hours: selectedTask.estimated_hours || "",
-                          actual_hours: selectedTask.actual_hours || "",
-                          remark: selectedTask.remark || "",
-                          status_id: selectedTask.status_id,
-                        });
-                        setEditSelectedMembers(selectedTask.worker_ids || []);
-                      }}
-                      className="h-8 text-xs"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleEditTask}
-                      disabled={!editTaskData.title.trim() || isSaving}
-                      className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
-                    >
-                      {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
-                      Save Changes
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsTaskDetailsOpen(false)}
-                    className="h-8 text-xs ml-auto"
-                  >
-                    Close
-                  </Button>
-                )}
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Delete Task Dialog ── */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-sm rounded-2xl p-0 overflow-hidden gap-0">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-100">
-            <DialogTitle className="text-lg font-semibold text-slate-800">Delete Task</DialogTitle>
-          </DialogHeader>
-          
-          <div className="px-6 py-6">
-            <p className="text-sm text-slate-600">
-              Are you sure you want to delete <span className="font-semibold text-slate-800">{taskToDelete?.title}</span>? This action cannot be undone.
-            </p>
-          </div>
-          
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setIsDeleteDialogOpen(false);
-                setTaskToDelete(null);
-              }}
-              className="h-8 text-xs"
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleDeleteTask}
-              disabled={isSaving}
-              className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white"
-            >
-              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Trash2 className="h-3.5 w-3.5 mr-1" />}
-              Delete
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DeleteTaskDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        taskToDelete={taskToDelete}
+        isSaving={isSaving}
+        onConfirm={handleDeleteTask}
+        onCancel={() => { setIsDeleteDialogOpen(false); setTaskToDeleteFn(null); }}
+      />
     </div>
   );
 };

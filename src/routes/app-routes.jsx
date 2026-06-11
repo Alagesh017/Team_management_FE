@@ -14,6 +14,7 @@ import ProjectAllocationDetailPage from '../features/project-allocation/pages/Pr
 import TaskBoardPage from '../features/tasks/pages/TaskBoardPage'
 import TaskDetailPage from '../features/tasks/pages/TaskDetailPage'
 import TaskDashboardPage from '../features/tasks/pages/TaskDashboardPage'
+import ReportPage from '../features/reports/pages/ReportPage'
 import { ProtectedRoute } from '../common/components/ProtectedRoute'
 
 // Dummy components for testing
@@ -44,6 +45,7 @@ export default function AppRoutes() {
 			<Route path="/tasks/project/:id" element={<ProtectedRoute><TaskBoardPage /></ProtectedRoute>} />
 			<Route path="/tasks/project/:projectId/task/:taskId" element={<ProtectedRoute><TaskDetailPage /></ProtectedRoute>} />
 			<Route path="/tasks-dashboard" element={<ProtectedRoute><TaskDashboardPage /></ProtectedRoute>} />
+			<Route path="/reports" element={<ProtectedRoute><ReportPage /></ProtectedRoute>} />
 			<Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
 			<Route path="/permission-request" element={<ProtectedRoute><PermissionRequest /></ProtectedRoute>} />
 		</Routes>

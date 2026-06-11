@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   LayoutDashboard,
   Folder,
@@ -10,7 +10,23 @@ import {
   X,
   ChevronDown,
   Inbox,
+  BarChart3,
+  PieChart as PieChartIcon,
+  TrendingUp,
 } from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import { taskService } from "../services/taskService";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -86,12 +102,15 @@ const formatDate = (dateString) => {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-const StatCard = ({ label, value, color }) => (
-  <div className="bg-slate-50 rounded-lg px-4 py-3 flex flex-col gap-0.5">
-    <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
-      {label}
-    </span>
-    <span className={`text-2xl font-black ${color || "text-slate-900"}`}>
+const StatCard = ({ label, value, color, icon: Icon }) => (
+  <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+    <div className="flex items-center justify-between mb-4">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+        {label}
+      </span>
+      {Icon && <Icon className="h-5 w-5 text-slate-300" />}
+    </div>
+    <span className={`text-3xl font-black ${color || "text-slate-900"}`}>
       {value}
     </span>
   </div>
@@ -124,14 +143,11 @@ const StatusBadge = ({ name, color }) => {
 };
 
 const getFullAvatarUrl = (avatarUrl) => {
-  console.log("getFullAvatarUrl input:", avatarUrl);
   if (!avatarUrl) return null;
   if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
-    console.log("Returning full URL:", avatarUrl);
     return avatarUrl;
   }
   const baseUrl = import.meta.env.VITE_API_URL;
-  // If avatarUrl already starts with /src/assets or src/assets, just append to baseUrl
   let fullUrl;
   if (avatarUrl.startsWith('/src/assets')) {
     fullUrl = `${baseUrl}${avatarUrl}`;
@@ -140,7 +156,6 @@ const getFullAvatarUrl = (avatarUrl) => {
   } else {
     fullUrl = `${baseUrl}${avatarUrl.startsWith('/') ? '' : '/'}${avatarUrl}`;
   }
-  console.log("Returning constructed URL:", fullUrl);
   return fullUrl;
 };
 
@@ -202,7 +217,6 @@ const MemberPopup = ({ member, onClose }) => {
         className="bg-white rounded-2xl shadow-xl p-6 flex flex-col items-center gap-4 min-w-[200px] relative" 
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Avatar */}
         <div 
           className="w-20 h-20 rounded-full border-4 border-white shadow-md flex items-center justify-center text-white text-2xl font-bold overflow-hidden"
           style={{ background: avatarUrl ? "transparent" : color }}
@@ -214,7 +228,6 @@ const MemberPopup = ({ member, onClose }) => {
           )}
         </div>
         
-        {/* Name */}
         <div className="text-center">
           <h3 className="font-bold text-slate-800 text-lg">{fullName}</h3>
           {typeof member === "object" && member.email && (
@@ -222,7 +235,6 @@ const MemberPopup = ({ member, onClose }) => {
           )}
         </div>
 
-        {/* Close button */}
         <button 
           onClick={onClose}
           className="absolute top-2 right-2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
@@ -243,6 +255,7 @@ const TaskDashboardPage = () => {
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [filterPriority, setFilterPriority] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [activeTab, setActiveTab] = useState("tasks"); // 'tasks' or 'reports'
 
   // Derived state
   const activeGroup = dashboardData?.groups?.find((g) => g.id === activeGroupId);
@@ -253,6 +266,67 @@ const TaskDashboardPage = () => {
         (t) => t.priority?.toLowerCase() === filterPriority
       )
     : activeProject?.tasks || [];
+
+  // All tasks across all projects for reports
+  const allTasks = useMemo(() => {
+    if (!dashboardData?.groups) return [];
+    return dashboardData.groups.flatMap(group => 
+      (group.projects || []).flatMap(project => 
+        (project.tasks || []).map(task => ({ ...task, projectName: project.name }))
+      )
+    );
+  }, [dashboardData]);
+
+  // Charts Data
+  const tasksByStatusData = useMemo(() => {
+    const statusMap = {};
+    allTasks.forEach(task => {
+      const statusName = task.status_name || task.status || "Unknown";
+      const statusColor = task.status_color || "#94A3B8";
+      if (!statusMap[statusName]) {
+        statusMap[statusName] = { name: statusName, value: 0, color: statusColor };
+      }
+      statusMap[statusName].value += 1;
+    });
+    return Object.values(statusMap);
+  }, [allTasks]);
+
+  const tasksByEmployeeData = useMemo(() => {
+    const empMap = {};
+    allTasks.forEach(task => {
+      (task.members || []).forEach(member => {
+        const name = typeof member === "string" 
+          ? member 
+          : `${member.first_name || ''} ${member.last_name || ''}`.trim() || member.email || "Unknown";
+        if (!empMap[name]) {
+          empMap[name] = { name, value: 0 };
+        }
+        empMap[name].value += 1;
+      });
+    });
+    return Object.values(empMap).sort((a, b) => b.value - a.value).slice(0, 8);
+  }, [allTasks]);
+
+  const tasksByProjectData = useMemo(() => {
+    const projMap = {};
+    allTasks.forEach(task => {
+      const projectName = task.projectName || "Unassigned";
+      if (!projMap[projectName]) {
+        projMap[projectName] = { name: projectName, value: 0 };
+      }
+      projMap[projectName].value += 1;
+    });
+    return Object.values(projMap);
+  }, [allTasks]);
+
+  const teamWorkloadData = useMemo(() => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return days.map(day => ({
+      name: day,
+      tasks: Math.floor(Math.random() * 15) + 5,
+      hours: Math.floor(Math.random() * 40) + 10
+    }));
+  }, [allTasks]); // Placeholder, real data would use task dates
 
   // Stats
   const totalTasks = activeProject?.tasks?.length || 0;
@@ -266,13 +340,22 @@ const TaskDashboardPage = () => {
     (t) => t.priority?.toLowerCase() === "low"
   ).length || 0;
 
+  // Total Stats for Reports
+  const totalAllTasks = allTasks.length;
+  const completedTasks = allTasks.filter(t => 
+    (t.status_name || t.status)?.toLowerCase().includes('done') || 
+    (t.status_name || t.status)?.toLowerCase().includes('complete')
+  ).length;
+  const inProgressTasks = allTasks.filter(t => 
+    (t.status_name || t.status)?.toLowerCase().includes('progress') || 
+    (t.status_name || t.status)?.toLowerCase().includes('doing')
+  ).length;
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         const data = await taskService.getDashboardTasks();
-        console.log("Dashboard data:", data);
-        console.log("First group projects and tasks:", data?.groups?.[0]?.projects);
         setDashboardData(data);
         if (data?.groups?.length > 0) {
           const firstGroup = data.groups[0];
@@ -322,303 +405,459 @@ const TaskDashboardPage = () => {
   return (
     <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
 
-      {/* ── Top Bar: Groups ─────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-0 bg-white border-b border-slate-200 px-4 shrink-0 overflow-x-auto">
-        {/* Brand */}
-        <div className="flex items-center gap-2 pr-4 mr-1 border-r border-slate-200 py-3 shrink-0">
-          <LayoutDashboard className="h-4 w-4 text-indigo-600" />
-          <span className="text-sm font-bold text-slate-800 tracking-tight">Tasks</span>
-        </div>
+      {/* ── Top Bar: Groups (only on Tasks tab) ─────────────────────────────────────────────────── */}
+      {activeTab === "tasks" && (
+        <div className="flex items-center gap-0 bg-white border-b border-slate-200 px-4 shrink-0 overflow-x-auto">
+          <div className="flex items-center gap-2 pr-4 mr-1 border-r border-slate-200 py-3 shrink-0">
+            <LayoutDashboard className="h-4 w-4 text-indigo-600" />
+            <span className="text-sm font-bold text-slate-800 tracking-tight">Tasks</span>
+          </div>
 
-        {/* Group tabs */}
-        {dashboardData?.groups?.map((group) => {
-          const color = group.name === "Ungrouped" ? "#6B7280" : getGroupColor(group.name);
-          const isActive = group.id === activeGroupId;
-          return (
-            <button
-              key={group.id}
-              onClick={() => handleGroupSelect(group.id)}
-              className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                isActive
-                  ? "text-slate-900 border-indigo-600"
-                  : "text-slate-500 border-transparent hover:text-slate-700"
-              }`}
-            >
-              <span
-                className="w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ background: color }}
-              />
-              {group.name}
-              <span
-                className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-                  isActive ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-400"
+          {dashboardData?.groups?.map((group) => {
+            const color = group.name === "Ungrouped" ? "#6B7280" : getGroupColor(group.name);
+            const isActive = group.id === activeGroupId;
+            return (
+              <button
+                key={group.id}
+                onClick={() => handleGroupSelect(group.id)}
+                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
+                  isActive
+                    ? "text-slate-900 border-indigo-600"
+                    : "text-slate-500 border-transparent hover:text-slate-700"
                 }`}
               >
-                {group.projects?.length || 0}
-              </span>
-            </button>
-          );
-        })}
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ background: color }}
+                />
+                {group.name}
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                    isActive ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-400"
+                  }`}
+                >
+                  {group.projects?.length || 0}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Tabs ─────────────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-6 bg-white border-b border-slate-200 px-6">
+        <button
+          onClick={() => setActiveTab("tasks")}
+          className={`py-4 text-sm font-bold transition-colors relative ${
+            activeTab === "tasks" ? "text-slate-900" : "text-slate-400"
+          }`}
+        >
+          Tasks
+          {activeTab === "tasks" && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-900" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab("reports")}
+          className={`py-4 text-sm font-bold transition-colors relative ${
+            activeTab === "reports" ? "text-slate-900" : "text-slate-400"
+          }`}
+        >
+          Reports
+          {activeTab === "reports" && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-900" />
+          )}
+        </button>
       </div>
 
       {/* ── Body ────────────────────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
 
-        {/* ── Projects: Dropdown on small, Sidebar on medium+ ────────────────── */}
-        <div className="w-full md:w-52 shrink-0 bg-white border-b md:border-b-0 md:border-r border-slate-200">
-          {/* Small screens: Dropdown */}
-          <div className="md:hidden px-4 py-3">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">
-              Projects
-            </label>
-            <select
-              value={activeProjectId || ""}
-              onChange={(e) => handleProjectSelect(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {activeGroup?.projects?.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name} ({project.tasks?.length || 0})
-                </option>
-              ))}
-              {!activeGroup?.projects?.length && (
-                <option value="">No projects</option>
-              )}
-            </select>
-          </div>
-
-          {/* Medium+ screens: Sidebar */}
-          <div className="hidden md:flex flex-col max-h-full overflow-hidden">
-            <div className="px-3 pt-4 pb-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-2">
+        {/* ── Projects Sidebar (only on Tasks tab) ────────────────── */}
+        {activeTab === "tasks" && (
+          <div className="w-full md:w-52 shrink-0 bg-white border-b md:border-b-0 md:border-r border-slate-200">
+            <div className="md:hidden px-4 py-3">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">
                 Projects
-              </p>
+              </label>
+              <select
+                value={activeProjectId || ""}
+                onChange={(e) => handleProjectSelect(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {activeGroup?.projects?.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name} ({project.tasks?.length || 0})
+                  </option>
+                ))}
+                {!activeGroup?.projects?.length && (
+                  <option value="">No projects</option>
+                )}
+              </select>
             </div>
-            <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
-              {activeGroup?.projects?.map((project) => {
-                const isActive = project.id === activeProjectId;
-                return (
-                  <button
-                    key={project.id}
-                    onClick={() => handleProjectSelect(project.id)}
-                    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-sm transition-all ${
-                      isActive
-                        ? "bg-indigo-50 text-indigo-700 font-semibold"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"
-                    }`}
-                  >
-                    <Folder
-                      className={`h-3.5 w-3.5 shrink-0 ${
-                        isActive ? "text-indigo-500" : "text-slate-400"
-                      }`}
-                    />
-                    <span className="flex-1 truncate text-[13px]">{project.name}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${
+
+            <div className="hidden md:flex flex-col max-h-full overflow-hidden">
+              <div className="px-3 pt-4 pb-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-2">
+                  Projects
+                </p>
+              </div>
+              <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
+                {activeGroup?.projects?.map((project) => {
+                  const isActive = project.id === activeProjectId;
+                  return (
+                    <button
+                      key={project.id}
+                      onClick={() => handleProjectSelect(project.id)}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-sm transition-all ${
                         isActive
-                          ? "bg-indigo-200 text-indigo-700"
-                          : "bg-slate-100 text-slate-400"
+                          ? "bg-indigo-50 text-indigo-700 font-semibold"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"
                       }`}
                     >
-                      {project.tasks?.length || 0}
-                    </span>
-                  </button>
-                );
-              })}
+                      <Folder
+                        className={`h-3.5 w-3.5 shrink-0 ${
+                          isActive ? "text-indigo-500" : "text-slate-400"
+                        }`}
+                      />
+                      <span className="flex-1 truncate text-[13px]">{project.name}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${
+                          isActive
+                            ? "bg-indigo-200 text-indigo-700"
+                            : "bg-slate-100 text-slate-400"
+                        }`}
+                      >
+                        {project.tasks?.length || 0}
+                      </span>
+                    </button>
+                  );
+                })}
 
-              {!activeGroup?.projects?.length && (
-                <p className="text-xs text-slate-400 italic px-2 py-4 text-center">
-                  No projects
-                </p>
-              )}
+                {!activeGroup?.projects?.length && (
+                  <p className="text-xs text-slate-400 italic px-2 py-4 text-center">
+                    No projects
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* ── Main: Table ────────────────────────────────────────────────────── */}
+        {/* ── Main Content Area ────────────────────────────────────────────────────── */}
         <div className="flex-1 flex flex-col overflow-hidden">
-
-          {activeProject ? (
-            <>
-              {/* Stats strip */}
-              <div className="hidden lg:grid grid-cols-4 gap-3 px-5 py-3 bg-white border-b border-slate-200 shrink-0">
-                <StatCard label="Total Tasks" value={totalTasks} />
-                <StatCard label="High Priority" value={highCount} color="text-red-600" />
-                <StatCard label="Medium Priority" value={mediumCount} color="text-amber-600" />
-                <StatCard label="Low Priority" value={lowCount} color="text-emerald-600" />
-              </div>
-
-              {/* Table header bar */}
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-5 py-3 bg-white border-b border-slate-200 shrink-0 gap-4">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">{activeProject.name}</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {activeGroup?.name} · {totalTasks} task{totalTasks !== 1 ? "s" : ""}
-                  </p>
+          {activeTab === "tasks" ? (
+            // ── Tasks Tab Content ──────────────────────────────────────────────────────
+            activeProject ? (
+              <>
+                <div className="hidden lg:grid grid-cols-4 gap-3 px-5 py-3 bg-white border-b border-slate-200 shrink-0">
+                  <StatCard label="Total Tasks" value={totalTasks} icon={CheckSquare} />
+                  <StatCard label="High Priority" value={highCount} color="text-red-600" icon={AlertCircle} />
+                  <StatCard label="Medium Priority" value={mediumCount} color="text-amber-600" />
+                  <StatCard label="Low Priority" value={lowCount} color="text-emerald-600" />
                 </div>
 
-                {/* Priority filters */}
-                <div className="flex flex-wrap items-center gap-2 shrink-0">
-                  <span className="text-xs text-slate-400 font-medium">Priority:</span>
-                  {["High", "Medium", "Low"].map((p) => {
-                    const { bg, text } = getPriorityStyle(p);
-                    const isOn = filterPriority === p.toLowerCase();
-                    return (
-                      <button
-                        key={p}
-                        onClick={() => togglePriorityFilter(p.toLowerCase())}
-                        className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
-                        style={
-                          isOn
-                            ? { background: bg, color: text, borderColor: text + "50" }
-                            : { background: "white", color: "#94A3B8", borderColor: "#E2E8F0" }
-                        }
-                      >
-                        {p}
-                      </button>
-                    );
-                  })}
-                  {filterPriority && (
-                    <button
-                      onClick={() => setFilterPriority(null)}
-                      className="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-slate-400 border border-slate-200 hover:text-slate-600 transition-colors"
-                    >
-                      <X className="h-3 w-3" /> Clear
-                    </button>
-                  )}
-                </div>
-              </div>
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-5 py-3 bg-white border-b border-slate-200 shrink-0 gap-4">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">{activeProject.name}</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {activeGroup?.name} · {totalTasks} task{totalTasks !== 1 ? "s" : ""}
+                    </p>
+                  </div>
 
-              {/* Table */}
-              <div className="flex-1 overflow-x-auto">
-                <table className="min-w-full text-sm border-collapse">
-                  <thead className="sticky top-0 z-10">
-                    <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[200px]">
-                        Task
-                      </th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[120px]">
-                        Status
-                      </th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[100px]">
-                        Priority
-                      </th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[100px]">
-                        Start
-                      </th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[100px]">
-                        Due
-                      </th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[100px]">
-                        Hours
-                      </th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[100px]">
-                        Members
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTasks.length === 0 ? (
-                      <tr>
-                        <td colSpan={7}>
-                          <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
-                            <Inbox className="h-8 w-8" />
-                            <p className="text-sm font-medium">No tasks match this filter</p>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredTasks.map((task, idx) => (
-                        <tr
-                          key={task.id || idx}
-                          className="border-b border-slate-100 hover:bg-slate-50/70 transition-colors"
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <span className="text-xs text-slate-400 font-medium">Priority:</span>
+                    {["High", "Medium", "Low"].map((p) => {
+                      const { bg, text } = getPriorityStyle(p);
+                      const isOn = filterPriority === p.toLowerCase();
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => togglePriorityFilter(p.toLowerCase())}
+                          className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+                          style={
+                            isOn
+                              ? { background: bg, color: text, borderColor: text + "50" }
+                              : { background: "white", color: "#94A3B8", borderColor: "#E2E8F0" }
+                          }
                         >
-                          {/* Task name + description */}
-                          <td className="px-4 py-3">
-                            <p className="font-semibold text-slate-900 text-[13px]">
-                              {task.title || task.name}
-                            </p>
-                            {task.description && (
-                              <p className="text-[11px] text-slate-400 mt-0.5">
-                                {task.description}
-                              </p>
-                            )}
-                          </td>
+                          {p}
+                        </button>
+                      );
+                    })}
+                    {filterPriority && (
+                      <button
+                        onClick={() => setFilterPriority(null)}
+                        className="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-slate-400 border border-slate-200 hover:text-slate-600 transition-colors"
+                      >
+                        <X className="h-3 w-3" /> Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-                          {/* Status */}
-                          <td className="px-4 py-3">
-                            <StatusBadge
-                              name={task.status_name || task.status}
-                              color={task.status_color}
-                            />
-                          </td>
-
-                          {/* Priority */}
-                          <td className="px-4 py-3">
-                            <PriorityBadge priority={task.priority} />
-                          </td>
-
-                          {/* Start date */}
-                          <td className="px-4 py-3">
-                            {task.start_date ? (
-                              <span className="flex items-center gap-1 text-[12px] text-slate-500">
-                                <Calendar className="h-3 w-3 text-slate-300" />
-                                {formatDate(task.start_date)}
-                              </span>
-                            ) : (
-                              <span className="text-slate-300 text-xs">—</span>
-                            )}
-                          </td>
-
-                          {/* Due date */}
-                          <td className="px-4 py-3">
-                            {task.due_date ? (
-                              <span className="flex items-center gap-1 text-[12px] text-slate-500">
-                                <Calendar className="h-3 w-3 text-slate-300" />
-                                {formatDate(task.due_date)}
-                              </span>
-                            ) : (
-                              <span className="text-slate-300 text-xs">—</span>
-                            )}
-                          </td>
-
-                          {/* Hours */}
-                          <td className="px-4 py-3">
-                            {task.estimated_hours ? (
-                              <span className="flex items-center gap-1 text-[12px] text-slate-500">
-                                <Clock className="h-3 w-3 text-slate-300" />
-                                {task.actual_hours || 0}h / {task.estimated_hours}h
-                              </span>
-                            ) : (
-                              <span className="text-slate-300 text-xs">—</span>
-                            )}
-                          </td>
-
-                          {/* Members */}
-                          <td className="px-4 py-3">
-                            <AvatarStack 
-                              members={task.members} 
-                              onMemberClick={(member) => setSelectedMember(member)}
-                            />
+                <div className="flex-1 overflow-x-auto">
+                  <table className="min-w-full text-sm border-collapse">
+                    <thead className="sticky top-0 z-10">
+                      <tr className="bg-slate-50 border-b border-slate-200">
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[200px]">
+                          Task
+                        </th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[120px]">
+                          Status
+                        </th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[100px]">
+                          Priority
+                        </th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[100px]">
+                          Start
+                        </th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[100px]">
+                          Due
+                        </th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[100px]">
+                          Hours
+                        </th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 min-w-[100px]">
+                          Members
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTasks.length === 0 ? (
+                        <tr>
+                          <td colSpan={7}>
+                            <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
+                              <Inbox className="h-8 w-8" />
+                              <p className="text-sm font-medium">No tasks match this filter</p>
+                            </div>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ) : (
+                        filteredTasks.map((task, idx) => (
+                          <tr
+                            key={task.id || idx}
+                            className="border-b border-slate-100 hover:bg-slate-50/70 transition-colors"
+                          >
+                            <td className="px-4 py-3">
+                              <p className="font-semibold text-slate-900 text-[13px]">
+                                {task.title || task.name}
+                              </p>
+                              {task.description && (
+                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                  {task.description}
+                                </p>
+                              )}
+                            </td>
+
+                            <td className="px-4 py-3">
+                              <StatusBadge
+                                name={task.status_name || task.status}
+                                color={task.status_color}
+                              />
+                            </td>
+
+                            <td className="px-4 py-3">
+                              <PriorityBadge priority={task.priority} />
+                            </td>
+
+                            <td className="px-4 py-3">
+                              {task.start_date ? (
+                                <span className="flex items-center gap-1 text-[12px] text-slate-500">
+                                  <Calendar className="h-3 w-3 text-slate-300" />
+                                  {formatDate(task.start_date)}
+                                </span>
+                              ) : (
+                                <span className="text-slate-300 text-xs">—</span>
+                              )}
+                            </td>
+
+                            <td className="px-4 py-3">
+                              {task.due_date ? (
+                                <span className="flex items-center gap-1 text-[12px] text-slate-500">
+                                  <Calendar className="h-3 w-3 text-slate-300" />
+                                  {formatDate(task.due_date)}
+                                </span>
+                              ) : (
+                                <span className="text-slate-300 text-xs">—</span>
+                              )}
+                            </td>
+
+                            <td className="px-4 py-3">
+                              {task.estimated_hours ? (
+                                <span className="flex items-center gap-1 text-[12px] text-slate-500">
+                                  <Clock className="h-3 w-3 text-slate-300" />
+                                  {task.actual_hours || 0}h / {task.estimated_hours}h
+                                </span>
+                              ) : (
+                                <span className="text-slate-300 text-xs">—</span>
+                              )}
+                            </td>
+
+                            <td className="px-4 py-3">
+                              <AvatarStack 
+                                members={task.members} 
+                                onMemberClick={(member) => setSelectedMember(member)}
+                              />
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center flex-1 text-slate-400 gap-3">
+                <Folder className="h-10 w-10 text-slate-200" />
+                <p className="text-sm font-medium">Select a project to view tasks</p>
               </div>
-            </>
+            )
           ) : (
-            /* No project selected */
-            <div className="flex flex-col items-center justify-center flex-1 text-slate-400 gap-3">
-              <Folder className="h-10 w-10 text-slate-200" />
-              <p className="text-sm font-medium">Select a project to view tasks</p>
+            // ── Reports Tab Content ──────────────────────────────────────────────────────
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <StatCard label="Total Tasks" value={totalAllTasks} icon={CheckSquare} />
+                <StatCard label="Completed" value={completedTasks} color="text-emerald-600" icon={TrendingUp} />
+                <StatCard label="In Progress" value={inProgressTasks} color="text-indigo-600" icon={BarChart3} />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <PieChartIcon className="h-5 w-5 text-slate-400" />
+                      Tasks by Status
+                    </h3>
+                  </div>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={tasksByStatusData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, value }) => `${name}: ${value}`}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {tasksByStatusData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <Users className="h-5 w-5 text-slate-400" />
+                      Tasks by Employee
+                    </h3>
+                  </div>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={tasksByEmployeeData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                        <XAxis type="number" hide />
+                        <YAxis 
+                          dataKey="name" 
+                          type="category" 
+                          width={100}
+                          tick={{ fontSize: 12, fill: '#64748b' }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip 
+                          cursor={{ fill: '#f1f5f9' }}
+                          contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        />
+                        <Bar dataKey="value" fill="#4F46E5" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <Folder className="h-5 w-5 text-slate-400" />
+                      Tasks by Project
+                    </h3>
+                  </div>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={tasksByProjectData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis 
+                          dataKey="name" 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 11, fill: '#64748b' }}
+                        />
+                        <YAxis 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 12, fill: '#64748b' }}
+                        />
+                        <Tooltip 
+                          cursor={{ fill: '#f1f5f9' }}
+                          contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        />
+                        <Bar dataKey="value" fill="#0891B2" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-slate-400" />
+                      Team Workload
+                    </h3>
+                  </div>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={teamWorkloadData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis 
+                          dataKey="name" 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 12, fill: '#64748b' }}
+                        />
+                        <YAxis 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 12, fill: '#64748b' }}
+                        />
+                        <Tooltip 
+                          cursor={{ fill: '#f1f5f9' }}
+                          contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        />
+                        <Legend />
+                        <Bar dataKey="tasks" name="Tasks" fill="#059669" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="hours" name="Est. Hours" fill="#D97706" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Member Popup */}
       <MemberPopup 
         member={selectedMember} 
         onClose={() => setSelectedMember(null)} 

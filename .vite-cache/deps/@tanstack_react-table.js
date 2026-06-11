@@ -1,9 +1,9 @@
 import {
   require_react
-} from "./chunk-MQ4DZOKW.js";
+} from "./chunk-PDNHVAOE.js";
 import {
   __toESM
-} from "./chunk-DC5AMYBS.js";
+} from "./chunk-2TUXWMP5.js";
 
 // node_modules/@tanstack/react-table/build/lib/index.mjs
 var React = __toESM(require_react(), 1);

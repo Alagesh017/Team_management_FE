@@ -10,14 +10,14 @@ import {
   OIDC_DEFAULT_SCOPES,
   WrapperSKU,
   stubbedPublicClientApplication
-} from "./chunk-RBO4M7U7.js";
+} from "./chunk-SZWTCCCJ.js";
 import "./chunk-JR2R32O7.js";
 import {
   require_react
-} from "./chunk-MQ4DZOKW.js";
+} from "./chunk-PDNHVAOE.js";
 import {
   __toESM
-} from "./chunk-DC5AMYBS.js";
+} from "./chunk-2TUXWMP5.js";
 
 // node_modules/@azure/msal-react/dist/MsalContext.js
 var React = __toESM(require_react(), 1);
