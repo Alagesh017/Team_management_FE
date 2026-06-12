@@ -2,7 +2,7 @@ import {
   appendErrors,
   get,
   set
-} from "./chunk-JBERLVG4.js";
+} from "./chunk-2BK6JDSI.js";
 import {
   $ZodError,
   parse,
@@ -28,82 +28,91 @@ var s = (r2, s3) => {
   s3.shouldUseNativeValidation && o(r2, s3);
   const n2 = {};
   for (const o2 in r2) {
-    const f = get(s3.fields, o2), c = Object.assign(r2[o2] || {}, { ref: f && f.ref });
+    const c = get(s3.fields, o2), f = Object.assign(r2[o2] || {}, { ref: c && c.ref });
     if (i(s3.names || Object.keys(r2), o2)) {
       const r3 = Object.assign({}, get(n2, o2));
-      set(r3, "root", c), set(n2, o2, r3);
-    } else set(n2, o2, c);
+      set(r3, "root", f), set(n2, o2, r3);
+    } else set(n2, o2, f);
   }
   return n2;
 };
 var i = (e, t2) => {
-  const r2 = n(t2);
+  const r2 = n(t2).replace(/[.*+?^${}()|\\]/g, "\\$&");
   return e.some((e2) => n(e2).match(`^${r2}\\.\\d+`));
 };
 function n(e) {
-  return e.replace(/\]|\[/g, "");
+  return e.replace(/[\[\]]/g, "");
 }
 
 // node_modules/@hookform/resolvers/zod/dist/zod.mjs
-function t(r2, e) {
+function t() {
+  return t = Object.assign ? Object.assign.bind() : function(r2) {
+    for (var e = 1; e < arguments.length; e++) {
+      var n2 = arguments[e];
+      for (var o2 in n2) ({}).hasOwnProperty.call(n2, o2) && (r2[o2] = n2[o2]);
+    }
+    return r2;
+  }, t.apply(null, arguments);
+}
+function s2(r2, e) {
   try {
-    var o2 = r2();
+    var n2 = r2();
   } catch (r3) {
     return e(r3);
   }
-  return o2 && o2.then ? o2.then(void 0, e) : o2;
+  return n2 && n2.then ? n2.then(void 0, e) : n2;
 }
-function s2(r2, e) {
-  for (var n2 = {}; r2.length; ) {
+function i2(r2, e) {
+  for (var o2 = {}; r2.length; ) {
     var t2 = r2[0], s3 = t2.code, i3 = t2.message, a2 = t2.path.join(".");
-    if (!n2[a2]) if ("unionErrors" in t2) {
-      var u = t2.unionErrors[0].errors[0];
-      n2[a2] = { message: u.message, type: u.code };
-    } else n2[a2] = { message: i3, type: s3 };
+    if (!o2[a2]) if ("unionErrors" in t2) {
+      var u2 = t2.unionErrors[0].errors[0];
+      o2[a2] = { message: u2.message, type: u2.code };
+    } else o2[a2] = { message: i3, type: s3 };
     if ("unionErrors" in t2 && t2.unionErrors.forEach(function(e2) {
       return e2.errors.forEach(function(e3) {
         return r2.push(e3);
       });
     }), e) {
-      var c = n2[a2].types, f = c && c[t2.code];
-      n2[a2] = appendErrors(a2, e, n2, s3, f ? [].concat(f, t2.message) : t2.message);
+      var c = o2[a2].types, f = c && c[t2.code];
+      o2[a2] = appendErrors(a2, e, o2, s3, f ? [].concat(f, t2.message) : t2.message);
     }
     r2.shift();
   }
-  return n2;
+  return o2;
 }
-function i2(r2, e) {
-  for (var n2 = {}; r2.length; ) {
-    var t2 = r2[0], s3 = t2.code, i3 = t2.message, a2 = t2.path.join(".");
-    if (!n2[a2]) if ("invalid_union" === t2.code && t2.errors.length > 0) {
-      var u = t2.errors[0][0];
-      n2[a2] = { message: u.message, type: u.code };
-    } else n2[a2] = { message: i3, type: s3 };
-    if ("invalid_union" === t2.code && t2.errors.forEach(function(e2) {
+function a(r2, e) {
+  for (var o2 = {}, s3 = function() {
+    var s4 = r2[0], i3 = s4.code, a2 = s4.message, u2 = s4.path.join(".");
+    if (!o2[u2]) if ("invalid_union" === s4.code && s4.errors.length > 0) {
+      var c = s4.errors[0][0];
+      o2[u2] = { message: c.message, type: c.code };
+    } else o2[u2] = { message: a2, type: i3 };
+    if ("invalid_union" === s4.code && s4.errors.forEach(function(e2) {
       return e2.forEach(function(e3) {
-        return r2.push(e3);
+        return r2.push(t({}, e3, { path: [].concat(s4.path, e3.path) }));
       });
     }), e) {
-      var c = n2[a2].types, f = c && c[t2.code];
-      n2[a2] = appendErrors(a2, e, n2, s3, f ? [].concat(f, t2.message) : t2.message);
+      var f = o2[u2].types, l = f && f[s4.code];
+      o2[u2] = appendErrors(u2, e, o2, i3, l ? [].concat(l, s4.message) : s4.message);
     }
     r2.shift();
-  }
-  return n2;
+  }; r2.length; ) s3();
+  return o2;
 }
-function a(o2, a2, u) {
-  if (void 0 === u && (u = {}), function(r2) {
+function u(n2, t2, u2) {
+  if (void 0 === u2 && (u2 = {}), function(r2) {
     return "_def" in r2 && "object" == typeof r2._def && "typeName" in r2._def;
-  }(o2)) return function(n2, i3, c) {
+  }(n2)) return function(o2, a2, c) {
     try {
-      return Promise.resolve(t(function() {
-        return Promise.resolve(o2["sync" === u.mode ? "parse" : "parseAsync"](n2, a2)).then(function(e) {
-          return c.shouldUseNativeValidation && o({}, c), { errors: {}, values: u.raw ? Object.assign({}, n2) : e };
+      return Promise.resolve(s2(function() {
+        return Promise.resolve(n2["sync" === u2.mode ? "parse" : "parseAsync"](o2, t2)).then(function(e) {
+          return c.shouldUseNativeValidation && o({}, c), { errors: {}, values: u2.raw ? Object.assign({}, o2) : e };
         });
       }, function(r2) {
         if (function(r3) {
           return Array.isArray(null == r3 ? void 0 : r3.issues);
-        }(r2)) return { values: {}, errors: s(s2(r2.errors, !c.shouldUseNativeValidation && "all" === c.criteriaMode), c) };
+        }(r2)) return { values: {}, errors: s(i2(r2.errors, !c.shouldUseNativeValidation && "all" === c.criteriaMode), c) };
         throw r2;
       }));
     } catch (r2) {
@@ -112,16 +121,16 @@ function a(o2, a2, u) {
   };
   if (function(r2) {
     return "_zod" in r2 && "object" == typeof r2._zod;
-  }(o2)) return function(s3, c, f) {
+  }(n2)) return function(i3, c, f) {
     try {
-      return Promise.resolve(t(function() {
-        return Promise.resolve(("sync" === u.mode ? parse : parseAsync)(o2, s3, a2)).then(function(e) {
-          return f.shouldUseNativeValidation && o({}, f), { errors: {}, values: u.raw ? Object.assign({}, s3) : e };
+      return Promise.resolve(s2(function() {
+        return Promise.resolve(("sync" === u2.mode ? parse : parseAsync)(n2, i3, t2)).then(function(e) {
+          return f.shouldUseNativeValidation && o({}, f), { errors: {}, values: u2.raw ? Object.assign({}, i3) : e };
         });
       }, function(r2) {
         if (function(r3) {
           return r3 instanceof $ZodError;
-        }(r2)) return { values: {}, errors: s(i2(r2.issues, !f.shouldUseNativeValidation && "all" === f.criteriaMode), f) };
+        }(r2)) return { values: {}, errors: s(a(r2.issues, !f.shouldUseNativeValidation && "all" === f.criteriaMode), f) };
         throw r2;
       }));
     } catch (r2) {
@@ -131,6 +140,6 @@ function a(o2, a2, u) {
   throw new Error("Invalid input: not a Zod schema");
 }
 export {
-  a as zodResolver
+  u as zodResolver
 };
 //# sourceMappingURL=@hookform_resolvers_zod.js.map

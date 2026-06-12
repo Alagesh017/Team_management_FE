@@ -1,6 +1,7 @@
 import React from "react";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Search, FileSpreadsheet } from "lucide-react";
 import { Input } from "../../../../common/components/ui/input";
+import { Button } from "../../../../common/components/ui/button";
 import { avatarColor, getMemberInitials } from "./constants";
 import { Checkbox } from "../../../../common/components/ui/checkbox";
 
@@ -12,6 +13,7 @@ const BoardHeader = ({
   meMode,
   setMeMode,
   availableMembers,
+  onExportClick,
 }) => {
   return (
     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white/70 backdrop-blur shrink-0 md:px-5">
@@ -42,6 +44,18 @@ const BoardHeader = ({
             className="pl-8 w-64 bg-slate-50/50 focus:bg-white transition-all"
           />
         </div>
+        {/* Excel export button */}
+        {onExportClick && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+            onClick={onExportClick}
+            title="Export to Excel"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+          </Button>
+        )}
 
         {/* me mode toggle */}
         <div className="flex items-center gap-2 border-l border-slate-200 pl-3 md:pl-3">

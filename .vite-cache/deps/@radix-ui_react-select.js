@@ -1,46 +1,50 @@
 "use client";
 import {
   VISUALLY_HIDDEN_STYLES
-} from "./chunk-PWEP5ZPY.js";
+} from "./chunk-YRJFRJZO.js";
 import {
   usePrevious
 } from "./chunk-LE2TECWD.js";
 import {
   createCollection,
   useDirection
-} from "./chunk-ELAUS723.js";
+} from "./chunk-YMWCPF7Z.js";
 import {
   Anchor,
   Arrow,
   Content,
   Root2,
   createPopperScope
-} from "./chunk-TJUC63Z3.js";
-import "./chunk-MRRLR2IA.js";
+} from "./chunk-ZRHFMZKU.js";
 import {
   Combination_default,
   FocusScope,
   hideOthers,
   useFocusGuards
-} from "./chunk-HZBXQ4YW.js";
+} from "./chunk-N745OCTE.js";
 import {
   DismissableLayer,
   Portal,
   useCallbackRef
-} from "./chunk-RCNRZNAH.js";
+} from "./chunk-I7AUCXNX.js";
+import "./chunk-YTBWRBXS.js";
 import {
   useId
-} from "./chunk-2345P64T.js";
+} from "./chunk-B27WR2XR.js";
 import {
+  Presence,
   composeEventHandlers,
   createContextScope,
   useControllableState,
   useLayoutEffect2
-} from "./chunk-7OFDEBVJ.js";
+} from "./chunk-RDPS35OT.js";
 import {
-  composeRefs,
+  Primitive
+} from "./chunk-5TF7N7PE.js";
+import {
+  createSlot,
   useComposedRefs
-} from "./chunk-EEEJQ3GM.js";
+} from "./chunk-TGRXSLBB.js";
 import {
   require_jsx_runtime
 } from "./chunk-7Q3DJPV2.js";
@@ -55,150 +59,16 @@ import {
 } from "./chunk-2TUXWMP5.js";
 
 // node_modules/@radix-ui/react-select/dist/index.mjs
-var React3 = __toESM(require_react(), 1);
-var ReactDOM2 = __toESM(require_react_dom(), 1);
+var React = __toESM(require_react(), 1);
+var ReactDOM = __toESM(require_react_dom(), 1);
 
 // node_modules/@radix-ui/number/dist/index.mjs
 function clamp(value, [min, max]) {
   return Math.min(max, Math.max(min, value));
 }
 
-// node_modules/@radix-ui/react-select/node_modules/@radix-ui/react-primitive/dist/index.mjs
-var React2 = __toESM(require_react(), 1);
-var ReactDOM = __toESM(require_react_dom(), 1);
-
-// node_modules/@radix-ui/react-select/node_modules/@radix-ui/react-slot/dist/index.mjs
-var React = __toESM(require_react(), 1);
-var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
-function createSlot(ownerName) {
-  const SlotClone = createSlotClone(ownerName);
-  const Slot22 = React.forwardRef((props, forwardedRef) => {
-    const { children, ...slotProps } = props;
-    const childrenArray = React.Children.toArray(children);
-    const slottable = childrenArray.find(isSlottable);
-    if (slottable) {
-      const newElement = slottable.props.children;
-      const newChildren = childrenArray.map((child) => {
-        if (child === slottable) {
-          if (React.Children.count(newElement) > 1) return React.Children.only(null);
-          return React.isValidElement(newElement) ? newElement.props.children : null;
-        } else {
-          return child;
-        }
-      });
-      return (0, import_jsx_runtime.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children: React.isValidElement(newElement) ? React.cloneElement(newElement, void 0, newChildren) : null });
-    }
-    return (0, import_jsx_runtime.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children });
-  });
-  Slot22.displayName = `${ownerName}.Slot`;
-  return Slot22;
-}
-var Slot = createSlot("Slot");
-function createSlotClone(ownerName) {
-  const SlotClone = React.forwardRef((props, forwardedRef) => {
-    const { children, ...slotProps } = props;
-    if (React.isValidElement(children)) {
-      const childrenRef = getElementRef(children);
-      const props2 = mergeProps(slotProps, children.props);
-      if (children.type !== React.Fragment) {
-        props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
-      }
-      return React.cloneElement(children, props2);
-    }
-    return React.Children.count(children) > 1 ? React.Children.only(null) : null;
-  });
-  SlotClone.displayName = `${ownerName}.SlotClone`;
-  return SlotClone;
-}
-var SLOTTABLE_IDENTIFIER = Symbol("radix.slottable");
-function createSlottable(ownerName) {
-  const Slottable2 = ({ children }) => {
-    return (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children });
-  };
-  Slottable2.displayName = `${ownerName}.Slottable`;
-  Slottable2.__radixId = SLOTTABLE_IDENTIFIER;
-  return Slottable2;
-}
-var Slottable = createSlottable("Slottable");
-function isSlottable(child) {
-  return React.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
-}
-function mergeProps(slotProps, childProps) {
-  const overrideProps = { ...childProps };
-  for (const propName in childProps) {
-    const slotPropValue = slotProps[propName];
-    const childPropValue = childProps[propName];
-    const isHandler = /^on[A-Z]/.test(propName);
-    if (isHandler) {
-      if (slotPropValue && childPropValue) {
-        overrideProps[propName] = (...args) => {
-          const result = childPropValue(...args);
-          slotPropValue(...args);
-          return result;
-        };
-      } else if (slotPropValue) {
-        overrideProps[propName] = slotPropValue;
-      }
-    } else if (propName === "style") {
-      overrideProps[propName] = { ...slotPropValue, ...childPropValue };
-    } else if (propName === "className") {
-      overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
-    }
-  }
-  return { ...slotProps, ...overrideProps };
-}
-function getElementRef(element) {
-  var _a, _b;
-  let getter = (_a = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = (_b = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-
-// node_modules/@radix-ui/react-select/node_modules/@radix-ui/react-primitive/dist/index.mjs
-var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
-var NODES = [
-  "a",
-  "button",
-  "div",
-  "form",
-  "h2",
-  "h3",
-  "img",
-  "input",
-  "label",
-  "li",
-  "nav",
-  "ol",
-  "p",
-  "select",
-  "span",
-  "svg",
-  "ul"
-];
-var Primitive = NODES.reduce((primitive, node) => {
-  const Slot3 = createSlot(`Primitive.${node}`);
-  const Node = React2.forwardRef((props, forwardedRef) => {
-    const { asChild, ...primitiveProps } = props;
-    const Comp = asChild ? Slot3 : node;
-    if (typeof window !== "undefined") {
-      window[Symbol.for("radix-ui")] = true;
-    }
-    return (0, import_jsx_runtime2.jsx)(Comp, { ...primitiveProps, ref: forwardedRef });
-  });
-  Node.displayName = `Primitive.${node}`;
-  return { ...primitive, [node]: Node };
-}, {});
-
 // node_modules/@radix-ui/react-select/dist/index.mjs
-var import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
 var OPEN_KEYS = [" ", "Enter", "ArrowUp", "ArrowDown"];
 var SELECTION_KEYS = [" ", "Enter"];
 var SELECT_NAME = "Select";
@@ -208,9 +78,10 @@ var [createSelectContext, createSelectScope] = createContextScope(SELECT_NAME, [
   createPopperScope
 ]);
 var usePopperScope = createPopperScope();
-var [SelectProvider, useSelectContext] = createSelectContext(SELECT_NAME);
+var [SelectProviderImpl, useSelectContext] = createSelectContext(SELECT_NAME);
 var [SelectNativeOptionsProvider, useSelectNativeOptionsContext] = createSelectContext(SELECT_NAME);
-var Select = (props) => {
+var PROVIDER_NAME = "SelectProvider";
+function SelectProvider(props) {
   const {
     __scopeSelect,
     children,
@@ -225,12 +96,14 @@ var Select = (props) => {
     autoComplete,
     disabled,
     required,
-    form
+    form,
+    // @ts-expect-error internal render prop used by `Select` to compose its default parts
+    internal_do_not_use_render
   } = props;
   const popperScope = usePopperScope(__scopeSelect);
-  const [trigger, setTrigger] = React3.useState(null);
-  const [valueNode, setValueNode] = React3.useState(null);
-  const [valueNodeHasChildren, setValueNodeHasChildren] = React3.useState(false);
+  const [trigger, setTrigger] = React.useState(null);
+  const [valueNode, setValueNode] = React.useState(null);
+  const [valueNodeHasChildren, setValueNodeHasChildren] = React.useState(false);
   const direction = useDirection(dir);
   const [open, setOpen] = useControllableState({
     prop: openProp,
@@ -244,73 +117,77 @@ var Select = (props) => {
     onChange: onValueChange,
     caller: SELECT_NAME
   });
-  const triggerPointerDownPosRef = React3.useRef(null);
-  const isFormControl = trigger ? form || !!trigger.closest("form") : true;
-  const [nativeOptionsSet, setNativeOptionsSet] = React3.useState(/* @__PURE__ */ new Set());
+  const triggerPointerDownPosRef = React.useRef(null);
+  const isFormControl = trigger ? !!form || !!trigger.closest("form") : true;
+  const [nativeOptionsSet, setNativeOptionsSet] = React.useState(/* @__PURE__ */ new Set());
+  const contentId = useId();
   const nativeSelectKey = Array.from(nativeOptionsSet).map((option) => option.props.value).join(";");
-  return (0, import_jsx_runtime3.jsx)(Root2, { ...popperScope, children: (0, import_jsx_runtime3.jsxs)(
+  const handleNativeOptionAdd = React.useCallback((option) => {
+    setNativeOptionsSet((prev) => new Set(prev).add(option));
+  }, []);
+  const handleNativeOptionRemove = React.useCallback((option) => {
+    setNativeOptionsSet((prev) => {
+      const optionsSet = new Set(prev);
+      optionsSet.delete(option);
+      return optionsSet;
+    });
+  }, []);
+  const context = {
+    required,
+    trigger,
+    onTriggerChange: setTrigger,
+    valueNode,
+    onValueNodeChange: setValueNode,
+    valueNodeHasChildren,
+    onValueNodeHasChildrenChange: setValueNodeHasChildren,
+    contentId,
+    value,
+    onValueChange: setValue,
+    open,
+    onOpenChange: setOpen,
+    dir: direction,
+    triggerPointerDownPosRef,
+    disabled,
+    name,
+    autoComplete,
+    form,
+    nativeOptions: nativeOptionsSet,
+    nativeSelectKey,
+    isFormControl
+  };
+  return (0, import_jsx_runtime.jsx)(Root2, { ...popperScope, children: (0, import_jsx_runtime.jsx)(SelectProviderImpl, { scope: __scopeSelect, ...context, children: (0, import_jsx_runtime.jsx)(Collection.Provider, { scope: __scopeSelect, children: (0, import_jsx_runtime.jsx)(
+    SelectNativeOptionsProvider,
+    {
+      scope: __scopeSelect,
+      onNativeOptionAdd: handleNativeOptionAdd,
+      onNativeOptionRemove: handleNativeOptionRemove,
+      children: isFunction(internal_do_not_use_render) ? internal_do_not_use_render(context) : children
+    }
+  ) }) }) });
+}
+SelectProvider.displayName = PROVIDER_NAME;
+var Select = (props) => {
+  const { __scopeSelect, children, ...providerProps } = props;
+  return (0, import_jsx_runtime.jsx)(
     SelectProvider,
     {
-      required,
-      scope: __scopeSelect,
-      trigger,
-      onTriggerChange: setTrigger,
-      valueNode,
-      onValueNodeChange: setValueNode,
-      valueNodeHasChildren,
-      onValueNodeHasChildrenChange: setValueNodeHasChildren,
-      contentId: useId(),
-      value,
-      onValueChange: setValue,
-      open,
-      onOpenChange: setOpen,
-      dir: direction,
-      triggerPointerDownPosRef,
-      disabled,
-      children: [
-        (0, import_jsx_runtime3.jsx)(Collection.Provider, { scope: __scopeSelect, children: (0, import_jsx_runtime3.jsx)(
-          SelectNativeOptionsProvider,
-          {
-            scope: props.__scopeSelect,
-            onNativeOptionAdd: React3.useCallback((option) => {
-              setNativeOptionsSet((prev) => new Set(prev).add(option));
-            }, []),
-            onNativeOptionRemove: React3.useCallback((option) => {
-              setNativeOptionsSet((prev) => {
-                const optionsSet = new Set(prev);
-                optionsSet.delete(option);
-                return optionsSet;
-              });
-            }, []),
-            children
-          }
-        ) }),
-        isFormControl ? (0, import_jsx_runtime3.jsxs)(
+      __scopeSelect,
+      ...providerProps,
+      internal_do_not_use_render: ({ isFormControl }) => (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+        children,
+        isFormControl ? (0, import_jsx_runtime.jsx)(
           SelectBubbleInput,
           {
-            "aria-hidden": true,
-            required,
-            tabIndex: -1,
-            name,
-            autoComplete,
-            value,
-            onChange: (event) => setValue(event.target.value),
-            disabled,
-            form,
-            children: [
-              value === void 0 ? (0, import_jsx_runtime3.jsx)("option", { value: "" }) : null,
-              Array.from(nativeOptionsSet)
-            ]
-          },
-          nativeSelectKey
+            __scopeSelect
+          }
         ) : null
-      ]
+      ] })
     }
-  ) });
+  );
 };
 Select.displayName = SELECT_NAME;
 var TRIGGER_NAME = "SelectTrigger";
-var SelectTrigger = React3.forwardRef(
+var SelectTrigger = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, disabled = false, ...triggerProps } = props;
     const popperScope = usePopperScope(__scopeSelect);
@@ -318,7 +195,7 @@ var SelectTrigger = React3.forwardRef(
     const isDisabled = context.disabled || disabled;
     const composedRefs = useComposedRefs(forwardedRef, context.onTriggerChange);
     const getItems = useCollection(__scopeSelect);
-    const pointerTypeRef = React3.useRef("touch");
+    const pointerTypeRef = React.useRef("touch");
     const [searchRef, handleTypeaheadSearch, resetTypeahead] = useTypeaheadSearch((search) => {
       const enabledItems = getItems().filter((item) => !item.disabled);
       const currentItem = enabledItems.find((item) => item.value === context.value);
@@ -339,12 +216,12 @@ var SelectTrigger = React3.forwardRef(
         };
       }
     };
-    return (0, import_jsx_runtime3.jsx)(Anchor, { asChild: true, ...popperScope, children: (0, import_jsx_runtime3.jsx)(
+    return (0, import_jsx_runtime.jsx)(Anchor, { asChild: true, ...popperScope, children: (0, import_jsx_runtime.jsx)(
       Primitive.button,
       {
         type: "button",
         role: "combobox",
-        "aria-controls": context.contentId,
+        "aria-controls": context.open ? context.contentId : void 0,
         "aria-expanded": context.open,
         "aria-required": context.required,
         "aria-autocomplete": "none",
@@ -388,7 +265,7 @@ var SelectTrigger = React3.forwardRef(
 );
 SelectTrigger.displayName = TRIGGER_NAME;
 var VALUE_NAME = "SelectValue";
-var SelectValue = React3.forwardRef(
+var SelectValue = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, className, style, children, placeholder = "", ...valueProps } = props;
     const context = useSelectContext(VALUE_NAME, __scopeSelect);
@@ -398,58 +275,68 @@ var SelectValue = React3.forwardRef(
     useLayoutEffect2(() => {
       onValueNodeHasChildrenChange(hasChildren);
     }, [onValueNodeHasChildrenChange, hasChildren]);
-    return (0, import_jsx_runtime3.jsx)(
+    const showPlaceholder = shouldShowPlaceholder(context.value);
+    return (0, import_jsx_runtime.jsx)(
       Primitive.span,
       {
         ...valueProps,
+        asChild: showPlaceholder ? false : valueProps.asChild,
         ref: composedRefs,
         style: { pointerEvents: "none" },
-        children: shouldShowPlaceholder(context.value) ? (0, import_jsx_runtime3.jsx)(import_jsx_runtime3.Fragment, { children: placeholder }) : children
+        children: (0, import_jsx_runtime.jsx)(React.Fragment, { children: showPlaceholder ? placeholder : children }, showPlaceholder ? "placeholder" : "value")
       }
     );
   }
 );
 SelectValue.displayName = VALUE_NAME;
 var ICON_NAME = "SelectIcon";
-var SelectIcon = React3.forwardRef(
+var SelectIcon = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, children, ...iconProps } = props;
-    return (0, import_jsx_runtime3.jsx)(Primitive.span, { "aria-hidden": true, ...iconProps, ref: forwardedRef, children: children || "▼" });
+    return (0, import_jsx_runtime.jsx)(Primitive.span, { "aria-hidden": true, ...iconProps, ref: forwardedRef, children: children || "▼" });
   }
 );
 SelectIcon.displayName = ICON_NAME;
 var PORTAL_NAME = "SelectPortal";
+var [PortalProvider, usePortalContext] = createSelectContext(PORTAL_NAME, {
+  forceMount: void 0
+});
 var SelectPortal = (props) => {
-  return (0, import_jsx_runtime3.jsx)(Portal, { asChild: true, ...props });
+  const { __scopeSelect, forceMount, ...portalProps } = props;
+  return (0, import_jsx_runtime.jsx)(PortalProvider, { scope: props.__scopeSelect, forceMount, children: (0, import_jsx_runtime.jsx)(Portal, { asChild: true, ...portalProps }) });
 };
 SelectPortal.displayName = PORTAL_NAME;
 var CONTENT_NAME = "SelectContent";
-var SelectContent = React3.forwardRef(
+var SelectContent = React.forwardRef(
   (props, forwardedRef) => {
+    const portalContext = usePortalContext(CONTENT_NAME, props.__scopeSelect);
+    const { forceMount = portalContext.forceMount, ...contentProps } = props;
     const context = useSelectContext(CONTENT_NAME, props.__scopeSelect);
-    const [fragment, setFragment] = React3.useState();
+    const [fragment, setFragment] = React.useState();
     useLayoutEffect2(() => {
       setFragment(new DocumentFragment());
     }, []);
-    if (!context.open) {
-      const frag = fragment;
-      return frag ? ReactDOM2.createPortal(
-        (0, import_jsx_runtime3.jsx)(SelectContentProvider, { scope: props.__scopeSelect, children: (0, import_jsx_runtime3.jsx)(Collection.Slot, { scope: props.__scopeSelect, children: (0, import_jsx_runtime3.jsx)("div", { children: props.children }) }) }),
-        frag
-      ) : null;
-    }
-    return (0, import_jsx_runtime3.jsx)(SelectContentImpl, { ...props, ref: forwardedRef });
+    return (0, import_jsx_runtime.jsx)(Presence, { present: forceMount || context.open, children: ({ present }) => present ? (0, import_jsx_runtime.jsx)(SelectContentImpl, { ...contentProps, ref: forwardedRef }) : (0, import_jsx_runtime.jsx)(SelectContentFragment, { ...contentProps, fragment }) });
   }
 );
 SelectContent.displayName = CONTENT_NAME;
+var SelectContentFragment = React.forwardRef((props, forwardedRef) => {
+  const { __scopeSelect, children, fragment } = props;
+  if (!fragment) return null;
+  return ReactDOM.createPortal(
+    (0, import_jsx_runtime.jsx)(SelectContentProvider, { scope: __scopeSelect, children: (0, import_jsx_runtime.jsx)(Collection.Slot, { scope: __scopeSelect, children: (0, import_jsx_runtime.jsx)("div", { ref: forwardedRef, children }) }) }),
+    fragment
+  );
+});
+SelectContentFragment.displayName = "SelectContentFragment";
 var CONTENT_MARGIN = 10;
 var [SelectContentProvider, useSelectContentContext] = createSelectContext(CONTENT_NAME);
 var CONTENT_IMPL_NAME = "SelectContentImpl";
-var Slot2 = createSlot("SelectContent.RemoveScroll");
-var SelectContentImpl = React3.forwardRef(
+var Slot = createSlot("SelectContent.RemoveScroll");
+var SelectContentImpl = React.forwardRef(
   (props, forwardedRef) => {
+    const { __scopeSelect } = props;
     const {
-      __scopeSelect,
       position = "item-aligned",
       onCloseAutoFocus,
       onEscapeKeyDown,
@@ -470,21 +357,21 @@ var SelectContentImpl = React3.forwardRef(
       ...contentProps
     } = props;
     const context = useSelectContext(CONTENT_NAME, __scopeSelect);
-    const [content, setContent] = React3.useState(null);
-    const [viewport, setViewport] = React3.useState(null);
+    const [content, setContent] = React.useState(null);
+    const [viewport, setViewport] = React.useState(null);
     const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
-    const [selectedItem, setSelectedItem] = React3.useState(null);
-    const [selectedItemText, setSelectedItemText] = React3.useState(
+    const [selectedItem, setSelectedItem] = React.useState(null);
+    const [selectedItemText, setSelectedItemText] = React.useState(
       null
     );
     const getItems = useCollection(__scopeSelect);
-    const [isPositioned, setIsPositioned] = React3.useState(false);
-    const firstValidItemFoundRef = React3.useRef(false);
-    React3.useEffect(() => {
+    const [isPositioned, setIsPositioned] = React.useState(false);
+    const firstValidItemFoundRef = React.useRef(false);
+    React.useEffect(() => {
       if (content) return hideOthers(content);
     }, [content]);
     useFocusGuards();
-    const focusFirst = React3.useCallback(
+    const focusFirst = React.useCallback(
       (candidates) => {
         const [firstItem, ...restItems] = getItems().map((item) => item.ref.current);
         const [lastItem] = restItems.slice(-1);
@@ -500,17 +387,17 @@ var SelectContentImpl = React3.forwardRef(
       },
       [getItems, viewport]
     );
-    const focusSelectedItem = React3.useCallback(
+    const focusSelectedItem = React.useCallback(
       () => focusFirst([selectedItem, content]),
       [focusFirst, selectedItem, content]
     );
-    React3.useEffect(() => {
+    React.useEffect(() => {
       if (isPositioned) {
         focusSelectedItem();
       }
     }, [isPositioned, focusSelectedItem]);
     const { onOpenChange, triggerPointerDownPosRef } = context;
-    React3.useEffect(() => {
+    React.useEffect(() => {
       if (content) {
         let pointerMoveDelta = { x: 0, y: 0 };
         const handlePointerMove = (event) => {
@@ -524,7 +411,7 @@ var SelectContentImpl = React3.forwardRef(
           if (pointerMoveDelta.x <= 10 && pointerMoveDelta.y <= 10) {
             event.preventDefault();
           } else {
-            if (!content.contains(event.target)) {
+            if (!event.composedPath().includes(content)) {
               onOpenChange(false);
             }
           }
@@ -541,7 +428,7 @@ var SelectContentImpl = React3.forwardRef(
         };
       }
     }, [content, onOpenChange, triggerPointerDownPosRef]);
-    React3.useEffect(() => {
+    React.useEffect(() => {
       const close = () => onOpenChange(false);
       window.addEventListener("blur", close);
       window.addEventListener("resize", close);
@@ -558,7 +445,7 @@ var SelectContentImpl = React3.forwardRef(
         setTimeout(() => nextItem.ref.current.focus());
       }
     });
-    const itemRefCallback = React3.useCallback(
+    const itemRefCallback = React.useCallback(
       (node, value, disabled) => {
         const isFirstValidItem = !firstValidItemFoundRef.current && !disabled;
         const isSelectedItem = context.value !== void 0 && context.value === value;
@@ -569,8 +456,8 @@ var SelectContentImpl = React3.forwardRef(
       },
       [context.value]
     );
-    const handleItemLeave = React3.useCallback(() => content == null ? void 0 : content.focus(), [content]);
-    const itemTextRefCallback = React3.useCallback(
+    const handleItemLeave = React.useCallback(() => content == null ? void 0 : content.focus(), [content]);
+    const itemTextRefCallback = React.useCallback(
       (node, value, disabled) => {
         const isFirstValidItem = !firstValidItemFoundRef.current && !disabled;
         const isSelectedItem = context.value !== void 0 && context.value === value;
@@ -593,7 +480,7 @@ var SelectContentImpl = React3.forwardRef(
       hideWhenDetached,
       avoidCollisions
     } : {};
-    return (0, import_jsx_runtime3.jsx)(
+    return (0, import_jsx_runtime.jsx)(
       SelectContentProvider,
       {
         scope: __scopeSelect,
@@ -609,7 +496,7 @@ var SelectContentImpl = React3.forwardRef(
         position,
         isPositioned,
         searchRef,
-        children: (0, import_jsx_runtime3.jsx)(Combination_default, { as: Slot2, allowPinchZoom: true, children: (0, import_jsx_runtime3.jsx)(
+        children: (0, import_jsx_runtime.jsx)(Combination_default, { as: Slot, allowPinchZoom: true, children: (0, import_jsx_runtime.jsx)(
           FocusScope,
           {
             asChild: true,
@@ -622,7 +509,7 @@ var SelectContentImpl = React3.forwardRef(
               (_a = context.trigger) == null ? void 0 : _a.focus({ preventScroll: true });
               event.preventDefault();
             }),
-            children: (0, import_jsx_runtime3.jsx)(
+            children: (0, import_jsx_runtime.jsx)(
               DismissableLayer,
               {
                 asChild: true,
@@ -631,7 +518,7 @@ var SelectContentImpl = React3.forwardRef(
                 onPointerDownOutside,
                 onFocusOutside: (event) => event.preventDefault(),
                 onDismiss: () => context.onOpenChange(false),
-                children: (0, import_jsx_runtime3.jsx)(
+                children: (0, import_jsx_runtime.jsx)(
                   SelectPosition,
                   {
                     role: "listbox",
@@ -682,18 +569,18 @@ var SelectContentImpl = React3.forwardRef(
 );
 SelectContentImpl.displayName = CONTENT_IMPL_NAME;
 var ITEM_ALIGNED_POSITION_NAME = "SelectItemAlignedPosition";
-var SelectItemAlignedPosition = React3.forwardRef((props, forwardedRef) => {
+var SelectItemAlignedPosition = React.forwardRef((props, forwardedRef) => {
   const { __scopeSelect, onPlaced, ...popperProps } = props;
   const context = useSelectContext(CONTENT_NAME, __scopeSelect);
   const contentContext = useSelectContentContext(CONTENT_NAME, __scopeSelect);
-  const [contentWrapper, setContentWrapper] = React3.useState(null);
-  const [content, setContent] = React3.useState(null);
+  const [contentWrapper, setContentWrapper] = React.useState(null);
+  const [content, setContent] = React.useState(null);
   const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
   const getItems = useCollection(__scopeSelect);
-  const shouldExpandOnScrollRef = React3.useRef(false);
-  const shouldRepositionRef = React3.useRef(true);
+  const shouldExpandOnScrollRef = React.useRef(false);
+  const shouldRepositionRef = React.useRef(true);
   const { viewport, selectedItem, selectedItemText, focusSelectedItem } = contentContext;
-  const position = React3.useCallback(() => {
+  const position = React.useCallback(() => {
     if (context.trigger && context.valueNode && contentWrapper && content && viewport && selectedItem && selectedItemText) {
       const triggerRect = context.trigger.getBoundingClientRect();
       const contentRect = content.getBoundingClientRect();
@@ -793,11 +680,11 @@ var SelectItemAlignedPosition = React3.forwardRef((props, forwardedRef) => {
     onPlaced
   ]);
   useLayoutEffect2(() => position(), [position]);
-  const [contentZIndex, setContentZIndex] = React3.useState();
+  const [contentZIndex, setContentZIndex] = React.useState();
   useLayoutEffect2(() => {
     if (content) setContentZIndex(window.getComputedStyle(content).zIndex);
   }, [content]);
-  const handleScrollButtonChange = React3.useCallback(
+  const handleScrollButtonChange = React.useCallback(
     (node) => {
       if (node && shouldRepositionRef.current === true) {
         position();
@@ -807,14 +694,14 @@ var SelectItemAlignedPosition = React3.forwardRef((props, forwardedRef) => {
     },
     [position, focusSelectedItem]
   );
-  return (0, import_jsx_runtime3.jsx)(
+  return (0, import_jsx_runtime.jsx)(
     SelectViewportProvider,
     {
       scope: __scopeSelect,
       contentWrapper,
       shouldExpandOnScrollRef,
       onScrollButtonChange: handleScrollButtonChange,
-      children: (0, import_jsx_runtime3.jsx)(
+      children: (0, import_jsx_runtime.jsx)(
         "div",
         {
           ref: setContentWrapper,
@@ -824,7 +711,7 @@ var SelectItemAlignedPosition = React3.forwardRef((props, forwardedRef) => {
             position: "fixed",
             zIndex: contentZIndex
           },
-          children: (0, import_jsx_runtime3.jsx)(
+          children: (0, import_jsx_runtime.jsx)(
             Primitive.div,
             {
               ...popperProps,
@@ -846,7 +733,7 @@ var SelectItemAlignedPosition = React3.forwardRef((props, forwardedRef) => {
 });
 SelectItemAlignedPosition.displayName = ITEM_ALIGNED_POSITION_NAME;
 var POPPER_POSITION_NAME = "SelectPopperPosition";
-var SelectPopperPosition = React3.forwardRef((props, forwardedRef) => {
+var SelectPopperPosition = React.forwardRef((props, forwardedRef) => {
   const {
     __scopeSelect,
     align = "start",
@@ -854,7 +741,7 @@ var SelectPopperPosition = React3.forwardRef((props, forwardedRef) => {
     ...popperProps
   } = props;
   const popperScope = usePopperScope(__scopeSelect);
-  return (0, import_jsx_runtime3.jsx)(
+  return (0, import_jsx_runtime.jsx)(
     Content,
     {
       ...popperScope,
@@ -881,15 +768,15 @@ var SelectPopperPosition = React3.forwardRef((props, forwardedRef) => {
 SelectPopperPosition.displayName = POPPER_POSITION_NAME;
 var [SelectViewportProvider, useSelectViewportContext] = createSelectContext(CONTENT_NAME, {});
 var VIEWPORT_NAME = "SelectViewport";
-var SelectViewport = React3.forwardRef(
+var SelectViewport = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, nonce, ...viewportProps } = props;
     const contentContext = useSelectContentContext(VIEWPORT_NAME, __scopeSelect);
     const viewportContext = useSelectViewportContext(VIEWPORT_NAME, __scopeSelect);
     const composedRefs = useComposedRefs(forwardedRef, contentContext.onViewportChange);
-    const prevScrollTopRef = React3.useRef(0);
-    return (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
-      (0, import_jsx_runtime3.jsx)(
+    const prevScrollTopRef = React.useRef(0);
+    return (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+      (0, import_jsx_runtime.jsx)(
         "style",
         {
           dangerouslySetInnerHTML: {
@@ -898,7 +785,7 @@ var SelectViewport = React3.forwardRef(
           nonce
         }
       ),
-      (0, import_jsx_runtime3.jsx)(Collection.Slot, { scope: __scopeSelect, children: (0, import_jsx_runtime3.jsx)(
+      (0, import_jsx_runtime.jsx)(Collection.Slot, { scope: __scopeSelect, children: (0, import_jsx_runtime.jsx)(
         Primitive.div,
         {
           "data-radix-select-viewport": "",
@@ -950,26 +837,26 @@ var SelectViewport = React3.forwardRef(
 SelectViewport.displayName = VIEWPORT_NAME;
 var GROUP_NAME = "SelectGroup";
 var [SelectGroupContextProvider, useSelectGroupContext] = createSelectContext(GROUP_NAME);
-var SelectGroup = React3.forwardRef(
+var SelectGroup = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, ...groupProps } = props;
     const groupId = useId();
-    return (0, import_jsx_runtime3.jsx)(SelectGroupContextProvider, { scope: __scopeSelect, id: groupId, children: (0, import_jsx_runtime3.jsx)(Primitive.div, { role: "group", "aria-labelledby": groupId, ...groupProps, ref: forwardedRef }) });
+    return (0, import_jsx_runtime.jsx)(SelectGroupContextProvider, { scope: __scopeSelect, id: groupId, children: (0, import_jsx_runtime.jsx)(Primitive.div, { role: "group", "aria-labelledby": groupId, ...groupProps, ref: forwardedRef }) });
   }
 );
 SelectGroup.displayName = GROUP_NAME;
 var LABEL_NAME = "SelectLabel";
-var SelectLabel = React3.forwardRef(
+var SelectLabel = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, ...labelProps } = props;
     const groupContext = useSelectGroupContext(LABEL_NAME, __scopeSelect);
-    return (0, import_jsx_runtime3.jsx)(Primitive.div, { id: groupContext.id, ...labelProps, ref: forwardedRef });
+    return (0, import_jsx_runtime.jsx)(Primitive.div, { id: groupContext.id, ...labelProps, ref: forwardedRef });
   }
 );
 SelectLabel.displayName = LABEL_NAME;
 var ITEM_NAME = "SelectItem";
 var [SelectItemContextProvider, useSelectItemContext] = createSelectContext(ITEM_NAME);
-var SelectItem = React3.forwardRef(
+var SelectItem = React.forwardRef(
   (props, forwardedRef) => {
     const {
       __scopeSelect,
@@ -981,8 +868,8 @@ var SelectItem = React3.forwardRef(
     const context = useSelectContext(ITEM_NAME, __scopeSelect);
     const contentContext = useSelectContentContext(ITEM_NAME, __scopeSelect);
     const isSelected = context.value === value;
-    const [textValue, setTextValue] = React3.useState(textValueProp ?? "");
-    const [isFocused, setIsFocused] = React3.useState(false);
+    const [textValue, setTextValue] = React.useState(textValueProp ?? "");
+    const [isFocused, setIsFocused] = React.useState(false);
     const composedRefs = useComposedRefs(
       forwardedRef,
       (node) => {
@@ -991,7 +878,7 @@ var SelectItem = React3.forwardRef(
       }
     );
     const textId = useId();
-    const pointerTypeRef = React3.useRef("touch");
+    const pointerTypeRef = React.useRef("touch");
     const handleSelect = () => {
       if (!disabled) {
         context.onValueChange(value);
@@ -1003,7 +890,7 @@ var SelectItem = React3.forwardRef(
         "A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder."
       );
     }
-    return (0, import_jsx_runtime3.jsx)(
+    return (0, import_jsx_runtime.jsx)(
       SelectItemContextProvider,
       {
         scope: __scopeSelect,
@@ -1011,17 +898,17 @@ var SelectItem = React3.forwardRef(
         disabled,
         textId,
         isSelected,
-        onItemTextChange: React3.useCallback((node) => {
+        onItemTextChange: React.useCallback((node) => {
           setTextValue((prevTextValue) => prevTextValue || ((node == null ? void 0 : node.textContent) ?? "").trim());
         }, []),
-        children: (0, import_jsx_runtime3.jsx)(
+        children: (0, import_jsx_runtime.jsx)(
           Collection.ItemSlot,
           {
             scope: __scopeSelect,
             value,
             disabled,
             textValue,
-            children: (0, import_jsx_runtime3.jsx)(
+            children: (0, import_jsx_runtime.jsx)(
               Primitive.div,
               {
                 role: "option",
@@ -1077,14 +964,14 @@ var SelectItem = React3.forwardRef(
 );
 SelectItem.displayName = ITEM_NAME;
 var ITEM_TEXT_NAME = "SelectItemText";
-var SelectItemText = React3.forwardRef(
+var SelectItemText = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, className, style, ...itemTextProps } = props;
     const context = useSelectContext(ITEM_TEXT_NAME, __scopeSelect);
     const contentContext = useSelectContentContext(ITEM_TEXT_NAME, __scopeSelect);
     const itemContext = useSelectItemContext(ITEM_TEXT_NAME, __scopeSelect);
     const nativeOptionsContext = useSelectNativeOptionsContext(ITEM_TEXT_NAME, __scopeSelect);
-    const [itemTextNode, setItemTextNode] = React3.useState(null);
+    const [itemTextNode, setItemTextNode] = React.useState(null);
     const composedRefs = useComposedRefs(
       forwardedRef,
       (node) => setItemTextNode(node),
@@ -1095,8 +982,8 @@ var SelectItemText = React3.forwardRef(
       }
     );
     const textContent = itemTextNode == null ? void 0 : itemTextNode.textContent;
-    const nativeOption = React3.useMemo(
-      () => (0, import_jsx_runtime3.jsx)("option", { value: itemContext.value, disabled: itemContext.disabled, children: textContent }, itemContext.value),
+    const nativeOption = React.useMemo(
+      () => (0, import_jsx_runtime.jsx)("option", { value: itemContext.value, disabled: itemContext.disabled, children: textContent }, itemContext.value),
       [itemContext.disabled, itemContext.value, textContent]
     );
     const { onNativeOptionAdd, onNativeOptionRemove } = nativeOptionsContext;
@@ -1104,27 +991,27 @@ var SelectItemText = React3.forwardRef(
       onNativeOptionAdd(nativeOption);
       return () => onNativeOptionRemove(nativeOption);
     }, [onNativeOptionAdd, onNativeOptionRemove, nativeOption]);
-    return (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
-      (0, import_jsx_runtime3.jsx)(Primitive.span, { id: itemContext.textId, ...itemTextProps, ref: composedRefs }),
-      itemContext.isSelected && context.valueNode && !context.valueNodeHasChildren ? ReactDOM2.createPortal(itemTextProps.children, context.valueNode) : null
+    return (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+      (0, import_jsx_runtime.jsx)(Primitive.span, { id: itemContext.textId, ...itemTextProps, ref: composedRefs }),
+      itemContext.isSelected && context.valueNode && !context.valueNodeHasChildren ? ReactDOM.createPortal(itemTextProps.children, context.valueNode) : null
     ] });
   }
 );
 SelectItemText.displayName = ITEM_TEXT_NAME;
 var ITEM_INDICATOR_NAME = "SelectItemIndicator";
-var SelectItemIndicator = React3.forwardRef(
+var SelectItemIndicator = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, ...itemIndicatorProps } = props;
     const itemContext = useSelectItemContext(ITEM_INDICATOR_NAME, __scopeSelect);
-    return itemContext.isSelected ? (0, import_jsx_runtime3.jsx)(Primitive.span, { "aria-hidden": true, ...itemIndicatorProps, ref: forwardedRef }) : null;
+    return itemContext.isSelected ? (0, import_jsx_runtime.jsx)(Primitive.span, { "aria-hidden": true, ...itemIndicatorProps, ref: forwardedRef }) : null;
   }
 );
 SelectItemIndicator.displayName = ITEM_INDICATOR_NAME;
 var SCROLL_UP_BUTTON_NAME = "SelectScrollUpButton";
-var SelectScrollUpButton = React3.forwardRef((props, forwardedRef) => {
+var SelectScrollUpButton = React.forwardRef((props, forwardedRef) => {
   const contentContext = useSelectContentContext(SCROLL_UP_BUTTON_NAME, props.__scopeSelect);
   const viewportContext = useSelectViewportContext(SCROLL_UP_BUTTON_NAME, props.__scopeSelect);
-  const [canScrollUp, setCanScrollUp] = React3.useState(false);
+  const [canScrollUp, setCanScrollUp] = React.useState(false);
   const composedRefs = useComposedRefs(forwardedRef, viewportContext.onScrollButtonChange);
   useLayoutEffect2(() => {
     if (contentContext.viewport && contentContext.isPositioned) {
@@ -1139,7 +1026,7 @@ var SelectScrollUpButton = React3.forwardRef((props, forwardedRef) => {
       return () => viewport.removeEventListener("scroll", handleScroll2);
     }
   }, [contentContext.viewport, contentContext.isPositioned]);
-  return canScrollUp ? (0, import_jsx_runtime3.jsx)(
+  return canScrollUp ? (0, import_jsx_runtime.jsx)(
     SelectScrollButtonImpl,
     {
       ...props,
@@ -1155,10 +1042,10 @@ var SelectScrollUpButton = React3.forwardRef((props, forwardedRef) => {
 });
 SelectScrollUpButton.displayName = SCROLL_UP_BUTTON_NAME;
 var SCROLL_DOWN_BUTTON_NAME = "SelectScrollDownButton";
-var SelectScrollDownButton = React3.forwardRef((props, forwardedRef) => {
+var SelectScrollDownButton = React.forwardRef((props, forwardedRef) => {
   const contentContext = useSelectContentContext(SCROLL_DOWN_BUTTON_NAME, props.__scopeSelect);
   const viewportContext = useSelectViewportContext(SCROLL_DOWN_BUTTON_NAME, props.__scopeSelect);
-  const [canScrollDown, setCanScrollDown] = React3.useState(false);
+  const [canScrollDown, setCanScrollDown] = React.useState(false);
   const composedRefs = useComposedRefs(forwardedRef, viewportContext.onScrollButtonChange);
   useLayoutEffect2(() => {
     if (contentContext.viewport && contentContext.isPositioned) {
@@ -1174,7 +1061,7 @@ var SelectScrollDownButton = React3.forwardRef((props, forwardedRef) => {
       return () => viewport.removeEventListener("scroll", handleScroll2);
     }
   }, [contentContext.viewport, contentContext.isPositioned]);
-  return canScrollDown ? (0, import_jsx_runtime3.jsx)(
+  return canScrollDown ? (0, import_jsx_runtime.jsx)(
     SelectScrollButtonImpl,
     {
       ...props,
@@ -1189,18 +1076,18 @@ var SelectScrollDownButton = React3.forwardRef((props, forwardedRef) => {
   ) : null;
 });
 SelectScrollDownButton.displayName = SCROLL_DOWN_BUTTON_NAME;
-var SelectScrollButtonImpl = React3.forwardRef((props, forwardedRef) => {
+var SelectScrollButtonImpl = React.forwardRef((props, forwardedRef) => {
   const { __scopeSelect, onAutoScroll, ...scrollIndicatorProps } = props;
   const contentContext = useSelectContentContext("SelectScrollButton", __scopeSelect);
-  const autoScrollTimerRef = React3.useRef(null);
+  const autoScrollTimerRef = React.useRef(null);
   const getItems = useCollection(__scopeSelect);
-  const clearAutoScrollTimer = React3.useCallback(() => {
+  const clearAutoScrollTimer = React.useCallback(() => {
     if (autoScrollTimerRef.current !== null) {
       window.clearInterval(autoScrollTimerRef.current);
       autoScrollTimerRef.current = null;
     }
   }, []);
-  React3.useEffect(() => {
+  React.useEffect(() => {
     return () => clearAutoScrollTimer();
   }, [clearAutoScrollTimer]);
   useLayoutEffect2(() => {
@@ -1208,7 +1095,7 @@ var SelectScrollButtonImpl = React3.forwardRef((props, forwardedRef) => {
     const activeItem = getItems().find((item) => item.ref.current === document.activeElement);
     (_a = activeItem == null ? void 0 : activeItem.ref.current) == null ? void 0 : _a.scrollIntoView({ block: "nearest" });
   }, [getItems]);
-  return (0, import_jsx_runtime3.jsx)(
+  return (0, import_jsx_runtime.jsx)(
     Primitive.div,
     {
       "aria-hidden": true,
@@ -1234,31 +1121,34 @@ var SelectScrollButtonImpl = React3.forwardRef((props, forwardedRef) => {
   );
 });
 var SEPARATOR_NAME = "SelectSeparator";
-var SelectSeparator = React3.forwardRef(
+var SelectSeparator = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, ...separatorProps } = props;
-    return (0, import_jsx_runtime3.jsx)(Primitive.div, { "aria-hidden": true, ...separatorProps, ref: forwardedRef });
+    return (0, import_jsx_runtime.jsx)(Primitive.div, { "aria-hidden": true, ...separatorProps, ref: forwardedRef });
   }
 );
 SelectSeparator.displayName = SEPARATOR_NAME;
 var ARROW_NAME = "SelectArrow";
-var SelectArrow = React3.forwardRef(
+var SelectArrow = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, ...arrowProps } = props;
     const popperScope = usePopperScope(__scopeSelect);
-    const context = useSelectContext(ARROW_NAME, __scopeSelect);
     const contentContext = useSelectContentContext(ARROW_NAME, __scopeSelect);
-    return context.open && contentContext.position === "popper" ? (0, import_jsx_runtime3.jsx)(Arrow, { ...popperScope, ...arrowProps, ref: forwardedRef }) : null;
+    return contentContext.position === "popper" ? (0, import_jsx_runtime.jsx)(Arrow, { ...popperScope, ...arrowProps, ref: forwardedRef }) : null;
   }
 );
 SelectArrow.displayName = ARROW_NAME;
 var BUBBLE_INPUT_NAME = "SelectBubbleInput";
-var SelectBubbleInput = React3.forwardRef(
-  ({ __scopeSelect, value, ...props }, forwardedRef) => {
-    const ref = React3.useRef(null);
+var SelectBubbleInput = React.forwardRef(
+  ({ __scopeSelect, ...props }, forwardedRef) => {
+    const context = useSelectContext(BUBBLE_INPUT_NAME, __scopeSelect);
+    const { value, onValueChange, required, disabled, name, autoComplete, form } = context;
+    const { nativeOptions, nativeSelectKey } = context;
+    const ref = React.useRef(null);
     const composedRefs = useComposedRefs(forwardedRef, ref);
-    const prevValue = usePrevious(value);
-    React3.useEffect(() => {
+    const selectValue = value ?? "";
+    const prevValue = usePrevious(selectValue);
+    React.useEffect(() => {
       const select = ref.current;
       if (!select) return;
       const selectProto = window.HTMLSelectElement.prototype;
@@ -1267,32 +1157,48 @@ var SelectBubbleInput = React3.forwardRef(
         "value"
       );
       const setValue = descriptor.set;
-      if (prevValue !== value && setValue) {
+      if (prevValue !== selectValue && setValue) {
         const event = new Event("change", { bubbles: true });
-        setValue.call(select, value);
+        setValue.call(select, selectValue);
         select.dispatchEvent(event);
       }
-    }, [prevValue, value]);
-    return (0, import_jsx_runtime3.jsx)(
+    }, [prevValue, selectValue]);
+    return (0, import_jsx_runtime.jsxs)(
       Primitive.select,
       {
+        "aria-hidden": true,
+        required,
+        tabIndex: -1,
+        name,
+        autoComplete,
+        disabled,
+        form,
+        onChange: (event) => onValueChange(event.target.value),
         ...props,
         style: { ...VISUALLY_HIDDEN_STYLES, ...props.style },
         ref: composedRefs,
-        defaultValue: value
-      }
+        defaultValue: selectValue,
+        children: [
+          shouldShowPlaceholder(value) ? (0, import_jsx_runtime.jsx)("option", { value: "" }) : null,
+          Array.from(nativeOptions)
+        ]
+      },
+      nativeSelectKey
     );
   }
 );
 SelectBubbleInput.displayName = BUBBLE_INPUT_NAME;
+function isFunction(value) {
+  return typeof value === "function";
+}
 function shouldShowPlaceholder(value) {
   return value === "" || value === void 0;
 }
 function useTypeaheadSearch(onSearchChange) {
   const handleSearchChange = useCallbackRef(onSearchChange);
-  const searchRef = React3.useRef("");
-  const timerRef = React3.useRef(0);
-  const handleTypeaheadSearch = React3.useCallback(
+  const searchRef = React.useRef("");
+  const timerRef = React.useRef(0);
+  const handleTypeaheadSearch = React.useCallback(
     (key) => {
       const search = searchRef.current + key;
       handleSearchChange(search);
@@ -1304,11 +1210,11 @@ function useTypeaheadSearch(onSearchChange) {
     },
     [handleSearchChange]
   );
-  const resetTypeahead = React3.useCallback(() => {
+  const resetTypeahead = React.useCallback(() => {
     searchRef.current = "";
     window.clearTimeout(timerRef.current);
   }, []);
-  React3.useEffect(() => {
+  React.useEffect(() => {
     return () => window.clearTimeout(timerRef.current);
   }, []);
   return [searchRef, handleTypeaheadSearch, resetTypeahead];
@@ -1328,35 +1234,19 @@ function findNextItem(items, search, currentItem) {
 function wrapArray(array, startIndex) {
   return array.map((_, index) => array[(startIndex + index) % array.length]);
 }
-var Root22 = Select;
-var Trigger = SelectTrigger;
-var Value = SelectValue;
-var Icon = SelectIcon;
-var Portal2 = SelectPortal;
-var Content2 = SelectContent;
-var Viewport = SelectViewport;
-var Group = SelectGroup;
-var Label = SelectLabel;
-var Item = SelectItem;
-var ItemText = SelectItemText;
-var ItemIndicator = SelectItemIndicator;
-var ScrollUpButton = SelectScrollUpButton;
-var ScrollDownButton = SelectScrollDownButton;
-var Separator = SelectSeparator;
-var Arrow2 = SelectArrow;
 export {
-  Arrow2 as Arrow,
-  Content2 as Content,
-  Group,
-  Icon,
-  Item,
-  ItemIndicator,
-  ItemText,
-  Label,
-  Portal2 as Portal,
-  Root22 as Root,
-  ScrollDownButton,
-  ScrollUpButton,
+  SelectArrow as Arrow,
+  SelectContent as Content,
+  SelectGroup as Group,
+  SelectIcon as Icon,
+  SelectItem as Item,
+  SelectItemIndicator as ItemIndicator,
+  SelectItemText as ItemText,
+  SelectLabel as Label,
+  SelectPortal as Portal,
+  Select as Root,
+  SelectScrollDownButton as ScrollDownButton,
+  SelectScrollUpButton as ScrollUpButton,
   Select,
   SelectArrow,
   SelectContent,
@@ -1373,10 +1263,14 @@ export {
   SelectTrigger,
   SelectValue,
   SelectViewport,
-  Separator,
-  Trigger,
-  Value,
-  Viewport,
-  createSelectScope
+  SelectSeparator as Separator,
+  SelectTrigger as Trigger,
+  SelectValue as Value,
+  SelectViewport as Viewport,
+  createSelectScope,
+  SelectBubbleInput as unstable_BubbleInput,
+  SelectProvider as unstable_Provider,
+  SelectBubbleInput as unstable_SelectBubbleInput,
+  SelectProvider as unstable_SelectProvider
 };
 //# sourceMappingURL=@radix-ui_react-select.js.map

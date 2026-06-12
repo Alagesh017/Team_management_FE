@@ -1,26 +1,24 @@
 "use client";
 import {
-  Presence
-} from "./chunk-ZFS5Q5GP.js";
-import {
   useId
-} from "./chunk-2345P64T.js";
+} from "./chunk-B27WR2XR.js";
 import {
+  Presence,
   composeEventHandlers,
   createContextScope,
   useControllableState,
   useLayoutEffect2
-} from "./chunk-7OFDEBVJ.js";
+} from "./chunk-RDPS35OT.js";
 import {
-  composeRefs,
+  Primitive
+} from "./chunk-5TF7N7PE.js";
+import {
   useComposedRefs
-} from "./chunk-EEEJQ3GM.js";
+} from "./chunk-TGRXSLBB.js";
 import {
   require_jsx_runtime
 } from "./chunk-7Q3DJPV2.js";
-import {
-  require_react_dom
-} from "./chunk-7CF2CFZT.js";
+import "./chunk-7CF2CFZT.js";
 import {
   require_react
 } from "./chunk-PDNHVAOE.js";
@@ -29,148 +27,12 @@ import {
 } from "./chunk-2TUXWMP5.js";
 
 // node_modules/@radix-ui/react-collapsible/dist/index.mjs
-var React3 = __toESM(require_react(), 1);
-
-// node_modules/@radix-ui/react-collapsible/node_modules/@radix-ui/react-primitive/dist/index.mjs
-var React2 = __toESM(require_react(), 1);
-var ReactDOM = __toESM(require_react_dom(), 1);
-
-// node_modules/@radix-ui/react-collapsible/node_modules/@radix-ui/react-slot/dist/index.mjs
 var React = __toESM(require_react(), 1);
 var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
-function createSlot(ownerName) {
-  const SlotClone = createSlotClone(ownerName);
-  const Slot2 = React.forwardRef((props, forwardedRef) => {
-    const { children, ...slotProps } = props;
-    const childrenArray = React.Children.toArray(children);
-    const slottable = childrenArray.find(isSlottable);
-    if (slottable) {
-      const newElement = slottable.props.children;
-      const newChildren = childrenArray.map((child) => {
-        if (child === slottable) {
-          if (React.Children.count(newElement) > 1) return React.Children.only(null);
-          return React.isValidElement(newElement) ? newElement.props.children : null;
-        } else {
-          return child;
-        }
-      });
-      return (0, import_jsx_runtime.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children: React.isValidElement(newElement) ? React.cloneElement(newElement, void 0, newChildren) : null });
-    }
-    return (0, import_jsx_runtime.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children });
-  });
-  Slot2.displayName = `${ownerName}.Slot`;
-  return Slot2;
-}
-var Slot = createSlot("Slot");
-function createSlotClone(ownerName) {
-  const SlotClone = React.forwardRef((props, forwardedRef) => {
-    const { children, ...slotProps } = props;
-    if (React.isValidElement(children)) {
-      const childrenRef = getElementRef(children);
-      const props2 = mergeProps(slotProps, children.props);
-      if (children.type !== React.Fragment) {
-        props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
-      }
-      return React.cloneElement(children, props2);
-    }
-    return React.Children.count(children) > 1 ? React.Children.only(null) : null;
-  });
-  SlotClone.displayName = `${ownerName}.SlotClone`;
-  return SlotClone;
-}
-var SLOTTABLE_IDENTIFIER = Symbol("radix.slottable");
-function createSlottable(ownerName) {
-  const Slottable2 = ({ children }) => {
-    return (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children });
-  };
-  Slottable2.displayName = `${ownerName}.Slottable`;
-  Slottable2.__radixId = SLOTTABLE_IDENTIFIER;
-  return Slottable2;
-}
-var Slottable = createSlottable("Slottable");
-function isSlottable(child) {
-  return React.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
-}
-function mergeProps(slotProps, childProps) {
-  const overrideProps = { ...childProps };
-  for (const propName in childProps) {
-    const slotPropValue = slotProps[propName];
-    const childPropValue = childProps[propName];
-    const isHandler = /^on[A-Z]/.test(propName);
-    if (isHandler) {
-      if (slotPropValue && childPropValue) {
-        overrideProps[propName] = (...args) => {
-          const result = childPropValue(...args);
-          slotPropValue(...args);
-          return result;
-        };
-      } else if (slotPropValue) {
-        overrideProps[propName] = slotPropValue;
-      }
-    } else if (propName === "style") {
-      overrideProps[propName] = { ...slotPropValue, ...childPropValue };
-    } else if (propName === "className") {
-      overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
-    }
-  }
-  return { ...slotProps, ...overrideProps };
-}
-function getElementRef(element) {
-  var _a, _b;
-  let getter = (_a = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = (_b = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-
-// node_modules/@radix-ui/react-collapsible/node_modules/@radix-ui/react-primitive/dist/index.mjs
-var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
-var NODES = [
-  "a",
-  "button",
-  "div",
-  "form",
-  "h2",
-  "h3",
-  "img",
-  "input",
-  "label",
-  "li",
-  "nav",
-  "ol",
-  "p",
-  "select",
-  "span",
-  "svg",
-  "ul"
-];
-var Primitive = NODES.reduce((primitive, node) => {
-  const Slot2 = createSlot(`Primitive.${node}`);
-  const Node = React2.forwardRef((props, forwardedRef) => {
-    const { asChild, ...primitiveProps } = props;
-    const Comp = asChild ? Slot2 : node;
-    if (typeof window !== "undefined") {
-      window[Symbol.for("radix-ui")] = true;
-    }
-    return (0, import_jsx_runtime2.jsx)(Comp, { ...primitiveProps, ref: forwardedRef });
-  });
-  Node.displayName = `Primitive.${node}`;
-  return { ...primitive, [node]: Node };
-}, {});
-
-// node_modules/@radix-ui/react-collapsible/dist/index.mjs
-var import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
 var COLLAPSIBLE_NAME = "Collapsible";
 var [createCollapsibleContext, createCollapsibleScope] = createContextScope(COLLAPSIBLE_NAME);
 var [CollapsibleProvider, useCollapsibleContext] = createCollapsibleContext(COLLAPSIBLE_NAME);
-var Collapsible = React3.forwardRef(
+var Collapsible = React.forwardRef(
   (props, forwardedRef) => {
     const {
       __scopeCollapsible,
@@ -186,15 +48,15 @@ var Collapsible = React3.forwardRef(
       onChange: onOpenChange,
       caller: COLLAPSIBLE_NAME
     });
-    return (0, import_jsx_runtime3.jsx)(
+    return (0, import_jsx_runtime.jsx)(
       CollapsibleProvider,
       {
         scope: __scopeCollapsible,
         disabled,
         contentId: useId(),
         open,
-        onOpenToggle: React3.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
-        children: (0, import_jsx_runtime3.jsx)(
+        onOpenToggle: React.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
+        children: (0, import_jsx_runtime.jsx)(
           Primitive.div,
           {
             "data-state": getState(open),
@@ -209,15 +71,15 @@ var Collapsible = React3.forwardRef(
 );
 Collapsible.displayName = COLLAPSIBLE_NAME;
 var TRIGGER_NAME = "CollapsibleTrigger";
-var CollapsibleTrigger = React3.forwardRef(
+var CollapsibleTrigger = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeCollapsible, ...triggerProps } = props;
     const context = useCollapsibleContext(TRIGGER_NAME, __scopeCollapsible);
-    return (0, import_jsx_runtime3.jsx)(
+    return (0, import_jsx_runtime.jsx)(
       Primitive.button,
       {
         type: "button",
-        "aria-controls": context.contentId,
+        "aria-controls": context.open ? context.contentId : void 0,
         "aria-expanded": context.open || false,
         "data-state": getState(context.open),
         "data-disabled": context.disabled ? "" : void 0,
@@ -231,28 +93,28 @@ var CollapsibleTrigger = React3.forwardRef(
 );
 CollapsibleTrigger.displayName = TRIGGER_NAME;
 var CONTENT_NAME = "CollapsibleContent";
-var CollapsibleContent = React3.forwardRef(
+var CollapsibleContent = React.forwardRef(
   (props, forwardedRef) => {
     const { forceMount, ...contentProps } = props;
     const context = useCollapsibleContext(CONTENT_NAME, props.__scopeCollapsible);
-    return (0, import_jsx_runtime3.jsx)(Presence, { present: forceMount || context.open, children: ({ present }) => (0, import_jsx_runtime3.jsx)(CollapsibleContentImpl, { ...contentProps, ref: forwardedRef, present }) });
+    return (0, import_jsx_runtime.jsx)(Presence, { present: forceMount || context.open, children: ({ present }) => (0, import_jsx_runtime.jsx)(CollapsibleContentImpl, { ...contentProps, ref: forwardedRef, present }) });
   }
 );
 CollapsibleContent.displayName = CONTENT_NAME;
-var CollapsibleContentImpl = React3.forwardRef((props, forwardedRef) => {
+var CollapsibleContentImpl = React.forwardRef((props, forwardedRef) => {
   const { __scopeCollapsible, present, children, ...contentProps } = props;
   const context = useCollapsibleContext(CONTENT_NAME, __scopeCollapsible);
-  const [isPresent, setIsPresent] = React3.useState(present);
-  const ref = React3.useRef(null);
+  const [isPresent, setIsPresent] = React.useState(present);
+  const ref = React.useRef(null);
   const composedRefs = useComposedRefs(forwardedRef, ref);
-  const heightRef = React3.useRef(0);
+  const heightRef = React.useRef(0);
   const height = heightRef.current;
-  const widthRef = React3.useRef(0);
+  const widthRef = React.useRef(0);
   const width = widthRef.current;
   const isOpen = context.open || isPresent;
-  const isMountAnimationPreventedRef = React3.useRef(isOpen);
-  const originalStylesRef = React3.useRef(void 0);
-  React3.useEffect(() => {
+  const isMountAnimationPreventedRef = React.useRef(isOpen);
+  const originalStylesRef = React.useRef(void 0);
+  React.useEffect(() => {
     const rAF = requestAnimationFrame(() => isMountAnimationPreventedRef.current = false);
     return () => cancelAnimationFrame(rAF);
   }, []);
@@ -275,7 +137,7 @@ var CollapsibleContentImpl = React3.forwardRef((props, forwardedRef) => {
       setIsPresent(present);
     }
   }, [context.open, present]);
-  return (0, import_jsx_runtime3.jsx)(
+  return (0, import_jsx_runtime.jsx)(
     Primitive.div,
     {
       "data-state": getState(context.open),

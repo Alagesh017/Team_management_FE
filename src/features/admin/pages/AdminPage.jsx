@@ -238,21 +238,22 @@ const AdminPage = () => {
               <Plus className="mr-2 h-4 w-4" /> Add Admin
             </Button>
           </SheetTrigger>
-          <SheetContent className="sm:max-w-[750px] overflow-y-auto border-l shadow-2xl">
-            <SheetHeader className="border-b pb-6">
+          <SheetContent className="sm:max-w-[450px] md:max-w-[550px] lg:max-w-[650px] xl:max-w-[700px] border-l shadow-2xl p-0 flex flex-col">
+            <SheetHeader className="border-b pb-6 px-6 pt-6">
               <SheetTitle className="text-2xl font-bold">{editingAdmin ? "Edit Administrator" : "New Administrator"}</SheetTitle>
               <SheetDescription>Only Email and Role are mandatory. All other fields are optional.</SheetDescription>
             </SheetHeader>
-            
-            <AdminForm 
-              onSubmit={onSubmit} 
-              initialData={editingAdmin ? {
-                ...editingAdmin,
-                role_type: editingAdmin.is_superadmin ? "superadmin" : editingAdmin.is_scrum ? "scrum" : "admin"
-              } : null}
-              submitting={submitting}
-              error={error}
-            />
+            <div className="flex-1 overflow-y-auto px-6">
+              <AdminForm 
+                onSubmit={onSubmit} 
+                initialData={editingAdmin ? {
+                  ...editingAdmin,
+                  role_type: editingAdmin.is_superadmin ? "superadmin" : editingAdmin.is_scrum ? "scrum" : "admin"
+                } : null}
+                submitting={submitting}
+                error={error}
+              />
+            </div>
           </SheetContent>
         </Sheet>
       </div>

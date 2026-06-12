@@ -214,8 +214,8 @@ const ProjectGroupPage = () => {
 
       {/* Group Form Sheet */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="sm:max-w-[500px]">
-          <SheetHeader className="border-b pb-4">
+        <SheetContent className="sm:max-w-[400px] md:max-w-[450px] lg:max-w-[500px] p-0 flex flex-col">
+          <SheetHeader className="border-b pb-4 px-6 pt-6">
             <SheetTitle className="text-xl font-black uppercase tracking-tight">
               {editingGroup ? "Edit Project Group" : "Create New Group"}
             </SheetTitle>
@@ -223,12 +223,14 @@ const ProjectGroupPage = () => {
               Groups help you categorize and manage multiple related projects together.
             </SheetDescription>
           </SheetHeader>
-          <ProjectGroupForm 
-            onSubmit={onSubmit} 
-            initialData={editingGroup} 
-            submitting={submitting}
-            error={error}
-          />
+          <div className="flex-1 overflow-y-auto px-6">
+            <ProjectGroupForm 
+              onSubmit={onSubmit} 
+              initialData={editingGroup} 
+              submitting={submitting}
+              error={error}
+            />
+          </div>
         </SheetContent>
       </Sheet>
 

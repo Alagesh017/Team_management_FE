@@ -10,8 +10,8 @@ import {
   OIDC_DEFAULT_SCOPES,
   WrapperSKU,
   stubbedPublicClientApplication
-} from "./chunk-SZWTCCCJ.js";
-import "./chunk-JR2R32O7.js";
+} from "./chunk-ILVP55OB.js";
+import "./chunk-HKFK5PAP.js";
 import {
   require_react
 } from "./chunk-PDNHVAOE.js";
@@ -75,7 +75,7 @@ function getAccountByIdentifiers(allAccounts, accountIdentifiers) {
 
 // node_modules/@azure/msal-react/dist/packageMetadata.js
 var name = "@azure/msal-react";
-var version = "5.4.2";
+var version = "5.4.4";
 
 // node_modules/@azure/msal-react/dist/MsalProvider.js
 var MsalProviderActionType = {
@@ -533,45 +533,45 @@ export {
 /*! Bundled license information:
 
 @azure/msal-react/dist/MsalContext.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 
 @azure/msal-react/dist/utils/utilities.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 
 @azure/msal-react/dist/packageMetadata.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 
 @azure/msal-react/dist/MsalProvider.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 
 @azure/msal-react/dist/hooks/useMsal.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 
 @azure/msal-react/dist/hooks/useIsAuthenticated.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 
 @azure/msal-react/dist/components/AuthenticatedTemplate.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 
 @azure/msal-react/dist/components/UnauthenticatedTemplate.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 
 @azure/msal-react/dist/hooks/useAccount.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 
 @azure/msal-react/dist/error/ReactAuthError.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 
 @azure/msal-react/dist/hooks/useMsalAuthentication.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 
 @azure/msal-react/dist/components/MsalAuthenticationTemplate.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 
 @azure/msal-react/dist/components/withMsal.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 
 @azure/msal-react/dist/index.js:
-  (*! @azure/msal-react v5.4.2 2026-05-19 *)
+  (*! @azure/msal-react v5.4.4 2026-06-10 *)
 */
 //# sourceMappingURL=@azure_msal-react.js.map

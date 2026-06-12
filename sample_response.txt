@@ -1,0 +1,716 @@
+{
+  "all_admins": [
+    {
+      "avatar_url": "/src/assets/profile_images/6e78eebd-19d2-4081-abbd-3efc314530b3.png",
+      "email": "waranalagesh551@gmail.com",
+      "first_name": "Alageshwaran",
+      "is_admin": true,
+      "is_scrum": false,
+      "is_superadmin": false,
+      "last_name": "K",
+      "type": "admin",
+      "user_id": 5
+    },
+    {
+      "avatar_url": "",
+      "email": "scrum@gmail.com",
+      "first_name": "scrum ",
+      "is_admin": false,
+      "is_scrum": true,
+      "is_superadmin": false,
+      "last_name": "ON",
+      "type": "admin",
+      "user_id": 7
+    },
+    {
+      "avatar_url": "",
+      "email": "veeramani.gobi@gmail.com",
+      "first_name": "veera",
+      "is_admin": true,
+      "is_scrum": false,
+      "is_superadmin": false,
+      "last_name": "",
+      "type": "admin",
+      "user_id": 8
+    }
+  ],
+  "allocated_members": [
+    {
+      "avatar_url": "/src/assets/profile_images/c2e1ff81-5fc6-4580-b636-93f812eca559.jpeg",
+      "email": "k.alageshwaran172@gmail.com",
+      "first_name": "kamalesh",
+      "is_tl": true,
+      "is_worker": false,
+      "job_title": "",
+      "last_name": "K",
+      "parent_id": null,
+      "role": "Team Leader",
+      "type": "worker",
+      "user_id": 2
+    },
+    {
+      "avatar_url": "/src/assets/profile_images/170d6501-742c-4020-afd5-e879db69484b.jpeg",
+      "email": "work@gmail.com",
+      "first_name": "worker ",
+      "is_tl": false,
+      "is_worker": true,
+      "job_title": "",
+      "last_name": "2",
+      "parent_id": 2,
+      "role": "Worker",
+      "type": "worker",
+      "user_id": 4
+    },
+    {
+      "avatar_url": "/src/assets/profile_images/7801c542-dc4b-46fb-b0f6-0bcdd12ffcdf.png",
+      "email": "sathiya017@gmail.com",
+      "first_name": "sathiyaa",
+      "is_tl": true,
+      "is_worker": false,
+      "job_title": "",
+      "last_name": "K",
+      "parent_id": null,
+      "role": "Team Leader",
+      "type": "worker",
+      "user_id": 3
+    },
+    {
+      "avatar_url": "",
+      "email": "tl@gmail.com",
+      "first_name": "team lead A",
+      "is_tl": true,
+      "is_worker": false,
+      "job_title": "",
+      "last_name": "2",
+      "parent_id": null,
+      "role": "Team Leader",
+      "type": "worker",
+      "user_id": 7
+    },
+    {
+      "avatar_url": "",
+      "email": "work3@gmail.com",
+      "first_name": "worker",
+      "is_tl": false,
+      "is_worker": true,
+      "job_title": "",
+      "last_name": "3",
+      "parent_id": 3,
+      "role": "Worker",
+      "type": "worker",
+      "user_id": 5
+    },
+    {
+      "avatar_url": "",
+      "email": "mani@gmail.com",
+      "first_name": "mani",
+      "is_tl": false,
+      "is_worker": true,
+      "job_title": "",
+      "last_name": "kandan",
+      "parent_id": 7,
+      "role": "Worker",
+      "type": "worker",
+      "user_id": 8
+    },
+    {
+      "avatar_url": "",
+      "email": "arasan@dce.technology",
+      "first_name": "arasan",
+      "is_tl": false,
+      "is_worker": true,
+      "job_title": "",
+      "last_name": "A",
+      "parent_id": 2,
+      "role": "Worker",
+      "type": "worker",
+      "user_id": 9
+    },
+    {
+      "avatar_url": "",
+      "email": "work4@gmail.com",
+      "first_name": "worker ",
+      "is_tl": false,
+      "is_worker": true,
+      "job_title": "",
+      "last_name": "4",
+      "parent_id": 3,
+      "role": "Worker",
+      "type": "worker",
+      "user_id": 6
+    }
+  ],
+  "allocation": {
+    "allocation_id": 12,
+    "created_at": "2026-05-21T18:21:42",
+    "members": [
+      {
+        "parent_id": null,
+        "role": "Team Leader",
+        "user_id": 2
+      },
+      {
+        "parent_id": 2,
+        "role": "Worker",
+        "user_id": 4
+      },
+      {
+        "parent_id": null,
+        "role": "Team Leader",
+        "user_id": 3
+      },
+      {
+        "parent_id": null,
+        "role": "Team Leader",
+        "user_id": 7
+      },
+      {
+        "parent_id": 3,
+        "role": "Worker",
+        "user_id": 5
+      },
+      {
+        "parent_id": 7,
+        "role": "Worker",
+        "user_id": 8
+      },
+      {
+        "parent_id": 2,
+        "role": "Worker",
+        "user_id": 9
+      },
+      {
+        "parent_id": 3,
+        "role": "Worker",
+        "user_id": 6
+      }
+    ],
+    "project_id": 3,
+    "remark": "",
+    "updated_at": "2026-06-05T05:55:08"
+  },
+  "status": 1,
+  "statuses": [
+    {
+      "color": "#9DF718",
+      "is_confidential": false,
+      "name": "ended",
+      "remark": "",
+      "sort_order": 0,
+      "status_id": 14,
+      "tasks": []
+    },
+    {
+      "color": "#CC1E1E",
+      "is_confidential": null,
+      "name": "To Do",
+      "remark": "nee requirements",
+      "sort_order": 1,
+      "status_id": 1,
+      "tasks": [
+        {
+          "actual_hours": 5.0,
+          "allocation_id": 12,
+          "assigned_by": 13,
+          "assigned_workers": [
+            {
+              "avatar_url": "/src/assets/profile_images/6e78eebd-19d2-4081-abbd-3efc314530b3.png",
+              "email": "waranalagesh551@gmail.com",
+              "first_name": "Alageshwaran",
+              "last_name": "K",
+              "type": "admin",
+              "user_id": 5
+            },
+            {
+              "avatar_url": "/src/assets/profile_images/c2e1ff81-5fc6-4580-b636-93f812eca559.jpeg",
+              "email": "k.alageshwaran172@gmail.com",
+              "first_name": "kamalesh",
+              "last_name": "K",
+              "type": "worker",
+              "user_id": 2
+            }
+          ],
+          "created_at": "2026-05-22T08:20:05",
+          "description": "i will make the excel to show in my app bro like file manage ment where i need to open that excel file and then i can able to create the entries bro is this possible ??",
+          "due_date": "2026-06-16",
+          "estimated_hours": 5.0,
+          "goal": "abcdxyz",
+          "is_confidential": null,
+          "priority": "low",
+          "project_id": 3,
+          "remark": "fvsgsdsvsfv",
+          "start_date": "2026-05-22",
+          "status_id": 1,
+          "task_id": 22,
+          "title": "This task  for   Nothing",
+          "worker_ids": [
+            {
+              "type": "admin",
+              "user_id": 5
+            },
+            {
+              "type": "worker",
+              "user_id": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "color": "#D800F5",
+      "is_confidential": false,
+      "name": "progress",
+      "remark": "",
+      "sort_order": 2,
+      "status_id": 2,
+      "tasks": [
+        {
+          "actual_hours": 3.0,
+          "allocation_id": 12,
+          "assigned_by": 13,
+          "assigned_workers": [
+            {
+              "avatar_url": "/src/assets/profile_images/c2e1ff81-5fc6-4580-b636-93f812eca559.jpeg",
+              "email": "k.alageshwaran172@gmail.com",
+              "first_name": "kamalesh",
+              "last_name": "K",
+              "type": "worker",
+              "user_id": 2
+            }
+          ],
+          "created_at": "2026-05-22T09:12:05",
+          "description": "",
+          "due_date": "2026-05-23",
+          "estimated_hours": 2.0,
+          "goal": "",
+          "is_confidential": false,
+          "priority": "high",
+          "project_id": 3,
+          "remark": "",
+          "start_date": "2026-05-22",
+          "status_id": 2,
+          "task_id": 29,
+          "title": "Review meeting ",
+          "worker_ids": [
+            {
+              "type": "worker",
+              "user_id": 2
+            }
+          ]
+        },
+        {
+          "actual_hours": 2.0,
+          "allocation_id": 12,
+          "assigned_by": 13,
+          "assigned_workers": [
+            {
+              "avatar_url": "/src/assets/profile_images/170d6501-742c-4020-afd5-e879db69484b.jpeg",
+              "email": "work@gmail.com",
+              "first_name": "worker ",
+              "last_name": "2",
+              "type": "worker",
+              "user_id": 4
+            }
+          ],
+          "created_at": "2026-05-22T09:12:05",
+          "description": null,
+          "due_date": "2026-05-23",
+          "estimated_hours": 2.0,
+          "goal": null,
+          "is_confidential": false,
+          "priority": "high",
+          "project_id": 3,
+          "remark": null,
+          "start_date": "2026-05-22",
+          "status_id": 2,
+          "task_id": 30,
+          "title": "Review meeting ",
+          "worker_ids": [
+            {
+              "type": "worker",
+              "user_id": 4
+            }
+          ]
+        },
+        {
+          "actual_hours": 2.0,
+          "allocation_id": 12,
+          "assigned_by": 13,
+          "assigned_workers": [
+            {
+              "avatar_url": "/src/assets/profile_images/7801c542-dc4b-46fb-b0f6-0bcdd12ffcdf.png",
+              "email": "sathiya017@gmail.com",
+              "first_name": "sathiyaa",
+              "last_name": "K",
+              "type": "worker",
+              "user_id": 3
+            }
+          ],
+          "created_at": "2026-05-22T09:12:05",
+          "description": null,
+          "due_date": "2026-05-23",
+          "estimated_hours": 2.0,
+          "goal": null,
+          "is_confidential": false,
+          "priority": "high",
+          "project_id": 3,
+          "remark": null,
+          "start_date": "2026-05-22",
+          "status_id": 2,
+          "task_id": 31,
+          "title": "Review meeting ",
+          "worker_ids": [
+            {
+              "type": "worker",
+              "user_id": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "color": "#0011FF",
+      "is_confidential": null,
+      "name": "On Hold",
+      "remark": "",
+      "sort_order": 3,
+      "status_id": 3,
+      "tasks": [
+        {
+          "actual_hours": 5.0,
+          "allocation_id": 12,
+          "assigned_by": null,
+          "assigned_workers": [],
+          "created_at": "2026-05-21T18:22:18",
+          "description": "abcd  ",
+          "due_date": "2026-05-30",
+          "estimated_hours": 2.0,
+          "goal": "nothing",
+          "is_confidential": null,
+          "priority": "high",
+          "project_id": 3,
+          "remark": "",
+          "start_date": "2026-05-20",
+          "status_id": 3,
+          "task_id": 14,
+          "title": "PR Raised with errors makes",
+          "worker_ids": []
+        }
+      ]
+    },
+    {
+      "color": "#000000",
+      "is_confidential": null,
+      "name": "Code review",
+      "remark": "",
+      "sort_order": 4,
+      "status_id": 11,
+      "tasks": [
+        {
+          "actual_hours": 2.0,
+          "allocation_id": 12,
+          "assigned_by": 13,
+          "assigned_workers": [
+            {
+              "avatar_url": "/src/assets/profile_images/6e78eebd-19d2-4081-abbd-3efc314530b3.png",
+              "email": "waranalagesh551@gmail.com",
+              "first_name": "Alageshwaran",
+              "last_name": "K",
+              "type": "admin",
+              "user_id": 5
+            }
+          ],
+          "created_at": "2026-05-22T09:43:56",
+          "description": null,
+          "due_date": "2026-05-23",
+          "estimated_hours": 2.0,
+          "goal": null,
+          "is_confidential": null,
+          "priority": "high",
+          "project_id": 3,
+          "remark": null,
+          "start_date": "2026-05-22",
+          "status_id": 11,
+          "task_id": 34,
+          "title": "XYZ",
+          "worker_ids": [
+            {
+              "type": "admin",
+              "user_id": 5
+            }
+          ]
+        },
+        {
+          "actual_hours": 2.0,
+          "allocation_id": 12,
+          "assigned_by": 13,
+          "assigned_workers": [
+            {
+              "avatar_url": "/src/assets/profile_images/7801c542-dc4b-46fb-b0f6-0bcdd12ffcdf.png",
+              "email": "sathiya017@gmail.com",
+              "first_name": "sathiyaa",
+              "last_name": "K",
+              "type": "worker",
+              "user_id": 3
+            }
+          ],
+          "created_at": "2026-05-22T09:43:56",
+          "description": null,
+          "due_date": "2026-05-23",
+          "estimated_hours": 2.0,
+          "goal": null,
+          "is_confidential": null,
+          "priority": "high",
+          "project_id": 3,
+          "remark": null,
+          "start_date": "2026-05-22",
+          "status_id": 11,
+          "task_id": 38,
+          "title": "XYZ",
+          "worker_ids": [
+            {
+              "type": "worker",
+              "user_id": 3
+            }
+          ]
+        },
+        {
+          "actual_hours": 2.0,
+          "allocation_id": 12,
+          "assigned_by": 13,
+          "assigned_workers": [
+            {
+              "avatar_url": "",
+              "email": "arasan@dce.technology",
+              "first_name": "arasan",
+              "last_name": "A",
+              "type": "worker",
+              "user_id": 9
+            }
+          ],
+          "created_at": "2026-06-01T11:20:28",
+          "description": null,
+          "due_date": null,
+          "estimated_hours": 2.0,
+          "goal": null,
+          "is_confidential": null,
+          "priority": "medium",
+          "project_id": 3,
+          "remark": null,
+          "start_date": "2026-06-01",
+          "status_id": 11,
+          "task_id": 44,
+          "title": "arasan task",
+          "worker_ids": [
+            {
+              "type": "worker",
+              "user_id": 9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "color": "#000000",
+      "is_confidential": true,
+      "name": "Completed",
+      "remark": "",
+      "sort_order": 5,
+      "status_id": 12,
+      "tasks": [
+        {
+          "actual_hours": 2.0,
+          "allocation_id": 12,
+          "assigned_by": 13,
+          "assigned_workers": [
+            {
+              "avatar_url": "/src/assets/profile_images/170d6501-742c-4020-afd5-e879db69484b.jpeg",
+              "email": "work@gmail.com",
+              "first_name": "worker ",
+              "last_name": "2",
+              "type": "worker",
+              "user_id": 4
+            }
+          ],
+          "created_at": "2026-05-22T09:43:56",
+          "description": null,
+          "due_date": "2026-05-23",
+          "estimated_hours": 2.0,
+          "goal": null,
+          "is_confidential": true,
+          "priority": "high",
+          "project_id": 3,
+          "remark": null,
+          "start_date": "2026-05-22",
+          "status_id": 12,
+          "task_id": 37,
+          "title": "XYZ",
+          "worker_ids": [
+            {
+              "type": "worker",
+              "user_id": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "color": "red",
+      "is_confidential": null,
+      "name": "xyz",
+      "remark": null,
+      "sort_order": 100,
+      "status_id": 13,
+      "tasks": [
+        {
+          "actual_hours": null,
+          "allocation_id": 12,
+          "assigned_by": 13,
+          "assigned_workers": [
+            {
+              "avatar_url": "/src/assets/profile_images/170d6501-742c-4020-afd5-e879db69484b.jpeg",
+              "email": "work@gmail.com",
+              "first_name": "worker ",
+              "last_name": "2",
+              "type": "worker",
+              "user_id": 4
+            }
+          ],
+          "created_at": "2026-05-22T05:10:18",
+          "description": null,
+          "due_date": "2026-05-27",
+          "estimated_hours": null,
+          "goal": null,
+          "is_confidential": null,
+          "priority": "low",
+          "project_id": 3,
+          "remark": null,
+          "start_date": "2026-05-28",
+          "status_id": 13,
+          "task_id": 16,
+          "title": "Hatsun testing correction",
+          "worker_ids": [
+            {
+              "type": "worker",
+              "user_id": 4
+            }
+          ]
+        },
+        {
+          "actual_hours": null,
+          "allocation_id": 12,
+          "assigned_by": 13,
+          "assigned_workers": [
+            {
+              "avatar_url": "/src/assets/profile_images/170d6501-742c-4020-afd5-e879db69484b.jpeg",
+              "email": "work@gmail.com",
+              "first_name": "worker ",
+              "last_name": "2",
+              "type": "worker",
+              "user_id": 4
+            },
+            {
+              "avatar_url": "/src/assets/profile_images/c2e1ff81-5fc6-4580-b636-93f812eca559.jpeg",
+              "email": "k.alageshwaran172@gmail.com",
+              "first_name": "kamalesh",
+              "last_name": "K",
+              "type": "worker",
+              "user_id": 2
+            }
+          ],
+          "created_at": "2026-05-22T05:17:31",
+          "description": "",
+          "due_date": "2026-05-29",
+          "estimated_hours": null,
+          "goal": "",
+          "is_confidential": null,
+          "priority": "medium",
+          "project_id": 3,
+          "remark": "",
+          "start_date": "2026-05-22",
+          "status_id": 13,
+          "task_id": 18,
+          "title": "POC  for  Hatsun app ll",
+          "worker_ids": [
+            {
+              "type": "worker",
+              "user_id": 4
+            },
+            {
+              "type": "worker",
+              "user_id": 2
+            }
+          ]
+        },
+        {
+          "actual_hours": null,
+          "allocation_id": 12,
+          "assigned_by": 13,
+          "assigned_workers": [
+            {
+              "avatar_url": "/src/assets/profile_images/c2e1ff81-5fc6-4580-b636-93f812eca559.jpeg",
+              "email": "k.alageshwaran172@gmail.com",
+              "first_name": "kamalesh",
+              "last_name": "K",
+              "type": "worker",
+              "user_id": 2
+            }
+          ],
+          "created_at": "2026-05-22T05:17:59",
+          "description": null,
+          "due_date": null,
+          "estimated_hours": null,
+          "goal": null,
+          "is_confidential": null,
+          "priority": "medium",
+          "project_id": 3,
+          "remark": null,
+          "start_date": null,
+          "status_id": 13,
+          "task_id": 19,
+          "title": "Extended View of  all pages",
+          "worker_ids": [
+            {
+              "type": "worker",
+              "user_id": 2
+            }
+          ]
+        },
+        {
+          "actual_hours": 2.0,
+          "allocation_id": 12,
+          "assigned_by": 13,
+          "assigned_workers": [
+            {
+              "avatar_url": "",
+              "email": "tl@gmail.com",
+              "first_name": "team lead A",
+              "last_name": "2",
+              "type": "worker",
+              "user_id": 7
+            }
+          ],
+          "created_at": "2026-05-22T09:12:05",
+          "description": null,
+          "due_date": "2026-05-23",
+          "estimated_hours": 2.0,
+          "goal": null,
+          "is_confidential": null,
+          "priority": "high",
+          "project_id": 3,
+          "remark": null,
+          "start_date": "2026-05-22",
+          "status_id": 13,
+          "task_id": 32,
+          "title": "Review meeting ",
+          "worker_ids": [
+            {
+              "type": "worker",
+              "user_id": 7
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

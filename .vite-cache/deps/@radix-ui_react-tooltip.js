@@ -1,40 +1,39 @@
 "use client";
 import {
-  Presence
-} from "./chunk-ZFS5Q5GP.js";
-import {
   Root
-} from "./chunk-PWEP5ZPY.js";
+} from "./chunk-YRJFRJZO.js";
 import {
   Anchor,
   Arrow,
   Content,
   Root2,
   createPopperScope
-} from "./chunk-TJUC63Z3.js";
-import "./chunk-MRRLR2IA.js";
+} from "./chunk-ZRHFMZKU.js";
 import {
   DismissableLayer,
   Portal
-} from "./chunk-RCNRZNAH.js";
+} from "./chunk-I7AUCXNX.js";
+import "./chunk-YTBWRBXS.js";
 import {
   useId
-} from "./chunk-2345P64T.js";
+} from "./chunk-B27WR2XR.js";
 import {
+  Presence,
   composeEventHandlers,
   createContextScope,
   useControllableState
-} from "./chunk-7OFDEBVJ.js";
+} from "./chunk-RDPS35OT.js";
 import {
-  composeRefs,
+  Primitive
+} from "./chunk-5TF7N7PE.js";
+import {
+  createSlottable,
   useComposedRefs
-} from "./chunk-EEEJQ3GM.js";
+} from "./chunk-TGRXSLBB.js";
 import {
   require_jsx_runtime
 } from "./chunk-7Q3DJPV2.js";
-import {
-  require_react_dom
-} from "./chunk-7CF2CFZT.js";
+import "./chunk-7CF2CFZT.js";
 import {
   require_react
 } from "./chunk-PDNHVAOE.js";
@@ -43,144 +42,8 @@ import {
 } from "./chunk-2TUXWMP5.js";
 
 // node_modules/@radix-ui/react-tooltip/dist/index.mjs
-var React3 = __toESM(require_react(), 1);
-
-// node_modules/@radix-ui/react-tooltip/node_modules/@radix-ui/react-primitive/dist/index.mjs
-var React2 = __toESM(require_react(), 1);
-var ReactDOM = __toESM(require_react_dom(), 1);
-
-// node_modules/@radix-ui/react-tooltip/node_modules/@radix-ui/react-slot/dist/index.mjs
 var React = __toESM(require_react(), 1);
 var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
-function createSlot(ownerName) {
-  const SlotClone = createSlotClone(ownerName);
-  const Slot2 = React.forwardRef((props, forwardedRef) => {
-    const { children, ...slotProps } = props;
-    const childrenArray = React.Children.toArray(children);
-    const slottable = childrenArray.find(isSlottable);
-    if (slottable) {
-      const newElement = slottable.props.children;
-      const newChildren = childrenArray.map((child) => {
-        if (child === slottable) {
-          if (React.Children.count(newElement) > 1) return React.Children.only(null);
-          return React.isValidElement(newElement) ? newElement.props.children : null;
-        } else {
-          return child;
-        }
-      });
-      return (0, import_jsx_runtime.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children: React.isValidElement(newElement) ? React.cloneElement(newElement, void 0, newChildren) : null });
-    }
-    return (0, import_jsx_runtime.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children });
-  });
-  Slot2.displayName = `${ownerName}.Slot`;
-  return Slot2;
-}
-var Slot = createSlot("Slot");
-function createSlotClone(ownerName) {
-  const SlotClone = React.forwardRef((props, forwardedRef) => {
-    const { children, ...slotProps } = props;
-    if (React.isValidElement(children)) {
-      const childrenRef = getElementRef(children);
-      const props2 = mergeProps(slotProps, children.props);
-      if (children.type !== React.Fragment) {
-        props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
-      }
-      return React.cloneElement(children, props2);
-    }
-    return React.Children.count(children) > 1 ? React.Children.only(null) : null;
-  });
-  SlotClone.displayName = `${ownerName}.SlotClone`;
-  return SlotClone;
-}
-var SLOTTABLE_IDENTIFIER = Symbol("radix.slottable");
-function createSlottable(ownerName) {
-  const Slottable22 = ({ children }) => {
-    return (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children });
-  };
-  Slottable22.displayName = `${ownerName}.Slottable`;
-  Slottable22.__radixId = SLOTTABLE_IDENTIFIER;
-  return Slottable22;
-}
-var Slottable = createSlottable("Slottable");
-function isSlottable(child) {
-  return React.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
-}
-function mergeProps(slotProps, childProps) {
-  const overrideProps = { ...childProps };
-  for (const propName in childProps) {
-    const slotPropValue = slotProps[propName];
-    const childPropValue = childProps[propName];
-    const isHandler = /^on[A-Z]/.test(propName);
-    if (isHandler) {
-      if (slotPropValue && childPropValue) {
-        overrideProps[propName] = (...args) => {
-          const result = childPropValue(...args);
-          slotPropValue(...args);
-          return result;
-        };
-      } else if (slotPropValue) {
-        overrideProps[propName] = slotPropValue;
-      }
-    } else if (propName === "style") {
-      overrideProps[propName] = { ...slotPropValue, ...childPropValue };
-    } else if (propName === "className") {
-      overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
-    }
-  }
-  return { ...slotProps, ...overrideProps };
-}
-function getElementRef(element) {
-  var _a, _b;
-  let getter = (_a = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = (_b = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-
-// node_modules/@radix-ui/react-tooltip/node_modules/@radix-ui/react-primitive/dist/index.mjs
-var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
-var NODES = [
-  "a",
-  "button",
-  "div",
-  "form",
-  "h2",
-  "h3",
-  "img",
-  "input",
-  "label",
-  "li",
-  "nav",
-  "ol",
-  "p",
-  "select",
-  "span",
-  "svg",
-  "ul"
-];
-var Primitive = NODES.reduce((primitive, node) => {
-  const Slot2 = createSlot(`Primitive.${node}`);
-  const Node = React2.forwardRef((props, forwardedRef) => {
-    const { asChild, ...primitiveProps } = props;
-    const Comp = asChild ? Slot2 : node;
-    if (typeof window !== "undefined") {
-      window[Symbol.for("radix-ui")] = true;
-    }
-    return (0, import_jsx_runtime2.jsx)(Comp, { ...primitiveProps, ref: forwardedRef });
-  });
-  Node.displayName = `Primitive.${node}`;
-  return { ...primitive, [node]: Node };
-}, {});
-
-// node_modules/@radix-ui/react-tooltip/dist/index.mjs
-var import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
 var [createTooltipContext, createTooltipScope] = createContextScope("Tooltip", [
   createPopperScope
 ]);
@@ -197,24 +60,26 @@ var TooltipProvider = (props) => {
     disableHoverableContent = false,
     children
   } = props;
-  const isOpenDelayedRef = React3.useRef(true);
-  const isPointerInTransitRef = React3.useRef(false);
-  const skipDelayTimerRef = React3.useRef(0);
-  React3.useEffect(() => {
+  const isOpenDelayedRef = React.useRef(true);
+  const isPointerInTransitRef = React.useRef(false);
+  const skipDelayTimerRef = React.useRef(0);
+  React.useEffect(() => {
     const skipDelayTimer = skipDelayTimerRef.current;
     return () => window.clearTimeout(skipDelayTimer);
   }, []);
-  return (0, import_jsx_runtime3.jsx)(
+  return (0, import_jsx_runtime.jsx)(
     TooltipProviderContextProvider,
     {
       scope: __scopeTooltip,
       isOpenDelayedRef,
       delayDuration,
-      onOpen: React3.useCallback(() => {
+      onOpen: React.useCallback(() => {
+        if (skipDelayDuration <= 0) return;
         window.clearTimeout(skipDelayTimerRef.current);
         isOpenDelayedRef.current = false;
-      }, []),
-      onClose: React3.useCallback(() => {
+      }, [skipDelayDuration]),
+      onClose: React.useCallback(() => {
+        if (skipDelayDuration <= 0) return;
         window.clearTimeout(skipDelayTimerRef.current);
         skipDelayTimerRef.current = window.setTimeout(
           () => isOpenDelayedRef.current = true,
@@ -222,7 +87,7 @@ var TooltipProvider = (props) => {
         );
       }, [skipDelayDuration]),
       isPointerInTransitRef,
-      onPointerInTransitChange: React3.useCallback((inTransit) => {
+      onPointerInTransitChange: React.useCallback((inTransit) => {
         isPointerInTransitRef.current = inTransit;
       }, []),
       disableHoverableContent,
@@ -245,12 +110,12 @@ var Tooltip = (props) => {
   } = props;
   const providerContext = useTooltipProviderContext(TOOLTIP_NAME, props.__scopeTooltip);
   const popperScope = usePopperScope(__scopeTooltip);
-  const [trigger, setTrigger] = React3.useState(null);
+  const [trigger, setTrigger] = React.useState(null);
   const contentId = useId();
-  const openTimerRef = React3.useRef(0);
+  const openTimerRef = React.useRef(0);
   const disableHoverableContent = disableHoverableContentProp ?? providerContext.disableHoverableContent;
   const delayDuration = delayDurationProp ?? providerContext.delayDuration;
-  const wasOpenDelayedRef = React3.useRef(false);
+  const wasOpenDelayedRef = React.useRef(false);
   const [open, setOpen] = useControllableState({
     prop: openProp,
     defaultProp: defaultOpen ?? false,
@@ -265,21 +130,21 @@ var Tooltip = (props) => {
     },
     caller: TOOLTIP_NAME
   });
-  const stateAttribute = React3.useMemo(() => {
+  const stateAttribute = React.useMemo(() => {
     return open ? wasOpenDelayedRef.current ? "delayed-open" : "instant-open" : "closed";
   }, [open]);
-  const handleOpen = React3.useCallback(() => {
+  const handleOpen = React.useCallback(() => {
     window.clearTimeout(openTimerRef.current);
     openTimerRef.current = 0;
     wasOpenDelayedRef.current = false;
     setOpen(true);
   }, [setOpen]);
-  const handleClose = React3.useCallback(() => {
+  const handleClose = React.useCallback(() => {
     window.clearTimeout(openTimerRef.current);
     openTimerRef.current = 0;
     setOpen(false);
   }, [setOpen]);
-  const handleDelayedOpen = React3.useCallback(() => {
+  const handleDelayedOpen = React.useCallback(() => {
     window.clearTimeout(openTimerRef.current);
     openTimerRef.current = window.setTimeout(() => {
       wasOpenDelayedRef.current = true;
@@ -287,7 +152,7 @@ var Tooltip = (props) => {
       openTimerRef.current = 0;
     }, delayDuration);
   }, [delayDuration, setOpen]);
-  React3.useEffect(() => {
+  React.useEffect(() => {
     return () => {
       if (openTimerRef.current) {
         window.clearTimeout(openTimerRef.current);
@@ -295,7 +160,7 @@ var Tooltip = (props) => {
       }
     };
   }, []);
-  return (0, import_jsx_runtime3.jsx)(Root2, { ...popperScope, children: (0, import_jsx_runtime3.jsx)(
+  return (0, import_jsx_runtime.jsx)(Root2, { ...popperScope, children: (0, import_jsx_runtime.jsx)(
     TooltipContextProvider,
     {
       scope: __scopeTooltip,
@@ -304,11 +169,11 @@ var Tooltip = (props) => {
       stateAttribute,
       trigger,
       onTriggerChange: setTrigger,
-      onTriggerEnter: React3.useCallback(() => {
+      onTriggerEnter: React.useCallback(() => {
         if (providerContext.isOpenDelayedRef.current) handleDelayedOpen();
         else handleOpen();
       }, [providerContext.isOpenDelayedRef, handleDelayedOpen, handleOpen]),
-      onTriggerLeave: React3.useCallback(() => {
+      onTriggerLeave: React.useCallback(() => {
         if (disableHoverableContent) {
           handleClose();
         } else {
@@ -325,21 +190,21 @@ var Tooltip = (props) => {
 };
 Tooltip.displayName = TOOLTIP_NAME;
 var TRIGGER_NAME = "TooltipTrigger";
-var TooltipTrigger = React3.forwardRef(
+var TooltipTrigger = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeTooltip, ...triggerProps } = props;
     const context = useTooltipContext(TRIGGER_NAME, __scopeTooltip);
     const providerContext = useTooltipProviderContext(TRIGGER_NAME, __scopeTooltip);
     const popperScope = usePopperScope(__scopeTooltip);
-    const ref = React3.useRef(null);
+    const ref = React.useRef(null);
     const composedRefs = useComposedRefs(forwardedRef, ref, context.onTriggerChange);
-    const isPointerDownRef = React3.useRef(false);
-    const hasPointerMoveOpenedRef = React3.useRef(false);
-    const handlePointerUp = React3.useCallback(() => isPointerDownRef.current = false, []);
-    React3.useEffect(() => {
+    const isPointerDownRef = React.useRef(false);
+    const hasPointerMoveOpenedRef = React.useRef(false);
+    const handlePointerUp = React.useCallback(() => isPointerDownRef.current = false, []);
+    React.useEffect(() => {
       return () => document.removeEventListener("pointerup", handlePointerUp);
     }, [handlePointerUp]);
-    return (0, import_jsx_runtime3.jsx)(Anchor, { asChild: true, ...popperScope, children: (0, import_jsx_runtime3.jsx)(
+    return (0, import_jsx_runtime.jsx)(Anchor, { asChild: true, ...popperScope, children: (0, import_jsx_runtime.jsx)(
       Primitive.button,
       {
         "aria-describedby": context.open ? context.contentId : void 0,
@@ -381,32 +246,32 @@ var [PortalProvider, usePortalContext] = createTooltipContext(PORTAL_NAME, {
 var TooltipPortal = (props) => {
   const { __scopeTooltip, forceMount, children, container } = props;
   const context = useTooltipContext(PORTAL_NAME, __scopeTooltip);
-  return (0, import_jsx_runtime3.jsx)(PortalProvider, { scope: __scopeTooltip, forceMount, children: (0, import_jsx_runtime3.jsx)(Presence, { present: forceMount || context.open, children: (0, import_jsx_runtime3.jsx)(Portal, { asChild: true, container, children }) }) });
+  return (0, import_jsx_runtime.jsx)(PortalProvider, { scope: __scopeTooltip, forceMount, children: (0, import_jsx_runtime.jsx)(Presence, { present: forceMount || context.open, children: (0, import_jsx_runtime.jsx)(Portal, { asChild: true, container, children }) }) });
 };
 TooltipPortal.displayName = PORTAL_NAME;
 var CONTENT_NAME = "TooltipContent";
-var TooltipContent = React3.forwardRef(
+var TooltipContent = React.forwardRef(
   (props, forwardedRef) => {
     const portalContext = usePortalContext(CONTENT_NAME, props.__scopeTooltip);
     const { forceMount = portalContext.forceMount, side = "top", ...contentProps } = props;
     const context = useTooltipContext(CONTENT_NAME, props.__scopeTooltip);
-    return (0, import_jsx_runtime3.jsx)(Presence, { present: forceMount || context.open, children: context.disableHoverableContent ? (0, import_jsx_runtime3.jsx)(TooltipContentImpl, { side, ...contentProps, ref: forwardedRef }) : (0, import_jsx_runtime3.jsx)(TooltipContentHoverable, { side, ...contentProps, ref: forwardedRef }) });
+    return (0, import_jsx_runtime.jsx)(Presence, { present: forceMount || context.open, children: context.disableHoverableContent ? (0, import_jsx_runtime.jsx)(TooltipContentImpl, { side, ...contentProps, ref: forwardedRef }) : (0, import_jsx_runtime.jsx)(TooltipContentHoverable, { side, ...contentProps, ref: forwardedRef }) });
   }
 );
-var TooltipContentHoverable = React3.forwardRef((props, forwardedRef) => {
+var TooltipContentHoverable = React.forwardRef((props, forwardedRef) => {
   const context = useTooltipContext(CONTENT_NAME, props.__scopeTooltip);
   const providerContext = useTooltipProviderContext(CONTENT_NAME, props.__scopeTooltip);
-  const ref = React3.useRef(null);
+  const ref = React.useRef(null);
   const composedRefs = useComposedRefs(forwardedRef, ref);
-  const [pointerGraceArea, setPointerGraceArea] = React3.useState(null);
+  const [pointerGraceArea, setPointerGraceArea] = React.useState(null);
   const { trigger, onClose } = context;
   const content = ref.current;
   const { onPointerInTransitChange } = providerContext;
-  const handleRemoveGraceArea = React3.useCallback(() => {
+  const handleRemoveGraceArea = React.useCallback(() => {
     setPointerGraceArea(null);
     onPointerInTransitChange(false);
   }, [onPointerInTransitChange]);
-  const handleCreateGraceArea = React3.useCallback(
+  const handleCreateGraceArea = React.useCallback(
     (event, hoverTarget) => {
       const currentTarget = event.currentTarget;
       const exitPoint = { x: event.clientX, y: event.clientY };
@@ -419,10 +284,10 @@ var TooltipContentHoverable = React3.forwardRef((props, forwardedRef) => {
     },
     [onPointerInTransitChange]
   );
-  React3.useEffect(() => {
+  React.useEffect(() => {
     return () => handleRemoveGraceArea();
   }, [handleRemoveGraceArea]);
-  React3.useEffect(() => {
+  React.useEffect(() => {
     if (trigger && content) {
       const handleTriggerLeave = (event) => handleCreateGraceArea(event, content);
       const handleContentLeave = (event) => handleCreateGraceArea(event, trigger);
@@ -434,7 +299,7 @@ var TooltipContentHoverable = React3.forwardRef((props, forwardedRef) => {
       };
     }
   }, [trigger, content, handleCreateGraceArea, handleRemoveGraceArea]);
-  React3.useEffect(() => {
+  React.useEffect(() => {
     if (pointerGraceArea) {
       const handleTrackPointerGrace = (event) => {
         const target = event.target;
@@ -452,11 +317,11 @@ var TooltipContentHoverable = React3.forwardRef((props, forwardedRef) => {
       return () => document.removeEventListener("pointermove", handleTrackPointerGrace);
     }
   }, [trigger, content, pointerGraceArea, onClose, handleRemoveGraceArea]);
-  return (0, import_jsx_runtime3.jsx)(TooltipContentImpl, { ...props, ref: composedRefs });
+  return (0, import_jsx_runtime.jsx)(TooltipContentImpl, { ...props, ref: composedRefs });
 });
 var [VisuallyHiddenContentContextProvider, useVisuallyHiddenContentContext] = createTooltipContext(TOOLTIP_NAME, { isInside: false });
-var Slottable2 = createSlottable("TooltipContent");
-var TooltipContentImpl = React3.forwardRef(
+var Slottable = createSlottable("TooltipContent");
+var TooltipContentImpl = React.forwardRef(
   (props, forwardedRef) => {
     const {
       __scopeTooltip,
@@ -469,21 +334,22 @@ var TooltipContentImpl = React3.forwardRef(
     const context = useTooltipContext(CONTENT_NAME, __scopeTooltip);
     const popperScope = usePopperScope(__scopeTooltip);
     const { onClose } = context;
-    React3.useEffect(() => {
+    React.useEffect(() => {
       document.addEventListener(TOOLTIP_OPEN, onClose);
       return () => document.removeEventListener(TOOLTIP_OPEN, onClose);
     }, [onClose]);
-    React3.useEffect(() => {
+    React.useEffect(() => {
       if (context.trigger) {
         const handleScroll = (event) => {
-          const target = event.target;
-          if (target == null ? void 0 : target.contains(context.trigger)) onClose();
+          if (event.target instanceof Node && event.target.contains(context.trigger)) {
+            onClose();
+          }
         };
         window.addEventListener("scroll", handleScroll, { capture: true });
         return () => window.removeEventListener("scroll", handleScroll, { capture: true });
       }
     }, [context.trigger, onClose]);
-    return (0, import_jsx_runtime3.jsx)(
+    return (0, import_jsx_runtime.jsx)(
       DismissableLayer,
       {
         asChild: true,
@@ -492,7 +358,7 @@ var TooltipContentImpl = React3.forwardRef(
         onPointerDownOutside,
         onFocusOutside: (event) => event.preventDefault(),
         onDismiss: onClose,
-        children: (0, import_jsx_runtime3.jsxs)(
+        children: (0, import_jsx_runtime.jsxs)(
           Content,
           {
             "data-state": context.stateAttribute,
@@ -511,8 +377,8 @@ var TooltipContentImpl = React3.forwardRef(
               }
             },
             children: [
-              (0, import_jsx_runtime3.jsx)(Slottable2, { children }),
-              (0, import_jsx_runtime3.jsx)(VisuallyHiddenContentContextProvider, { scope: __scopeTooltip, isInside: true, children: (0, import_jsx_runtime3.jsx)(Root, { id: context.contentId, role: "tooltip", children: ariaLabel || children }) })
+              (0, import_jsx_runtime.jsx)(Slottable, { children }),
+              (0, import_jsx_runtime.jsx)(VisuallyHiddenContentContextProvider, { scope: __scopeTooltip, isInside: true, children: (0, import_jsx_runtime.jsx)(Root, { id: context.contentId, role: "tooltip", children: ariaLabel || children }) })
             ]
           }
         )
@@ -522,7 +388,7 @@ var TooltipContentImpl = React3.forwardRef(
 );
 TooltipContent.displayName = CONTENT_NAME;
 var ARROW_NAME = "TooltipArrow";
-var TooltipArrow = React3.forwardRef(
+var TooltipArrow = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeTooltip, ...arrowProps } = props;
     const popperScope = usePopperScope(__scopeTooltip);
@@ -530,7 +396,7 @@ var TooltipArrow = React3.forwardRef(
       ARROW_NAME,
       __scopeTooltip
     );
-    return visuallyHiddenContentContext.isInside ? null : (0, import_jsx_runtime3.jsx)(Arrow, { ...popperScope, ...arrowProps, ref: forwardedRef });
+    return visuallyHiddenContentContext.isInside ? null : (0, import_jsx_runtime.jsx)(Arrow, { ...popperScope, ...arrowProps, ref: forwardedRef });
   }
 );
 TooltipArrow.displayName = ARROW_NAME;

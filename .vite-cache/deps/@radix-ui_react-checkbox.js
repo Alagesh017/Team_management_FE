@@ -1,28 +1,26 @@
 "use client";
 import {
-  Presence
-} from "./chunk-ZFS5Q5GP.js";
-import {
   usePrevious
 } from "./chunk-LE2TECWD.js";
 import {
   useSize
-} from "./chunk-MRRLR2IA.js";
+} from "./chunk-YTBWRBXS.js";
 import {
+  Presence,
   composeEventHandlers,
   createContextScope,
   useControllableState
-} from "./chunk-7OFDEBVJ.js";
+} from "./chunk-RDPS35OT.js";
 import {
-  composeRefs,
+  Primitive
+} from "./chunk-5TF7N7PE.js";
+import {
   useComposedRefs
-} from "./chunk-EEEJQ3GM.js";
+} from "./chunk-TGRXSLBB.js";
 import {
   require_jsx_runtime
 } from "./chunk-7Q3DJPV2.js";
-import {
-  require_react_dom
-} from "./chunk-7CF2CFZT.js";
+import "./chunk-7CF2CFZT.js";
 import {
   require_react
 } from "./chunk-PDNHVAOE.js";
@@ -31,144 +29,8 @@ import {
 } from "./chunk-2TUXWMP5.js";
 
 // node_modules/@radix-ui/react-checkbox/dist/index.mjs
-var React3 = __toESM(require_react(), 1);
-
-// node_modules/@radix-ui/react-checkbox/node_modules/@radix-ui/react-primitive/dist/index.mjs
-var React2 = __toESM(require_react(), 1);
-var ReactDOM = __toESM(require_react_dom(), 1);
-
-// node_modules/@radix-ui/react-checkbox/node_modules/@radix-ui/react-slot/dist/index.mjs
 var React = __toESM(require_react(), 1);
 var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
-function createSlot(ownerName) {
-  const SlotClone = createSlotClone(ownerName);
-  const Slot2 = React.forwardRef((props, forwardedRef) => {
-    const { children, ...slotProps } = props;
-    const childrenArray = React.Children.toArray(children);
-    const slottable = childrenArray.find(isSlottable);
-    if (slottable) {
-      const newElement = slottable.props.children;
-      const newChildren = childrenArray.map((child) => {
-        if (child === slottable) {
-          if (React.Children.count(newElement) > 1) return React.Children.only(null);
-          return React.isValidElement(newElement) ? newElement.props.children : null;
-        } else {
-          return child;
-        }
-      });
-      return (0, import_jsx_runtime.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children: React.isValidElement(newElement) ? React.cloneElement(newElement, void 0, newChildren) : null });
-    }
-    return (0, import_jsx_runtime.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children });
-  });
-  Slot2.displayName = `${ownerName}.Slot`;
-  return Slot2;
-}
-var Slot = createSlot("Slot");
-function createSlotClone(ownerName) {
-  const SlotClone = React.forwardRef((props, forwardedRef) => {
-    const { children, ...slotProps } = props;
-    if (React.isValidElement(children)) {
-      const childrenRef = getElementRef(children);
-      const props2 = mergeProps(slotProps, children.props);
-      if (children.type !== React.Fragment) {
-        props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
-      }
-      return React.cloneElement(children, props2);
-    }
-    return React.Children.count(children) > 1 ? React.Children.only(null) : null;
-  });
-  SlotClone.displayName = `${ownerName}.SlotClone`;
-  return SlotClone;
-}
-var SLOTTABLE_IDENTIFIER = Symbol("radix.slottable");
-function createSlottable(ownerName) {
-  const Slottable2 = ({ children }) => {
-    return (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children });
-  };
-  Slottable2.displayName = `${ownerName}.Slottable`;
-  Slottable2.__radixId = SLOTTABLE_IDENTIFIER;
-  return Slottable2;
-}
-var Slottable = createSlottable("Slottable");
-function isSlottable(child) {
-  return React.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
-}
-function mergeProps(slotProps, childProps) {
-  const overrideProps = { ...childProps };
-  for (const propName in childProps) {
-    const slotPropValue = slotProps[propName];
-    const childPropValue = childProps[propName];
-    const isHandler = /^on[A-Z]/.test(propName);
-    if (isHandler) {
-      if (slotPropValue && childPropValue) {
-        overrideProps[propName] = (...args) => {
-          const result = childPropValue(...args);
-          slotPropValue(...args);
-          return result;
-        };
-      } else if (slotPropValue) {
-        overrideProps[propName] = slotPropValue;
-      }
-    } else if (propName === "style") {
-      overrideProps[propName] = { ...slotPropValue, ...childPropValue };
-    } else if (propName === "className") {
-      overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
-    }
-  }
-  return { ...slotProps, ...overrideProps };
-}
-function getElementRef(element) {
-  var _a, _b;
-  let getter = (_a = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = (_b = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-
-// node_modules/@radix-ui/react-checkbox/node_modules/@radix-ui/react-primitive/dist/index.mjs
-var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
-var NODES = [
-  "a",
-  "button",
-  "div",
-  "form",
-  "h2",
-  "h3",
-  "img",
-  "input",
-  "label",
-  "li",
-  "nav",
-  "ol",
-  "p",
-  "select",
-  "span",
-  "svg",
-  "ul"
-];
-var Primitive = NODES.reduce((primitive, node) => {
-  const Slot2 = createSlot(`Primitive.${node}`);
-  const Node = React2.forwardRef((props, forwardedRef) => {
-    const { asChild, ...primitiveProps } = props;
-    const Comp = asChild ? Slot2 : node;
-    if (typeof window !== "undefined") {
-      window[Symbol.for("radix-ui")] = true;
-    }
-    return (0, import_jsx_runtime2.jsx)(Comp, { ...primitiveProps, ref: forwardedRef });
-  });
-  Node.displayName = `Primitive.${node}`;
-  return { ...primitive, [node]: Node };
-}, {});
-
-// node_modules/@radix-ui/react-checkbox/dist/index.mjs
-var import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
 var CHECKBOX_NAME = "Checkbox";
 var [createCheckboxContext, createCheckboxScope] = createContextScope(CHECKBOX_NAME);
 var [CheckboxProviderImpl, useCheckboxContext] = createCheckboxContext(CHECKBOX_NAME);
@@ -193,9 +55,9 @@ function CheckboxProvider(props) {
     onChange: onCheckedChange,
     caller: CHECKBOX_NAME
   });
-  const [control, setControl] = React3.useState(null);
-  const [bubbleInput, setBubbleInput] = React3.useState(null);
-  const hasConsumerStoppedPropagationRef = React3.useRef(false);
+  const [control, setControl] = React.useState(null);
+  const [bubbleInput, setBubbleInput] = React.useState(null);
+  const hasConsumerStoppedPropagationRef = React.useRef(false);
   const isFormControl = control ? !!form || !!control.closest("form") : (
     // We set this to true by default so that events bubble to forms without JS (SSR)
     true
@@ -216,7 +78,7 @@ function CheckboxProvider(props) {
     bubbleInput,
     setBubbleInput
   };
-  return (0, import_jsx_runtime3.jsx)(
+  return (0, import_jsx_runtime.jsx)(
     CheckboxProviderImpl,
     {
       scope: __scopeCheckbox,
@@ -226,7 +88,7 @@ function CheckboxProvider(props) {
   );
 }
 var TRIGGER_NAME = "CheckboxTrigger";
-var CheckboxTrigger = React3.forwardRef(
+var CheckboxTrigger = React.forwardRef(
   ({ __scopeCheckbox, onKeyDown, onClick, ...checkboxProps }, forwardedRef) => {
     const {
       control,
@@ -241,8 +103,8 @@ var CheckboxTrigger = React3.forwardRef(
       bubbleInput
     } = useCheckboxContext(TRIGGER_NAME, __scopeCheckbox);
     const composedRefs = useComposedRefs(forwardedRef, setControl);
-    const initialCheckedStateRef = React3.useRef(checked);
-    React3.useEffect(() => {
+    const initialCheckedStateRef = React.useRef(checked);
+    React.useEffect(() => {
       const form = control == null ? void 0 : control.form;
       if (form) {
         const reset = () => setChecked(initialCheckedStateRef.current);
@@ -250,7 +112,7 @@ var CheckboxTrigger = React3.forwardRef(
         return () => form.removeEventListener("reset", reset);
       }
     }, [control, setChecked]);
-    return (0, import_jsx_runtime3.jsx)(
+    return (0, import_jsx_runtime.jsx)(
       Primitive.button,
       {
         type: "button",
@@ -278,7 +140,7 @@ var CheckboxTrigger = React3.forwardRef(
   }
 );
 CheckboxTrigger.displayName = TRIGGER_NAME;
-var Checkbox = React3.forwardRef(
+var Checkbox = React.forwardRef(
   (props, forwardedRef) => {
     const {
       __scopeCheckbox,
@@ -292,7 +154,7 @@ var Checkbox = React3.forwardRef(
       form,
       ...checkboxProps
     } = props;
-    return (0, import_jsx_runtime3.jsx)(
+    return (0, import_jsx_runtime.jsx)(
       CheckboxProvider,
       {
         __scopeCheckbox,
@@ -304,8 +166,8 @@ var Checkbox = React3.forwardRef(
         name,
         form,
         value,
-        internal_do_not_use_render: ({ isFormControl }) => (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
-          (0, import_jsx_runtime3.jsx)(
+        internal_do_not_use_render: ({ isFormControl }) => (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+          (0, import_jsx_runtime.jsx)(
             CheckboxTrigger,
             {
               ...checkboxProps,
@@ -313,7 +175,7 @@ var Checkbox = React3.forwardRef(
               __scopeCheckbox
             }
           ),
-          isFormControl && (0, import_jsx_runtime3.jsx)(
+          isFormControl && (0, import_jsx_runtime.jsx)(
             CheckboxBubbleInput,
             {
               __scopeCheckbox
@@ -326,15 +188,15 @@ var Checkbox = React3.forwardRef(
 );
 Checkbox.displayName = CHECKBOX_NAME;
 var INDICATOR_NAME = "CheckboxIndicator";
-var CheckboxIndicator = React3.forwardRef(
+var CheckboxIndicator = React.forwardRef(
   (props, forwardedRef) => {
     const { __scopeCheckbox, forceMount, ...indicatorProps } = props;
     const context = useCheckboxContext(INDICATOR_NAME, __scopeCheckbox);
-    return (0, import_jsx_runtime3.jsx)(
+    return (0, import_jsx_runtime.jsx)(
       Presence,
       {
         present: forceMount || isIndeterminate(context.checked) || context.checked === true,
-        children: (0, import_jsx_runtime3.jsx)(
+        children: (0, import_jsx_runtime.jsx)(
           Primitive.span,
           {
             "data-state": getState(context.checked),
@@ -350,7 +212,7 @@ var CheckboxIndicator = React3.forwardRef(
 );
 CheckboxIndicator.displayName = INDICATOR_NAME;
 var BUBBLE_INPUT_NAME = "CheckboxBubbleInput";
-var CheckboxBubbleInput = React3.forwardRef(
+var CheckboxBubbleInput = React.forwardRef(
   ({ __scopeCheckbox, ...props }, forwardedRef) => {
     const {
       control,
@@ -368,7 +230,7 @@ var CheckboxBubbleInput = React3.forwardRef(
     const composedRefs = useComposedRefs(forwardedRef, setBubbleInput);
     const prevChecked = usePrevious(checked);
     const controlSize = useSize(control);
-    React3.useEffect(() => {
+    React.useEffect(() => {
       const input = bubbleInput;
       if (!input) return;
       const inputProto = window.HTMLInputElement.prototype;
@@ -385,8 +247,8 @@ var CheckboxBubbleInput = React3.forwardRef(
         input.dispatchEvent(event);
       }
     }, [bubbleInput, prevChecked, checked, hasConsumerStoppedPropagationRef]);
-    const defaultCheckedRef = React3.useRef(isIndeterminate(checked) ? false : checked);
-    return (0, import_jsx_runtime3.jsx)(
+    const defaultCheckedRef = React.useRef(isIndeterminate(checked) ? false : checked);
+    return (0, import_jsx_runtime.jsx)(
       Primitive.input,
       {
         type: "checkbox",

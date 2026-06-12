@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from '../features/auth/pages/login'
 import Register from '../features/auth/pages/register'
 import Dashboard from '../features/dashboard/pages/Dashboard'
@@ -14,6 +14,7 @@ import ProjectAllocationDetailPage from '../features/project-allocation/pages/Pr
 import TaskBoardPage from '../features/tasks/pages/TaskBoardPage'
 import TaskDetailPage from '../features/tasks/pages/TaskDetailPage'
 import TaskDashboardPage from '../features/tasks/pages/TaskDashboardPage'
+import TaskExportPage from '../features/tasks/pages/TaskExportPage'
 import ReportPage from '../features/reports/pages/ReportPage'
 import { ProtectedRoute } from '../common/components/ProtectedRoute'
 
@@ -45,6 +46,8 @@ export default function AppRoutes() {
 			<Route path="/tasks/project/:id" element={<ProtectedRoute><TaskBoardPage /></ProtectedRoute>} />
 			<Route path="/tasks/project/:projectId/task/:taskId" element={<ProtectedRoute><TaskDetailPage /></ProtectedRoute>} />
 			<Route path="/tasks-dashboard" element={<ProtectedRoute><TaskDashboardPage /></ProtectedRoute>} />
+			<Route path="/tasks/export" element={<ProtectedRoute><TaskExportPage /></ProtectedRoute>} />
+			<Route path="/tasks/export/:projectId" element={<Navigate to="/tasks/export" replace />} />
 			<Route path="/reports" element={<ProtectedRoute><ReportPage /></ProtectedRoute>} />
 			<Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
 			<Route path="/permission-request" element={<ProtectedRoute><PermissionRequest /></ProtectedRoute>} />

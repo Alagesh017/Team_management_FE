@@ -169,7 +169,7 @@ const TaskDetailPage = () => {
     <div className="flex flex-col h-[calc(100vh-80px)] bg-slate-50/60 relative overflow-hidden">
 
       {/* ── Top bar ───────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 border-b border-slate-200 bg-white/80 backdrop-blur-sm shrink-0">
+      <div className="flex items-center gap-2 md:gap-3 px-3 md:px-5 py-2 h-[56px] border-b border-slate-200 bg-white/80 backdrop-blur-sm shrink-0">
         <button
           onClick={() => navigate(`/tasks/project/${projectId}`)}
           className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-800"
@@ -571,13 +571,13 @@ const TaskDetailPage = () => {
         {/* Mobile Sidebar Overlay */}
         {isSubTaskSidebarOpen && (
           <div 
-            className="lg:hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity"
+            className="lg:hidden fixed top-[56px] left-0 right-0 bottom-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity"
             onClick={() => setIsSubTaskSidebarOpen(false)}
           />
         )}
 
         <div className={`
-          fixed lg:static top-0 right-0 h-full w-[85%] max-w-[380px] lg:w-[380px] 
+          fixed lg:static top-[56px] right-0 h-[calc(100vh-80px-56px)] w-[85%] max-w-[380px] lg:w-[380px] lg:top-0 lg:h-full
           flex flex-col bg-white border-l border-slate-200 shrink-0 z-50 lg:z-0
           transition-transform duration-300 ease-in-out
           ${isSubTaskSidebarOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full lg:translate-x-0'}

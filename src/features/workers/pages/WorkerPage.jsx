@@ -237,21 +237,22 @@ const WorkerPage = () => {
               <Plus className="mr-2 h-4 w-4" /> Add Worker
             </Button>
           </SheetTrigger>
-          <SheetContent className="sm:max-w-[750px] overflow-y-auto border-l shadow-2xl">
-            <SheetHeader className="border-b pb-6">
+          <SheetContent className="sm:max-w-[450px] md:max-w-[550px] lg:max-w-[650px] xl:max-w-[700px] border-l shadow-2xl p-0 flex flex-col">
+            <SheetHeader className="border-b pb-6 px-6 pt-6">
               <SheetTitle className="text-2xl font-bold">{editingWorker ? "Edit Worker" : "New Worker"}</SheetTitle>
               <SheetDescription>Enter the worker details. Email, First Name, Last Name and Role are mandatory.</SheetDescription>
             </SheetHeader>
-            
-            <WorkerForm 
-              onSubmit={onSubmit} 
-              initialData={editingWorker ? {
-                ...editingWorker,
-                role_type: editingWorker.is_tl ? "team_leader" : "worker"
-              } : null}
-              submitting={submitting}
-              error={error}
-            />
+            <div className="flex-1 overflow-y-auto px-6">
+              <WorkerForm 
+                onSubmit={onSubmit} 
+                initialData={editingWorker ? {
+                  ...editingWorker,
+                  role_type: editingWorker.is_tl ? "team_leader" : "worker"
+                } : null}
+                submitting={submitting}
+                error={error}
+              />
+            </div>
           </SheetContent>
         </Sheet>
       </div>

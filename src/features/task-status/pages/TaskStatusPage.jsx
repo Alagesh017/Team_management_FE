@@ -230,8 +230,8 @@ const TaskStatusPage = () => {
               <Plus className="mr-2 h-4 w-4" /> New Status
             </Button>
           </SheetTrigger>
-          <SheetContent className="sm:max-w-[500px] overflow-y-auto border-l shadow-2xl">
-            <SheetHeader className="border-b pb-6">
+          <SheetContent className="sm:max-w-[400px] md:max-w-[450px] lg:max-w-[500px] border-l shadow-2xl p-0 flex flex-col">
+            <SheetHeader className="border-b pb-6 px-6 pt-6">
               <SheetTitle className="text-2xl font-bold">
                 {editingStatus ? "Edit Task Status" : "New Task Status"}
               </SheetTitle>
@@ -239,13 +239,14 @@ const TaskStatusPage = () => {
                 Only Status Name is mandatory. All other fields are optional.
               </SheetDescription>
             </SheetHeader>
-            
-            <TaskStatusForm 
-              onSubmit={onSubmit} 
-              initialData={editingStatus}
-              submitting={submitting}
-              error={error}
-            />
+            <div className="flex-1 overflow-y-auto px-6">
+              <TaskStatusForm 
+                onSubmit={onSubmit} 
+                initialData={editingStatus}
+                submitting={submitting}
+                error={error}
+              />
+            </div>
           </SheetContent>
         </Sheet>
       </div>

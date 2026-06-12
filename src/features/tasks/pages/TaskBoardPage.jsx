@@ -1,6 +1,8 @@
 import React from "react";
 import { Loader2, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useTaskBoard } from "../hooks/useTaskBoard";
+import { useSidebar } from "../../../common/components/ui/sidebar";
 import BoardHeader from "../components/board/BoardHeader";
 import BoardColumn from "../components/board/BoardColumn";
 import AssignMemberDialog from "../components/board/AssignMemberDialog";
@@ -8,7 +10,10 @@ import TaskDetailsDialog from "../components/board/TaskDetailsDialog";
 import DeleteTaskDialog from "../components/board/DeleteTaskDialog";
 
 const TaskBoardPage = () => {
+  const navigate = useNavigate();
+  const { sidebarWidth } = useSidebar();
   const {
+    id: projectId,
     project,
     searchQuery,
     setSearchQuery,
@@ -83,8 +88,11 @@ const TaskBoardPage = () => {
 
   return (
     <div
-      className="flex flex-col h-[calc(100vh-80px)] w-[calc(100vw-5px)] lg:w-[calc(100vw-320px)] overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)" }}
+      className="flex flex-col h-[calc(100vh-80px)] overflow-hidden"
+      style={{ 
+        background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+        width: `calc(100vw - ${sidebarWidth}px)`
+      }}
     >
       {/* Header */}
       <BoardHeader
@@ -95,6 +103,9 @@ const TaskBoardPage = () => {
         meMode={meMode}
         setMeMode={setMeMode}
         availableMembers={availableMembers}
+        onExportClick={() => {
+          navigate(`/tasks/export?projectId=${projectId}`);
+        }}
       />
 
       {/* Columns */}
