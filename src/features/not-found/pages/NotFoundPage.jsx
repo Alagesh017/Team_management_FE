@@ -16,14 +16,6 @@ const NotFoundPage = () => {
             className="max-w-md w-full h-auto object-contain"
           />
         </div>
-        
-        <div className="space-y-4">
-          <h1 className="text-4xl md:text-6xl font-bold text-slate-900">Oops!</h1>
-          <p className="text-xl text-slate-600">
-            The page you're looking for doesn't exist or has been moved.
-          </p>
-        </div>
-
         <Button 
           onClick={() => navigate("/dashboard")} 
           className="bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all active:scale-95 px-8 py-6 text-lg"

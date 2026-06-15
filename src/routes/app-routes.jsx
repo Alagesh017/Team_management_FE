@@ -1,3 +1,4 @@
+import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from '../features/auth/pages/login'
 import Register from '../features/auth/pages/register'
@@ -21,10 +22,7 @@ import NotFoundPage from '../features/not-found/pages/NotFoundPage'
 import { ProtectedRoute } from '../common/components/ProtectedRoute'
 
 // Dummy components for testing
-const Attendance = () => <div className="text-2xl font-bold">Attendance</div>
 const Tasks = () => <div className="text-2xl font-bold">Tasks</div>
-const Meetings = () => <div className="text-2xl font-bold">Meetings</div>
-const PermissionRequest = () => <div className="text-2xl font-bold">Permission Request</div>
 
 export default function AppRoutes() {
 	return (
@@ -37,7 +35,7 @@ export default function AppRoutes() {
 			<Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
 			<Route path="/workers" element={<ProtectedRoute><WorkerPage /></ProtectedRoute>} />
 			<Route path="/task-status" element={<ProtectedRoute><TaskStatusPage /></ProtectedRoute>} />
-			<Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
+			<Route path="/attendance" element={<ProtectedRoute><Navigate to="/404" replace /></ProtectedRoute>} />
 			<Route path="/clients" element={<ProtectedRoute><ClientPage /></ProtectedRoute>} />
 			<Route path="/projects" element={<ProtectedRoute><ProjectPage /></ProtectedRoute>} />
 			<Route path="/project-grouping" element={<ProtectedRoute><ProjectGroupPage /></ProtectedRoute>} />
@@ -52,8 +50,12 @@ export default function AppRoutes() {
 			<Route path="/tasks/export/:projectId" element={<Navigate to="/tasks/export" replace />} />
 			<Route path="/tasks/editor/:excelId" element={<ProtectedRoute><TaskExcelEditorPage /></ProtectedRoute>} />
 			<Route path="/reports" element={<ProtectedRoute><ReportPage /></ProtectedRoute>} />
-			<Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
-			<Route path="/permission-request" element={<ProtectedRoute><PermissionRequest /></ProtectedRoute>} />
+			<Route path="/meetings" element={<ProtectedRoute><Navigate to="/404" replace /></ProtectedRoute>} />
+			<Route path="/permission-request" element={<ProtectedRoute><Navigate to="/404" replace /></ProtectedRoute>} />
+			<Route path="/404" element={<ProtectedRoute><NotFoundPage /></ProtectedRoute>} />
+			
+			{/* Catch-all 404 route - must be last */}
+			<Route path="*" element={<NotFoundPage />} />
 		</Routes>
 	)
 }

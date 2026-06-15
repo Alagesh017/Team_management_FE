@@ -7,6 +7,18 @@ import {
 
 // node_modules/@dnd-kit/utilities/dist/utilities.esm.js
 var import_react = __toESM(require_react());
+function useCombinedRefs() {
+  for (var _len = arguments.length, refs = new Array(_len), _key = 0; _key < _len; _key++) {
+    refs[_key] = arguments[_key];
+  }
+  return (0, import_react.useMemo)(
+    () => (node) => {
+      refs.forEach((ref) => ref(node));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    refs
+  );
+}
 var canUseDOM = typeof window !== "undefined" && typeof window.document !== "undefined" && typeof window.document.createElement !== "undefined";
 function isWindow(element) {
   const elementString = Object.prototype.toString.call(element);
@@ -270,6 +282,7 @@ function findFirstFocusableNode(element) {
 }
 
 export {
+  useCombinedRefs,
   canUseDOM,
   isWindow,
   isNode,
@@ -288,9 +301,11 @@ export {
   useUniqueId,
   add,
   subtract,
+  hasViewportRelativeCoordinates,
   isKeyboardEvent,
+  isTouchEvent,
   getEventCoordinates,
   CSS,
   findFirstFocusableNode
 };
-//# sourceMappingURL=chunk-RGUQDRRT.js.map
+//# sourceMappingURL=chunk-NRUHGK2O.js.map

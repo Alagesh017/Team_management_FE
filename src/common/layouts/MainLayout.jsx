@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "../components/ui/sidebar";
 import { AppSidebar } from "../components/layout/AppSidebar";
-import { Search, Bell, User, Settings, LogOut, Moon, Sun, Trash2, ShieldAlert, LayoutDashboard, Users, Briefcase, CheckSquare, ClipboardList, Calendar, Lock, UserCog, HardHat, LayoutGrid, Folder, FolderKanban, UserPlus, MessageSquare } from "lucide-react";
+import { Search, Bell, User, Settings, LogOut, Trash2, ShieldAlert, LayoutDashboard, Users, Briefcase, CheckSquare, ClipboardList, Calendar, Lock, UserCog, HardHat, LayoutGrid, Folder, FolderKanban, UserPlus, MessageSquare } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import {
@@ -39,7 +39,6 @@ const iconMap = {
 export function MainLayout({ children }) {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [groups, setGroups] = useState([]);
@@ -106,11 +105,6 @@ export function MainLayout({ children }) {
     if (!email) return "JD";
     const namePart = email.split("@")[0];
     return namePart.substring(0, 2).toUpperCase();
-  };
-
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle("dark");
   };
 
   const handleLogout = () => {
@@ -183,7 +177,7 @@ export function MainLayout({ children }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="text-slate-500 relative">
+            <Button variant="ghost" size="icon" className="text-slate-500 relative" onClick={() => navigate('/404')}>
               <Bell className="h-5 w-5" />
               <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full border-2 border-white" />
             </Button>
@@ -208,32 +202,19 @@ export function MainLayout({ children }) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-slate-100" />
                 
-                <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-lg hover:bg-slate-50 transition-colors">
+                <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-lg hover:bg-slate-50 transition-colors" onClick={() => navigate('/404')}>
                   <User className="h-4 w-4 text-slate-500" />
                   <span className="font-bold text-sm text-slate-700">My Profile</span>
                 </DropdownMenuItem>
-                
-                <DropdownMenuItem 
-                  onClick={toggleTheme}
-                  className="flex items-center justify-between p-3 cursor-pointer rounded-lg hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    {isDarkMode ? <Sun className="h-4 w-4 text-slate-500" /> : <Moon className="h-4 w-4 text-slate-500" />}
-                    <span className="font-bold text-sm text-slate-700">Theme Toggle</span>
-                  </div>
-                  <div className={`w-8 h-4 rounded-full transition-colors relative ${isDarkMode ? 'bg-slate-900' : 'bg-slate-200'}`}>
-                    <div className={`absolute top-1 w-2 h-2 rounded-full bg-white transition-all ${isDarkMode ? 'right-1' : 'left-1'}`} />
-                  </div>
-                </DropdownMenuItem>
 
-                <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-lg hover:bg-slate-50 transition-colors">
+                <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-lg hover:bg-slate-50 transition-colors" onClick={() => navigate('/404')}>
                   <Settings className="h-4 w-4 text-slate-500" />
                   <span className="font-bold text-sm text-slate-700">Settings</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator className="bg-slate-100" />
                 
-                <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-lg hover:bg-red-50 text-red-600 transition-colors">
+                <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-lg hover:bg-red-50 text-red-600 transition-colors" onClick={() => navigate('/404')}>
                   <Trash2 className="h-4 w-4" />
                   <span className="font-bold text-sm">Delete Account</span>
                 </DropdownMenuItem>

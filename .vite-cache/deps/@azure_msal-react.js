@@ -1,4 +1,7 @@
 import {
+  require_react
+} from "./chunk-PDNHVAOE.js";
+import {
   AuthError,
   BrowserUtils_exports,
   EventMessageUtils,
@@ -12,9 +15,6 @@ import {
   stubbedPublicClientApplication
 } from "./chunk-7HXLY5OB.js";
 import "./chunk-HKFK5PAP.js";
-import {
-  require_react
-} from "./chunk-PDNHVAOE.js";
 import {
   __toESM
 } from "./chunk-2TUXWMP5.js";

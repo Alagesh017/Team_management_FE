@@ -13,7 +13,6 @@ import { SheetFooter, SheetClose } from "../../../common/components/ui/sheet";
 export const taskStatusFormSchema = z.object({
   name: z.string().min(1, "Status name is required"),
   color: z.string().default("#000000"),
-  sort_order: z.coerce.number().int().nonnegative().default(0),
   remark: z.string().default(""),
   is_confidential: z.boolean().default(false),
 });
@@ -31,7 +30,6 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
     defaultValues: initialData || {
       name: "",
       color: "#000000",
-      sort_order: 0,
       remark: "",
       is_confidential: false,
     },
@@ -42,7 +40,6 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
       reset({
         ...initialData,
         is_confidential: Boolean(initialData.is_confidential),
-        sort_order: initialData.sort_order || 0,
         color: initialData.color || "#000000",
         remark: initialData.remark || "",
       });
@@ -50,7 +47,6 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
       reset({
         name: "",
         color: "#000000",
-        sort_order: 0,
         remark: "",
         is_confidential: false,
       });
@@ -104,7 +100,7 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
             <h3 className="font-bold text-slate-500">Optional Details</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             <div className="space-y-2">
               <Label htmlFor="color" className="font-bold">Display Color</Label>
               <div className="flex gap-3">
@@ -124,16 +120,6 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
                   className="flex-1 uppercase bg-slate-50/50"
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="sort_order" className="font-bold">Sort Order</Label>
-              <Input
-                id="sort_order"
-                type="number"
-                {...register("sort_order")}
-                className="bg-slate-50/50 focus:bg-white transition-all"
-              />
             </div>
           </div>
 

@@ -45,10 +45,20 @@ const deleteTaskStatus = async (id) => {
   }
 };
 
+const reorderTaskStatuses = async (statuses) => {
+  try {
+    const response = await api.put("/task-statuses/reorder", { statuses });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
 export const taskStatusService = {
   getAllTaskStatuses,
   getTaskStatusById,
   createTaskStatus,
   updateTaskStatus,
   deleteTaskStatus,
+  reorderTaskStatuses,
 };
