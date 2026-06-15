@@ -34,6 +34,7 @@ import ProjectDetails from "../components/ProjectDetails";
 import FolderIcon from "../components/FolderIcon";
 import { ContextMenu, ContextMenuItem } from "../../../common/components/ui/context-menu";
 import { formatDate } from "../../../core/utils/utils";
+import { useToast } from "../../../common/hooks/use-toast";
 
 const ProjectCard = ({ project, onEdit, onDelete }) => {
   const navigate = useNavigate();
@@ -105,6 +106,7 @@ const ProjectPage = () => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
 
   const handleEdit = (project) => {
     setEditingProject(project);
@@ -120,8 +122,18 @@ const ProjectPage = () => {
     if (projectToDelete) {
       try {
         await deleteProject(projectToDelete);
+        toast({
+          title: "Success",
+          description: "Project deleted successfully",
+          variant: "success",
+        });
       } catch (err) {
         console.error("Delete failed:", err);
+        toast({
+          title: "Error",
+          description: err.response?.data?.msg || err.message || "Failed to delete project",
+          variant: "destructive",
+        });
       } finally {
         setIsDeleteDialogOpen(false);
         setProjectToDelete(null);
@@ -135,14 +147,30 @@ const ProjectPage = () => {
     try {
       if (editingProject) {
         await updateProject(editingProject.id, data);
+        toast({
+          title: "Success",
+          description: "Project updated successfully",
+          variant: "success",
+        });
       } else {
         await addProject(data);
+        toast({
+          title: "Success",
+          description: "Project created successfully",
+          variant: "success",
+        });
       }
       
       setIsSheetOpen(false);
       setEditingProject(null);
     } catch (err) {
-      setError(err.msg || err.error || "Operation failed. Please try again.");
+      const errorMsg = err.response?.data?.msg || err.msg || err.error || "Operation failed. Please try again.";
+      setError(errorMsg);
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -229,8 +257,8 @@ const ProjectPage = () => {
 
       {/* Sheet for Add/Edit */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="sm:max-w-[540px] overflow-y-auto">
-          <SheetHeader className="border-b pb-6">
+        <SheetContent className="sm:max-w-[450px] md:max-w-[500px] lg:max-w-[540px] border-l shadow-2xl p-0 flex flex-col">
+          <SheetHeader className="border-b pb-6 px-6 pt-6">
             <SheetTitle className="text-2xl font-bold flex items-center gap-2">
               {editingProject ? (
                 <><Pencil className="h-5 w-5" /> Edit Project</>
@@ -244,13 +272,14 @@ const ProjectPage = () => {
                 : "Fill in the details below to create a new project for your team."}
             </SheetDescription>
           </SheetHeader>
-          
-          <ProjectForm 
-            onSubmit={onSubmit} 
-            initialData={editingProject} 
-            submitting={submitting}
-            error={error}
-          />
+          <div className="flex-1 overflow-y-auto px-6">
+            <ProjectForm 
+              onSubmit={onSubmit} 
+              initialData={editingProject} 
+              submitting={submitting}
+              error={error}
+            />
+          </div>
         </SheetContent>
       </Sheet>
 

@@ -1,6 +1,6 @@
 import {
   createContextScope
-} from "./chunk-RDPS35OT.js";
+} from "./chunk-T2U57YLV.js";
 import {
   createSlot,
   useComposedRefs
@@ -83,17 +83,7 @@ function createCollection(name) {
   ];
 }
 
-// node_modules/@radix-ui/react-direction/dist/index.mjs
-var React3 = __toESM(require_react(), 1);
-var import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
-var DirectionContext = React3.createContext(void 0);
-function useDirection(localDir) {
-  const globalDir = React3.useContext(DirectionContext);
-  return localDir || globalDir || "ltr";
-}
-
 export {
-  createCollection,
-  useDirection
+  createCollection
 };
-//# sourceMappingURL=chunk-YMWCPF7Z.js.map
+//# sourceMappingURL=chunk-3WBCDGAX.js.map

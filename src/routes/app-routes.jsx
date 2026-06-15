@@ -15,7 +15,9 @@ import TaskBoardPage from '../features/tasks/pages/TaskBoardPage'
 import TaskDetailPage from '../features/tasks/pages/TaskDetailPage'
 import TaskDashboardPage from '../features/tasks/pages/TaskDashboardPage'
 import TaskExportPage from '../features/tasks/pages/TaskExportPage'
+import TaskExcelEditorPage from '../features/tasks/pages/TaskExcelEditorPage'
 import ReportPage from '../features/reports/pages/ReportPage'
+import NotFoundPage from '../features/not-found/pages/NotFoundPage'
 import { ProtectedRoute } from '../common/components/ProtectedRoute'
 
 // Dummy components for testing
@@ -48,6 +50,7 @@ export default function AppRoutes() {
 			<Route path="/tasks-dashboard" element={<ProtectedRoute><TaskDashboardPage /></ProtectedRoute>} />
 			<Route path="/tasks/export" element={<ProtectedRoute><TaskExportPage /></ProtectedRoute>} />
 			<Route path="/tasks/export/:projectId" element={<Navigate to="/tasks/export" replace />} />
+			<Route path="/tasks/editor/:excelId" element={<ProtectedRoute><TaskExcelEditorPage /></ProtectedRoute>} />
 			<Route path="/reports" element={<ProtectedRoute><ReportPage /></ProtectedRoute>} />
 			<Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
 			<Route path="/permission-request" element={<ProtectedRoute><PermissionRequest /></ProtectedRoute>} />

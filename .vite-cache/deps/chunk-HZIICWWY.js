@@ -10764,7 +10764,7 @@ function _stringbool(Classes, _params) {
     type: "pipe",
     in: stringSchema,
     out: booleanSchema,
-    transform: (input, payload) => {
+    transform: ((input, payload) => {
       let data = input;
       if (params.case !== "sensitive")
         data = data.toLowerCase();
@@ -10783,14 +10783,14 @@ function _stringbool(Classes, _params) {
         });
         return {};
       }
-    },
-    reverseTransform: (input, _payload) => {
+    }),
+    reverseTransform: ((input, _payload) => {
       if (input === true) {
         return truthyArray[0] || "true";
       } else {
         return falsyArray[0] || "false";
       }
-    },
+    }),
     error: params.error
   });
   return codec;
@@ -12321,4 +12321,4 @@ export {
   toJSONSchema,
   core_exports2 as core_exports
 };
-//# sourceMappingURL=chunk-C4YHTKNB.js.map
+//# sourceMappingURL=chunk-HZIICWWY.js.map

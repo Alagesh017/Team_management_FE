@@ -1,4 +1,5 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useSidebar } from '../../../common/components/ui/sidebar'
 import { Button } from '../../../common/components/ui/button'
 import { FileSpreadsheet, Plus, Loader2 } from 'lucide-react'
@@ -7,6 +8,7 @@ import { useTaskExport } from '../hooks/useTaskExport'
 
 const TaskExportPage = () => {
   const { sidebarWidth } = useSidebar()
+  const navigate = useNavigate()
   const {
     excelFiles,
     loading,
@@ -16,15 +18,19 @@ const TaskExportPage = () => {
     handleDownloadExcel,
   } = useTaskExport()
 
+  const handleEditExcel = (excelFile) => {
+    navigate(`/tasks/editor/${excelFile.id}`)
+  }
+
   return (
     <div 
       className="p-4 md:p-6 space-y-8 bg-white min-h-screen"
       style={{ width: `calc(100vw - ${sidebarWidth}px)` }}
     >
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b pb-6">
-        <div className="min-w-0 space-y-2">
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2 truncate">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-b pb-6">
+        <div className="min-w-0 space-y-3">
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-3 truncate">
             <FileSpreadsheet className="h-5 w-5 md:h-6 md:w-6 text-green-600 shrink-0" />
             Excel Files
           </h1>
@@ -34,7 +40,7 @@ const TaskExportPage = () => {
         <Button 
           onClick={handleCreateExcel}
           disabled={creating || !projectId}
-          className="bg-green-600 hover:bg-green-700 text-white font-bold gap-2 px-6 transition-all active:scale-95 w-full sm:w-auto"
+          className="bg-green-600 hover:bg-green-700 text-white font-bold gap-3 px-6 transition-all active:scale-95 w-full sm:w-auto"
         >
           {creating ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -52,12 +58,12 @@ const TaskExportPage = () => {
           <p className="text-slate-500 font-bold animate-pulse uppercase tracking-widest text-[10px]">Loading files...</p>
         </div>
       ) : excelFiles.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-x-8 gap-y-12">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-8 p-4">
           {excelFiles.map((excelFile) => (
             <ExcelFileCard 
               key={excelFile.id} 
               excelFile={excelFile}
-              onClick={() => handleDownloadExcel(excelFile)}
+              onClick={() => handleEditExcel(excelFile)}
             />
           ))}
         </div>

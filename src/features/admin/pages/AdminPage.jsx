@@ -23,6 +23,7 @@ import { MoreHorizontal, ArrowUpDown, Plus, Pencil, Trash2, Loader2, Eye } from 
 import AdminForm from "../components/AdminForm";
 import AdminDetails from "../components/AdminDetails";
 import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
+import { useToast } from "../../../common/hooks/use-toast";
 
 const UserAvatar = ({ url, email, firstName, className = "h-10 w-10" }) => {
   const fullUrl = getFullAvatarUrl(url);
@@ -55,6 +56,7 @@ const AdminPage = () => {
   const [adminToDelete, setAdminToDelete] = useState(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const fetchAdmins = async () => {
     try {
@@ -92,8 +94,18 @@ const AdminPage = () => {
       try {
         await adminService.deleteAdmin(adminToDelete);
         fetchAdmins();
+        toast({
+          title: "Success",
+          description: "Admin deleted successfully",
+          variant: "success"
+        });
       } catch (err) {
         console.error("Delete failed:", err);
+        toast({
+          title: "Error",
+          description: err.msg || err.message || "Failed to delete admin",
+          variant: "destructive"
+        });
       } finally {
         setIsDeleteDialogOpen(false);
         setAdminToDelete(null);

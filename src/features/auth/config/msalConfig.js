@@ -5,7 +5,7 @@ console.log("Microsoft Client ID:", import.meta.env.VITE_MICROSOFT_CLIENT_ID);
 const msalConfig = {
   auth: {
     clientId: import.meta.env.VITE_MICROSOFT_CLIENT_ID,
-    authority: "https://login.microsoftonline.com/common",
+    authority: import.meta.env.VITE_MICROSOFT_AUTHORITY,
     redirectUri: import.meta.env.VITE_MICROSOFT_REDIRECT_URI,
   },
 };

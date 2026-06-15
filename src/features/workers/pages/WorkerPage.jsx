@@ -23,6 +23,7 @@ import { MoreHorizontal, ArrowUpDown, Plus, Pencil, Trash2, Loader2, Eye } from 
 import WorkerForm from "../components/WorkerForm";
 import WorkerDetails from "../components/WorkerDetails";
 import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
+import { useToast } from "../../../common/hooks/use-toast";
 
 const UserAvatar = ({ url, email, firstName, className = "h-10 w-10" }) => {
   const fullUrl = getFullAvatarUrl(url);
@@ -55,6 +56,7 @@ const WorkerPage = () => {
   const [workerToDelete, setWorkerToDelete] = useState(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const fetchWorkers = async () => {
     try {
@@ -92,8 +94,18 @@ const WorkerPage = () => {
       try {
         await workerService.deleteWorker(workerToDelete);
         fetchWorkers();
+        toast({
+          title: "Success",
+          description: "Worker deleted successfully",
+          variant: "success"
+        });
       } catch (err) {
         console.error("Delete failed:", err);
+        toast({
+          title: "Error",
+          description: err.msg || err.message || "Failed to delete worker",
+          variant: "destructive"
+        });
       } finally {
         setIsDeleteDialogOpen(false);
         setWorkerToDelete(null);

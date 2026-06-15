@@ -1,7 +1,7 @@
 import {
   composeEventHandlers,
   useLayoutEffect2
-} from "./chunk-RDPS35OT.js";
+} from "./chunk-T2U57YLV.js";
 import {
   Primitive,
   dispatchDiscreteCustomEvent
@@ -29,10 +29,10 @@ function useCallbackRef(callback) {
   React.useEffect(() => {
     callbackRef.current = callback;
   });
-  return React.useMemo(() => (...args) => {
+  return React.useMemo(() => ((...args) => {
     var _a;
     return (_a = callbackRef.current) == null ? void 0 : _a.call(callbackRef, ...args);
-  }, []);
+  }), []);
 }
 
 // node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs
@@ -260,6 +260,8 @@ function handleAndDispatchCustomEvent(name, handler, detail, { discrete }) {
     target.dispatchEvent(event);
   }
 }
+var Root = DismissableLayer;
+var Branch = DismissableLayerBranch;
 
 // node_modules/@radix-ui/react-portal/dist/index.mjs
 var React4 = __toESM(require_react(), 1);
@@ -279,6 +281,8 @@ Portal.displayName = PORTAL_NAME;
 export {
   useCallbackRef,
   DismissableLayer,
+  Root,
+  Branch,
   Portal
 };
-//# sourceMappingURL=chunk-I7AUCXNX.js.map
+//# sourceMappingURL=chunk-SYO475A3.js.map

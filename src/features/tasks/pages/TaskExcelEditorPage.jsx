@@ -1,11 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { AgGridReact } from 'ag-grid-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useSidebar } from '../../../common/components/ui/sidebar';
+import { AgGridReact, AgGridProvider } from 'ag-grid-react';
+import { AllCommunityModule } from 'ag-grid-community';
+
+const agGridModules = [AllCommunityModule];
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import * as XLSX from 'xlsx';
 import { Button } from '../../../common/components/ui/button';
 import { ArrowLeft, Save, Plus, Trash2, Loader2, FileSpreadsheet, Download } from 'lucide-react';
 import { projectExcelService } from '../services/projectExcelService';
+import { projectTaskService } from '../services/projectTaskService';
+import { useToast } from '../../../common/hooks/use-toast';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Custom Select Cell Editor — works for both Status and Members
@@ -224,44 +231,28 @@ const PriorityCellRenderer = ({ value }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main ExcelEditorPage
+// Main Page Component
 // ─────────────────────────────────────────────────────────────────────────────
-const ExcelEditorPage = ({ excelFile, sidebarWidth, projects, onBack, onSaved }) => {
+const TaskExcelEditorPage = () => {
+  const { excelId } = useParams();
+  const navigate = useNavigate();
+  const { sidebarWidth } = useSidebar();
+  const { toast } = useToast();
+  
   const gridRef = useRef(null);
+  const [excelFile, setExcelFile] = useState(null);
   const [rowData, setRowData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState('');
-
-  // ── Build option arrays from statuses / members ──────────────────────────
-  const statusOptions = (excelFile.statuses || []).map((s) => ({
-    value: `${s.status_id}|${s.name}`,
-    label: s.name,
-    color: s.color,
-  }));
-
-  const memberOptions = (excelFile.members || []).map((m) => ({
-    value: `${m.user_id}|${m.first_name} ${m.last_name}`.trim(),
-    label: `${m.first_name} ${m.last_name}`.trim(),
-  }));
+  const [statusOptions, setStatusOptions] = useState([]);
+  const [memberOptions, setMemberOptions] = useState([]);
 
   const priorityOptions = [
     { value: 'high',   label: 'High'   },
     { value: 'medium', label: 'Medium' },
     { value: 'low',    label: 'Low'    },
   ];
-
-  // ── Parse rows from the opened file ──────────────────────────────────────
-  useEffect(() => {
-    if (excelFile.rows && excelFile.rows.length > 0) {
-      // Filter out the empty template row (all fields empty)
-      const realRows = excelFile.rows.filter((r) =>
-        Object.values(r).some((v) => v !== '' && v !== null && v !== undefined)
-      );
-      setRowData(realRows.length > 0 ? realRows : [emptyRow()]);
-    } else {
-      setRowData([emptyRow()]);
-    }
-  }, [excelFile.id]);
 
   const emptyRow = () => ({
     'Task Title': '',
@@ -274,12 +265,172 @@ const ExcelEditorPage = ({ excelFile, sidebarWidth, projects, onBack, onSaved })
     'Actual Hours': '',
     'Member IDs': '',
     'Member Names': '',
-    // Internal combined fields used by dropdowns
     '_status': '',
     '_members': '',
   });
 
-  // ── Column Definitions ────────────────────────────────────────────────────
+  // Parse base64 Excel file to get rows and metadata
+  const parseExcelFile = (base64Data) => {
+    try {
+      if (!base64Data || !base64Data.includes(',')) {
+        return { rows: [], statuses: [], members: [] };
+      }
+      
+      const binaryString = atob(base64Data.split(',')[1]);
+      const uint8Array = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        uint8Array[i] = binaryString.charCodeAt(i);
+      }
+      
+      const workbook = XLSX.read(uint8Array, { type: 'array' });
+      
+      // Get Tasks sheet
+      const tasksSheet = workbook.Sheets['Tasks'];
+      if (!tasksSheet) return { rows: [], statuses: [], members: [] };
+      
+      const rows = XLSX.utils.sheet_to_json(tasksSheet, { header: 1 });
+      const headers = rows[0] || [];
+      const dataRows = rows.slice(1);
+      
+      // Convert to object format
+      const formattedRows = dataRows.map(row => {
+        const obj = {};
+        headers.forEach((header, idx) => {
+          obj[header] = row[idx] !== undefined ? row[idx] : '';
+        });
+        return obj;
+      });
+      
+      // Get __meta__ sheet if available
+      let statuses = [];
+      let members = [];
+      if (workbook.Sheets['__meta__']) {
+        const metaSheet = workbook.Sheets['__meta__'];
+        const metaData = XLSX.utils.sheet_to_json(metaSheet);
+        metaData.forEach(item => {
+          if (item.key === 'statuses') {
+            try {
+              statuses = JSON.parse(item.value);
+            } catch {
+              statuses = [];
+            }
+          }
+          if (item.key === 'members') {
+            try {
+              members = JSON.parse(item.value);
+            } catch {
+              members = [];
+            }
+          }
+        });
+      }
+      
+      return { rows: formattedRows, statuses, members };
+    } catch (err) {
+      console.error('Failed to parse Excel file:', err);
+      return { rows: [], statuses: [], members: [] };
+    }
+  };
+
+  // Load Excel file and project data
+  const loadExcelFile = async () => {
+    if (!excelId) return;
+    
+    try {
+      setLoading(true);
+      const data = await projectExcelService.getExcelById(excelId);
+      const fileData = data.excel_file;
+      
+      setExcelFile(fileData);
+      
+      // Parse Excel file
+      const { rows, statuses, members } = parseExcelFile(fileData.file_data);
+      
+      // If we don't have statuses/members from Excel, load from project
+      if ((statuses.length === 0 || members.length === 0) && fileData.project_id) {
+        try {
+          const projectData = await projectTaskService.getProjectTaskData(fileData.project_id);
+          
+          if (statuses.length === 0 && projectData.statuses) {
+            statuses.push(...projectData.statuses);
+          }
+          
+          if (members.length === 0 && (projectData.allocated_members || projectData.all_admins)) {
+            const seen = new Set();
+            const combined = [];
+            const allAdmins = projectData.all_admins || [];
+            const allocatedMembers = projectData.allocated_members || [];
+            [...allAdmins, ...allocatedMembers].forEach((m) => {
+              const memberType = m.type || (m.is_admin || m.is_superadmin ? 'admin' : 'worker');
+              const uniqueKey = `${memberType}-${m.user_id}`;
+              if (!seen.has(uniqueKey)) {
+                seen.add(uniqueKey);
+                combined.push({ ...m, type: memberType });
+              }
+            });
+            members.push(...combined);
+          }
+        } catch (err) {
+          console.error('Failed to load project data:', err);
+        }
+      }
+      
+      // Set status and member options
+      setStatusOptions(statuses.map(s => ({
+        value: `${s.status_id}|${s.name}`,
+        label: s.name,
+        color: s.color,
+      })));
+      
+      setMemberOptions(members.map(m => ({
+        value: `${m.user_id}|${m.first_name} ${m.last_name}`.trim(),
+        label: `${m.first_name} ${m.last_name}`.trim(),
+      })));
+      
+      // Store statuses/members on excelFile for later use
+      setExcelFile(prev => ({
+        ...prev,
+        statuses,
+        members,
+      }));
+      
+      // Normalize rows
+      const normalizedRows = normalizeRows(rows.length > 0 ? rows : [emptyRow()]);
+      setRowData(normalizedRows);
+      
+    } catch (err) {
+      console.error('Failed to load Excel file:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to load Excel file',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Normalize rows to add _status and _members fields
+  const normalizeRows = useCallback((rows) => {
+    return rows.map((r) => {
+      const row = { ...r };
+      if (!row['_status'] && row['Status ID'] && row['Status Name']) {
+        row['_status'] = `${row['Status ID']}|${row['Status Name']}`;
+      }
+      if (!row['_members'] && row['Member IDs'] && row['Member Names']) {
+        const ids = String(row['Member IDs']).split(',').map((v) => v.trim());
+        const names = String(row['Member Names']).split(',').map((v) => v.trim());
+        row['_members'] = ids.map((id, i) => `${id}|${names[i] || ''}`).join('; ');
+      }
+      return row;
+    });
+  }, []);
+
+  useEffect(() => {
+    loadExcelFile();
+  }, [excelId]);
+
+  // ── Column Definitions ─────────────────────────────────────────────────────
   const columnDefs = [
     {
       headerName: '#',
@@ -321,15 +472,14 @@ const ExcelEditorPage = ({ excelFile, sidebarWidth, projects, onBack, onSaved })
       cellRenderer: (params) => (
         <StatusCellRenderer value={params.value} statusOptions={statusOptions} />
       ),
-      // When value changes, split out Status ID and Status Name
       valueSetter: (params) => {
         params.data['_status'] = params.newValue;
         if (params.newValue) {
           const [id, ...nameParts] = params.newValue.split('|');
-          params.data['Status ID']   = id;
+          params.data['Status ID'] = id;
           params.data['Status Name'] = nameParts.join('|');
         } else {
-          params.data['Status ID']   = '';
+          params.data['Status ID'] = '';
           params.data['Status Name'] = '';
         }
         return true;
@@ -381,19 +531,18 @@ const ExcelEditorPage = ({ excelFile, sidebarWidth, projects, onBack, onSaved })
       cellRenderer: (params) => (
         <MembersCellRenderer value={params.value} memberOptions={memberOptions} />
       ),
-      // When value changes, split out Member IDs and Member Names
       valueSetter: (params) => {
         params.data['_members'] = params.newValue;
         if (params.newValue) {
           const entries = params.newValue.split(';').map((v) => v.trim()).filter(Boolean);
-          params.data['Member IDs']   = entries.map((e) => e.split('|')[0]).join(', ');
+          params.data['Member IDs'] = entries.map((e) => e.split('|')[0]).join(', ');
           params.data['Member Names'] = entries.map((e) => {
             const parts = e.split('|');
             parts.shift();
             return parts.join('|');
           }).join(', ');
         } else {
-          params.data['Member IDs']   = '';
+          params.data['Member IDs'] = '';
           params.data['Member Names'] = '';
         }
         return true;
@@ -440,35 +589,6 @@ const ExcelEditorPage = ({ excelFile, sidebarWidth, projects, onBack, onSaved })
     suppressMovable: false,
   };
 
-  // ── Initialize _status and _members from stored data on load ─────────────
-  const normalizeRows = useCallback((rows) => {
-    return rows.map((r) => {
-      const row = { ...r };
-      // Reconstruct _status from Status ID + Status Name
-      if (!row['_status'] && row['Status ID'] && row['Status Name']) {
-        row['_status'] = `${row['Status ID']}|${row['Status Name']}`;
-      }
-      // Reconstruct _members from Member IDs + Member Names
-      if (!row['_members'] && row['Member IDs'] && row['Member Names']) {
-        const ids   = row['Member IDs'].split(',').map((v) => v.trim());
-        const names = row['Member Names'].split(',').map((v) => v.trim());
-        row['_members'] = ids.map((id, i) => `${id}|${names[i] || ''}`).join('; ');
-      }
-      return row;
-    });
-  }, []);
-
-  useEffect(() => {
-    if (excelFile.rows && excelFile.rows.length > 0) {
-      const realRows = excelFile.rows.filter((r) =>
-        Object.values(r).some((v) => v !== '' && v !== null && v !== undefined)
-      );
-      setRowData(realRows.length > 0 ? normalizeRows(realRows) : [emptyRow()]);
-    } else {
-      setRowData([emptyRow()]);
-    }
-  }, [excelFile.id, normalizeRows]);
-
   // ── Add / Delete rows ─────────────────────────────────────────────────────
   const addRow = () => setRowData((prev) => [...prev, emptyRow()]);
 
@@ -482,16 +602,14 @@ const ExcelEditorPage = ({ excelFile, sidebarWidth, projects, onBack, onSaved })
 
   // ── Export / Save ─────────────────────────────────────────────────────────
   const buildWorkbook = () => {
-    // Strip internal _ fields before saving
     const exportRows = rowData.map(({ _status, _members, ...rest }) => rest);
-
     const tasksSheet = XLSX.utils.json_to_sheet(exportRows);
-
+    
     const metaSheet = XLSX.utils.json_to_sheet([
-      { key: 'statuses', value: JSON.stringify(excelFile.statuses || []) },
-      { key: 'members',  value: JSON.stringify(excelFile.members  || []) },
+      { key: 'statuses', value: JSON.stringify(excelFile?.statuses || []) },
+      { key: 'members', value: JSON.stringify(excelFile?.members || []) },
     ]);
-
+    
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, tasksSheet, 'Tasks');
     XLSX.utils.book_append_sheet(workbook, metaSheet, '__meta__');
@@ -505,17 +623,26 @@ const ExcelEditorPage = ({ excelFile, sidebarWidth, projects, onBack, onSaved })
       const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
       const base64Data = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${wbout}`;
 
-      await projectExcelService.updateExcel(excelFile.id, {
+      await projectExcelService.updateExcel(excelId, {
         file_data: base64Data,
-        file_name: excelFile.file_name,
+        file_name: excelFile?.file_name || 'Tasks.xlsx',
       });
 
       setSavedMsg('Saved!');
+      toast({
+        title: 'Success',
+        description: 'Excel file saved successfully',
+        variant: 'success',
+      });
       setTimeout(() => setSavedMsg(''), 2500);
-      onSaved?.();
     } catch (err) {
       console.error('Failed to save:', err);
       setSavedMsg('Save failed.');
+      toast({
+        title: 'Error',
+        description: err.msg || err.error || 'Failed to save Excel file',
+        variant: 'destructive',
+      });
       setTimeout(() => setSavedMsg(''), 3000);
     } finally {
       setSaving(false);
@@ -524,10 +651,37 @@ const ExcelEditorPage = ({ excelFile, sidebarWidth, projects, onBack, onSaved })
 
   const handleDownload = () => {
     const workbook = buildWorkbook();
-    XLSX.writeFile(workbook, excelFile.file_name || 'Tasks.xlsx');
+    XLSX.writeFile(workbook, excelFile?.file_name || 'Tasks.xlsx');
   };
 
-  // ─────────────────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div 
+        className="flex items-center justify-center bg-white min-h-screen"
+        style={{ width: `calc(100vw - ${sidebarWidth}px)` }}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-slate-400" />
+          <p className="text-slate-500 font-bold animate-pulse uppercase tracking-widest text-[10px]">Loading Excel file...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!excelFile) {
+    return (
+      <div 
+        className="flex flex-col items-center justify-center bg-white min-h-screen gap-4 p-8"
+        style={{ width: `calc(100vw - ${sidebarWidth}px)` }}
+      >
+        <h3 className="text-xl font-semibold text-slate-800">Excel file not found</h3>
+        <Button onClick={() => navigate('/tasks/export')}>
+          Back to Export Page
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex flex-col bg-white min-h-screen"
@@ -537,7 +691,7 @@ const ExcelEditorPage = ({ excelFile, sidebarWidth, projects, onBack, onSaved })
       <div className="flex items-center justify-between gap-3 px-5 py-3 border-b bg-white sticky top-0 z-20 shadow-sm">
         <div className="flex items-center gap-3 min-w-0">
           <button
-            onClick={onBack}
+            onClick={() => navigate('/tasks/export')}
             className="flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors text-sm font-medium"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -629,7 +783,6 @@ const ExcelEditorPage = ({ excelFile, sidebarWidth, projects, onBack, onSaved })
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
           onCellValueChanged={(e) => {
-            // Keep rowData in sync after edits
             const updated = [...rowData];
             updated[e.node.rowIndex] = { ...e.data };
             setRowData(updated);
@@ -655,11 +808,11 @@ const ExcelEditorPage = ({ excelFile, sidebarWidth, projects, onBack, onSaved })
           Members → <code className="bg-slate-100 px-1 rounded text-slate-600">id|name; id|name</code>
         </span>
         <span className="text-[11px] text-slate-400">
-          {(excelFile.statuses || []).length} statuses · {(excelFile.members || []).length} members loaded
+          {statusOptions.length} statuses · {memberOptions.length} members loaded
         </span>
       </div>
     </div>
   );
 };
 
-export default ExcelEditorPage;
+export default TaskExcelEditorPage;

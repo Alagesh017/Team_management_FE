@@ -7,6 +7,7 @@ import { Input } from "../../../common/components/ui/input";
 import { Label } from "../../../common/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../common/components/ui/select";
 import { Alert, AlertDescription } from "../../../common/components/ui/alert";
+import { Checkbox } from "../../../common/components/ui/checkbox";
 import { 
   Loader2, 
   UserPlus, 
@@ -33,7 +34,8 @@ const allocationFormSchema = z.object({
   members: z.array(z.object({
     user_id: z.union([z.string(), z.number()]).transform(val => Number(val)),
     role: z.string().min(1, "Role is required"),
-    parent_id: z.union([z.string(), z.number()]).nullable().optional().transform(val => val ? Number(val) : null)
+    parent_id: z.union([z.string(), z.number()]).nullable().optional().transform(val => val ? Number(val) : null),
+    client_contact: z.boolean().default(false)
   })).default([]),
 });
 
@@ -160,7 +162,7 @@ const AllocationForm = ({ onSubmit, initialData, submitting, error, onCancel, mo
   };
 
   const handleAddMember = async (userId, role, parentId = null) => {
-    const newMember = { user_id: Number(userId), role, parent_id: parentId };
+    const newMember = { user_id: Number(userId), role, parent_id: parentId, client_contact: false };
     const updatedMembers = [...selectedMembers, newMember];
     
     // Optimistically update UI
@@ -212,6 +214,7 @@ const AllocationForm = ({ onSubmit, initialData, submitting, error, onCancel, mo
             name,
             role: m.role,
             avatar,
+            client_contact: m.client_contact || false,
             children: buildTree(m.user_id)
           };
         });
@@ -270,6 +273,30 @@ const AllocationForm = ({ onSubmit, initialData, submitting, error, onCancel, mo
               </button>
             )}
           </div>
+          
+          {!node.isRoot && node.role === 'Team Leader' && (
+            <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-2">
+              <Checkbox 
+                id={`client-contact-${node.id}`}
+                checked={node.client_contact}
+                onCheckedChange={(checked) => {
+                  const updatedMembers = selectedMembers.map(m => 
+                    m.user_id === node.id ? { ...m, client_contact: !!checked } : m
+                  );
+                  setValue("members", updatedMembers);
+                  // Auto save
+                  const currentData = watch();
+                  onSubmit({ ...currentData, members: updatedMembers });
+                }}
+              />
+              <Label 
+                htmlFor={`client-contact-${node.id}`} 
+                className="text-[10px] font-bold uppercase tracking-wider text-slate-500 cursor-pointer"
+              >
+                Client Contact
+              </Label>
+            </div>
+          )}
         </div>
       </div>
     );

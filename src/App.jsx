@@ -3,6 +3,7 @@ import { BrowserRouter as Router } from 'react-router-dom'
 import { ProjectProvider } from './features/projects/contexts/ProjectContext'
 import { ProjectAllocationProvider } from './features/project-allocation/contexts/ProjectAllocationContext'
 import MicrosoftRedirectHandler from './features/auth/components/MicrosoftRedirectHandler'
+import { Toaster } from './common/components/Toaster'
 
 function App() {
 	return (
@@ -10,6 +11,7 @@ function App() {
 			<MicrosoftRedirectHandler />
 			<ProjectProvider>
 				<ProjectAllocationProvider>
+					<Toaster />
 					<AppRoutes />
 				</ProjectAllocationProvider>
 			</ProjectProvider>

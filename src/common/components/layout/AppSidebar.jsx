@@ -80,9 +80,10 @@ import {
 } from "@dnd-kit/core";
 import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import { projectService } from "../../../features/projects/services/projectService";
-import { projectGroupService } from "../../../features/projects/services/projectGroupService";
 import { useAuth } from "../../../features/auth/contexts/AuthContext";
 import ProjectGroupForm from "../../../features/projects/components/ProjectGroupForm";
+import { useProjects } from "../../../features/projects/contexts/ProjectContext";
+import { useToast } from "../../hooks/use-toast";
 
 // Draggable Project Component
 const DraggableProject = ({ project, isActive, isRestricted }) => {
@@ -226,14 +227,14 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const { setOpenMobile, isMobile } = useSidebar();
-  const [projects, setProjects] = useState([]);
-  const [groups, setGroups] = useState([]);
+  const { projects, groups, loading, fetchProjects, addGroup } = useProjects();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [isNewGroupSheetOpen, setIsNewGroupSheetOpen] = useState(false);
   const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
   const [groupError, setGroupError] = useState("");
   const [activeProject, setActiveProject] = useState(null);
+  const { toast } = useToast();
 
   const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -253,38 +254,31 @@ export function AppSidebar() {
     }
   };
 
-  const fetchData = async () => {
-    try {
-      const params = {};
-      if (user?.role) params.role = user.role;
-      if (user?.roleId) params.role_id = user.roleId;
-      
-      const [projectsData, groupsData] = await Promise.all([
-        projectService.getAllProjects(params),
-        projectGroupService.getAllGroups()
-      ]);
-      setProjects(Array.isArray(projectsData) ? projectsData : projectsData.projects || []);
-      setGroups(groupsData.groups || []);
-    } catch (error) {
-      console.error("Failed to fetch sidebar data:", error);
-    }
-  };
-
   useEffect(() => {
     if (user) {
-      fetchData();
+      fetchProjects();
     }
-  }, [user]);
+  }, [user, fetchProjects]);
 
   const handleCreateGroup = async (data) => {
     try {
       setIsSubmittingGroup(true);
       setGroupError("");
-      await projectGroupService.createGroup(data);
-      await fetchData();
+      await addGroup(data);
+      toast({
+        title: "Success",
+        description: "Project group created successfully",
+        variant: "success",
+      });
       setIsNewGroupSheetOpen(false);
     } catch (err) {
-      setGroupError(err.msg || "Failed to create group");
+      const errorMsg = err.response?.data?.msg || err.msg || err.error || "Failed to create group";
+      setGroupError(errorMsg);
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
     } finally {
       setIsSubmittingGroup(false);
     }
@@ -308,17 +302,13 @@ export function AppSidebar() {
 
     if (newGroupId === sourceGroupId) return;
 
-    // Optimistic UI update
-    const updatedProjects = projects.map(p => 
-      p.id.toString() === projectId ? { ...p, group_id: newGroupId } : p
-    );
-    setProjects(updatedProjects);
-
+    // Optimistic UI update would be better through context, but let's just call updateProject
     try {
       await projectService.updateProject(projectId, { group_id: newGroupId });
+      await fetchProjects(); // Refresh after update
     } catch (error) {
       console.error("Failed to update project group:", error);
-      await fetchData(); // Rollback
+      await fetchProjects(); // Rollback
     }
   };
 

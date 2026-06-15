@@ -4,7 +4,7 @@ import { FileSpreadsheet } from 'lucide-react'
 const ExcelFileCard = ({ excelFile, onClick }) => {
   return (
     <div 
-      className="group flex flex-col items-center gap-2 cursor-pointer outline-none"
+      className="group flex flex-col items-center gap-2 cursor-pointer outline-none p-2"
       onClick={onClick}
     >
       <div className="relative transition-all duration-300 group-hover:scale-105 active:scale-95 group-hover:-translate-y-1">
@@ -15,9 +15,9 @@ const ExcelFileCard = ({ excelFile, onClick }) => {
         </div>
       </div>
 
-      <div className="w-full text-center max-w-[160px] mt-1">
+      <div className="w-full text-center max-w-[160px] mt-2">
         <span 
-          className="text-[12px] font-medium text-slate-600 leading-tight line-clamp-2 break-all transition-colors group-hover:text-slate-800"
+          className="text-[12px] font-medium text-slate-600 leading-tight line-clamp-2 break-all transition-colors group-hover:text-slate-80"
           title={excelFile.file_name}
         >
           {excelFile.file_name}

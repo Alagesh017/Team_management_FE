@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { 
   Plus, 
   Pencil, 
@@ -6,7 +6,6 @@ import {
   Loader2, 
   Search,
   LayoutGrid,
-  ChevronRight,
   FolderOpen
 } from "lucide-react";
 import { Button } from "../../../common/components/ui/button";
@@ -20,8 +19,9 @@ import {
 } from "../../../common/components/ui/sheet";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import ProjectGroupForm from "../components/ProjectGroupForm";
-import { projectGroupService } from "../services/projectGroupService";
 import { ContextMenu, ContextMenuItem } from "../../../common/components/ui/context-menu";
+import { useToast } from "../../../common/hooks/use-toast";
+import { useProjects } from "../contexts/ProjectContext";
 
 const GroupCard = ({ group, onEdit, onDelete }) => {
   const contextContent = (
@@ -60,11 +60,8 @@ const GroupCard = ({ group, onEdit, onDelete }) => {
           </p>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+        <div className="mt-4 pt-4 border-t border-slate-100">
           <span className="text-[10px] font-bold text-slate-400 uppercase">Master Group</span>
-          <button className="text-[10px] font-black uppercase text-slate-900 flex items-center gap-1 hover:gap-2 transition-all">
-            Manage <ChevronRight className="h-3 w-3" />
-          </button>
         </div>
       </div>
     </ContextMenu>
@@ -72,8 +69,7 @@ const GroupCard = ({ group, onEdit, onDelete }) => {
 };
 
 const ProjectGroupPage = () => {
-  const [groups, setGroups] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const { groups, loading, fetchGroups, addGroup, updateGroup, deleteGroup } = useProjects();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -81,22 +77,7 @@ const ProjectGroupPage = () => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-  const fetchGroups = async () => {
-    try {
-      setLoading(true);
-      const data = await projectGroupService.getAllGroups();
-      setGroups(data.groups || []);
-    } catch (err) {
-      console.error("Failed to fetch groups:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchGroups();
-  }, []);
+  const { toast } = useToast();
 
   const handleEdit = (group) => {
     setEditingGroup(group);
@@ -111,10 +92,19 @@ const ProjectGroupPage = () => {
   const confirmDelete = async () => {
     if (groupToDelete) {
       try {
-        await projectGroupService.deleteGroup(groupToDelete);
-        fetchGroups();
+        await deleteGroup(groupToDelete);
+        toast({
+          title: "Success",
+          description: "Project group deleted successfully",
+          variant: "success",
+        });
       } catch (err) {
         console.error("Delete failed:", err);
+        toast({
+          title: "Error",
+          description: err.response?.data?.msg || err.message || "Failed to delete project group",
+          variant: "destructive",
+        });
       } finally {
         setIsDeleteDialogOpen(false);
         setGroupToDelete(null);
@@ -127,15 +117,30 @@ const ProjectGroupPage = () => {
     setError("");
     try {
       if (editingGroup) {
-        await projectGroupService.updateGroup(editingGroup.id, data);
+        await updateGroup(editingGroup.id, data);
+        toast({
+          title: "Success",
+          description: "Project group updated successfully",
+          variant: "success",
+        });
       } else {
-        await projectGroupService.createGroup(data);
+        await addGroup(data);
+        toast({
+          title: "Success",
+          description: "Project group created successfully",
+          variant: "success",
+        });
       }
-      fetchGroups();
       setIsSheetOpen(false);
       setEditingGroup(null);
     } catch (err) {
-      setError(err.msg || err.error || "Operation failed. Please try again.");
+      const errorMsg = err.response?.data?.msg || err.msg || err.error || "Operation failed. Please try again.";
+      setError(errorMsg);
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -240,7 +245,14 @@ const ProjectGroupPage = () => {
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={confirmDelete}
         title="Delete Project Group?"
-        description="This action cannot be undone. Projects in this group will not be deleted, but they will no longer be associated with this group."
+        description={(() => {
+          const groupBeingDeleted = groups.find(g => g.id === groupToDelete);
+          const projectCount = groupBeingDeleted?.project_count || 0;
+          if (projectCount > 0) {
+            return `This group has ${projectCount} project${projectCount !== 1 ? 's' : ''}. If you delete it, these projects will be moved to the uncategorized group.`;
+          }
+          return "This action cannot be undone.";
+        })()}
       />
     </div>
   );

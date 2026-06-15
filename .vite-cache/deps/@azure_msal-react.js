@@ -10,7 +10,7 @@ import {
   OIDC_DEFAULT_SCOPES,
   WrapperSKU,
   stubbedPublicClientApplication
-} from "./chunk-ILVP55OB.js";
+} from "./chunk-7HXLY5OB.js";
 import "./chunk-HKFK5PAP.js";
 import {
   require_react
@@ -533,44 +533,18 @@ export {
 /*! Bundled license information:
 
 @azure/msal-react/dist/MsalContext.js:
-  (*! @azure/msal-react v5.4.4 2026-06-10 *)
-
 @azure/msal-react/dist/utils/utilities.js:
-  (*! @azure/msal-react v5.4.4 2026-06-10 *)
-
 @azure/msal-react/dist/packageMetadata.js:
-  (*! @azure/msal-react v5.4.4 2026-06-10 *)
-
 @azure/msal-react/dist/MsalProvider.js:
-  (*! @azure/msal-react v5.4.4 2026-06-10 *)
-
 @azure/msal-react/dist/hooks/useMsal.js:
-  (*! @azure/msal-react v5.4.4 2026-06-10 *)
-
 @azure/msal-react/dist/hooks/useIsAuthenticated.js:
-  (*! @azure/msal-react v5.4.4 2026-06-10 *)
-
 @azure/msal-react/dist/components/AuthenticatedTemplate.js:
-  (*! @azure/msal-react v5.4.4 2026-06-10 *)
-
 @azure/msal-react/dist/components/UnauthenticatedTemplate.js:
-  (*! @azure/msal-react v5.4.4 2026-06-10 *)
-
 @azure/msal-react/dist/hooks/useAccount.js:
-  (*! @azure/msal-react v5.4.4 2026-06-10 *)
-
 @azure/msal-react/dist/error/ReactAuthError.js:
-  (*! @azure/msal-react v5.4.4 2026-06-10 *)
-
 @azure/msal-react/dist/hooks/useMsalAuthentication.js:
-  (*! @azure/msal-react v5.4.4 2026-06-10 *)
-
 @azure/msal-react/dist/components/MsalAuthenticationTemplate.js:
-  (*! @azure/msal-react v5.4.4 2026-06-10 *)
-
 @azure/msal-react/dist/components/withMsal.js:
-  (*! @azure/msal-react v5.4.4 2026-06-10 *)
-
 @azure/msal-react/dist/index.js:
   (*! @azure/msal-react v5.4.4 2026-06-10 *)
 */

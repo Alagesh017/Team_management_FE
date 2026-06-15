@@ -49,7 +49,7 @@ import {
   loadExternalTokens,
   stubbedPublicClientApplication,
   version
-} from "./chunk-ILVP55OB.js";
+} from "./chunk-7HXLY5OB.js";
 import {
   BrowserPerformanceMeasurement
 } from "./chunk-HKFK5PAP.js";

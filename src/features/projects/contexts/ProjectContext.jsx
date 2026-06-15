@@ -1,10 +1,14 @@
 import { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { projectService } from "../services/projectService";
+import { projectGroupService } from "../services/projectGroupService";
 
 const ProjectContext = createContext();
 
+export const useProjects = () => useContext(ProjectContext);
+
 export const ProjectProvider = ({ children }) => {
   const [projects, setProjects] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -22,9 +26,19 @@ export const ProjectProvider = ({ children }) => {
     }
   }, []);
 
+  const fetchGroups = useCallback(async () => {
+    try {
+      const data = await projectGroupService.getAllGroups();
+      setGroups(data.groups || []);
+    } catch (err) {
+      console.error("Failed to fetch groups:", err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchProjects();
-  }, [fetchProjects]);
+    fetchGroups();
+  }, [fetchProjects, fetchGroups]);
 
   const addProject = async (projectData) => {
     try {
@@ -73,17 +87,52 @@ export const ProjectProvider = ({ children }) => {
     }
   };
 
+  const addGroup = async (groupData) => {
+    try {
+      const data = await projectGroupService.createGroup(groupData);
+      await fetchGroups();
+      return data;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const updateGroup = async (id, groupData) => {
+    try {
+      const data = await projectGroupService.updateGroup(id, groupData);
+      await fetchGroups();
+      return data;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const deleteGroup = async (id) => {
+    try {
+      const data = await projectGroupService.deleteGroup(id);
+      await fetchGroups();
+      return data;
+    } catch (err) {
+      throw err;
+    }
+  };
+
   return (
     <ProjectContext.Provider
       value={{
         projects,
+        groups,
         loading,
         error,
         fetchProjects,
+        fetchGroups,
         addProject,
         updateProject,
         deleteProject,
         getProjectById,
+        addGroup,
+        updateGroup,
+        deleteGroup,
       }}
     >
       {children}

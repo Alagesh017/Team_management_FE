@@ -45,6 +45,7 @@ var Root = VisuallyHidden;
 
 export {
   VISUALLY_HIDDEN_STYLES,
+  VisuallyHidden,
   Root
 };
-//# sourceMappingURL=chunk-YRJFRJZO.js.map
+//# sourceMappingURL=chunk-D2AHYGKK.js.map

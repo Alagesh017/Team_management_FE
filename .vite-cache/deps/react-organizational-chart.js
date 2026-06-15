@@ -10,7 +10,7 @@ var e = __toESM(require_react());
 function r(e3, r2) {
   return r2 || (r2 = e3.slice(0)), e3.raw = r2, e3;
 }
-var n = function() {
+var n = (function() {
   function e3(e4) {
     var r3 = this;
     this._insertTag = function(e5) {
@@ -21,20 +21,20 @@ var n = function() {
   return r2.hydrate = function(e4) {
     e4.forEach(this._insertTag);
   }, r2.insert = function(e4) {
-    this.ctr % (this.isSpeedy ? 65e3 : 1) == 0 && this._insertTag(function(e5) {
+    this.ctr % (this.isSpeedy ? 65e3 : 1) == 0 && this._insertTag((function(e5) {
       var r4 = document.createElement("style");
       return r4.setAttribute("data-emotion", e5.key), void 0 !== e5.nonce && r4.setAttribute("nonce", e5.nonce), r4.appendChild(document.createTextNode("")), r4.setAttribute("data-s", ""), r4;
-    }(this));
+    })(this));
     var r3 = this.tags[this.tags.length - 1];
     if (true) {
       var n2 = 64 === e4.charCodeAt(0) && 105 === e4.charCodeAt(1);
       n2 && this._alreadyInsertedOrderInsensitiveRule && console.error("You're attempting to insert the following rule:\n" + e4 + "\n\n`@import` rules must be before all other types of rules in a stylesheet but other rules have already been inserted. Please ensure that `@import` rules are before all other rules."), this._alreadyInsertedOrderInsensitiveRule = this._alreadyInsertedOrderInsensitiveRule || !n2;
     }
     if (this.isSpeedy) {
-      var t2 = function(e5) {
+      var t2 = (function(e5) {
         if (e5.sheet) return e5.sheet;
         for (var r4 = 0; r4 < document.styleSheets.length; r4++) if (document.styleSheets[r4].ownerNode === e5) return document.styleSheets[r4];
-      }(r3);
+      })(r3);
       try {
         t2.insertRule(e4, t2.cssRules.length);
       } catch (r4) {
@@ -47,7 +47,7 @@ var n = function() {
       return e4.parentNode && e4.parentNode.removeChild(e4);
     }), this.tags = [], this.ctr = 0, this._alreadyInsertedOrderInsensitiveRule = false;
   }, e3;
-}();
+})();
 var t = "-ms-";
 var o = "-webkit-";
 var a = Math.abs;
@@ -273,9 +273,9 @@ function Y(e3, r2, n2, t2) {
   return E(e3, r2, n2, "decl", f(e3, 0, t2), f(e3, t2 + 1, -1), t2);
 }
 function W(e3, r2) {
-  switch (function(e4, r3) {
+  switch ((function(e4, r3) {
     return (((r3 << 2 ^ d(e4, 0)) << 2 ^ d(e4, 1)) << 2 ^ d(e4, 2)) << 2 ^ d(e4, 3);
-  }(e3, r2)) {
+  })(e3, r2)) {
     case 5103:
       return o + "print-" + e3 + e3;
     case 5737:
@@ -419,8 +419,8 @@ var J = function(e3) {
     for (var r2 = e3.value, n2 = e3.parent, t2 = e3.column === n2.column && e3.line === n2.line; "rule" !== n2.type; ) if (!(n2 = n2.parent)) return;
     if ((1 !== e3.props.length || 58 === r2.charCodeAt(0) || H.get(n2)) && !t2) {
       H.set(e3, true);
-      for (var o2 = [], a2 = function(e4, r3) {
-        return D(function(e5, r4) {
+      for (var o2 = [], a2 = (function(e4, r3) {
+        return D((function(e5, r4) {
           var n3 = -1, t3 = 44;
           do {
             switch ($(t3)) {
@@ -440,8 +440,8 @@ var J = function(e3) {
             }
           } while (t3 = O());
           return e5;
-        }(S(e4), r3));
-      }(r2, o2), s2 = n2.props, c2 = 0, l2 = 0; c2 < a2.length; c2++) for (var u2 = 0; u2 < s2.length; u2++, l2++) e3.props[l2] = o2[c2] ? a2[c2].replace(/&\f/g, s2[u2]) : s2[u2] + " " + a2[c2];
+        })(S(e4), r3));
+      })(r2, o2), s2 = n2.props, c2 = 0, l2 = 0; c2 < a2.length; c2++) for (var u2 = 0; u2 < s2.length; u2++, l2++) e3.props[l2] = o2[c2] ? a2[c2].replace(/&\f/g, s2[u2]) : s2[u2] + " " + a2[c2];
     }
   }
 };
@@ -461,10 +461,10 @@ var X = function(e3) {
   e3.type = "", e3.value = "", e3.return = "", e3.children = "", e3.props = "";
 };
 var ee = function(e3, r2, n2) {
-  Q(e3) && (e3.parent ? (console.error("`@import` rules can't be nested inside other rules. Please move it to the top level and put it before regular rules. Keep in mind that they can only be used within global styles."), X(e3)) : function(e4, r3) {
+  Q(e3) && (e3.parent ? (console.error("`@import` rules can't be nested inside other rules. Please move it to the top level and put it before regular rules. Keep in mind that they can only be used within global styles."), X(e3)) : (function(e4, r3) {
     for (var n3 = e4 - 1; n3 >= 0; n3--) if (!Q(r3[n3])) return true;
     return false;
-  }(r2, n2) && (console.error("`@import` rules can't be after other rules. Please put your `@import` rules before your other rules."), X(e3)));
+  })(r2, n2) && (console.error("`@import` rules can't be after other rules. Please put your `@import` rules before your other rules."), X(e3)));
 };
 var re = [function(e3, r2, n2, a2) {
   if (e3.length > -1 && !e3.return) switch (e3.type) {
@@ -474,12 +474,12 @@ var re = [function(e3, r2, n2, a2) {
     case "@keyframes":
       return L([x(e3, { value: l(e3.value, "@", "@" + o) })], a2);
     case "rule":
-      if (e3.length) return function(e4, r3) {
+      if (e3.length) return (function(e4, r3) {
         return e4.map(r3).join("");
-      }(e3.props, function(r3) {
-        switch (function(e4, r4) {
+      })(e3.props, function(r3) {
+        switch ((function(e4, r4) {
           return (e4 = /(::plac\w+|:read-\w+)/.exec(e4)) ? e4[0] : e4;
-        }(r3)) {
+        })(r3)) {
           case ":read-only":
           case ":read-write":
             return L([x(e3, { props: [l(r3, /:(read-\w+)/, ":-moz-$1")] })], a2);
@@ -550,7 +550,7 @@ function ge(e3, r2, n2) {
         var o2 = n2.styles + ";";
         return void 0 !== n2.map && (o2 += n2.map), o2;
       }
-      return function(e4, r3, n3) {
+      return (function(e4, r3, n3) {
         var t3 = "";
         if (Array.isArray(n3)) for (var o3 = 0; o3 < n3.length; o3++) t3 += ge(e4, r3, n3[o3]) + ";";
         else for (var a3 in n3) {
@@ -572,7 +572,7 @@ function ge(e3, r2, n2) {
           }
         }
         return t3;
-      }(e3, r2, n2);
+      })(e3, r2, n2);
     case "function":
       if (void 0 !== e3) {
         var a2 = be, i2 = n2(e3);
@@ -608,7 +608,7 @@ var ke = function(e3, r2, n2) {
     return a2 = e4, "";
   }), we.lastIndex = 0;
   for (var c2, l2 = ""; null !== (c2 = we.exec(o2)); ) l2 += "-" + c2[1];
-  var u2 = function(e4) {
+  var u2 = (function(e4) {
     for (var r3, n3 = 0, t3 = 0, o3 = e4.length; o3 >= 4; ++t3, o3 -= 4) r3 = 1540483477 * (65535 & (r3 = 255 & e4.charCodeAt(t3) | (255 & e4.charCodeAt(++t3)) << 8 | (255 & e4.charCodeAt(++t3)) << 16 | (255 & e4.charCodeAt(++t3)) << 24)) + (59797 * (r3 >>> 16) << 16), n3 = 1540483477 * (65535 & (r3 ^= r3 >>> 24)) + (59797 * (r3 >>> 16) << 16) ^ 1540483477 * (65535 & n3) + (59797 * (n3 >>> 16) << 16);
     switch (o3) {
       case 3:
@@ -619,7 +619,7 @@ var ke = function(e3, r2, n2) {
         n3 = 1540483477 * (65535 & (n3 ^= 255 & e4.charCodeAt(t3))) + (59797 * (n3 >>> 16) << 16);
     }
     return (((n3 = 1540483477 * (65535 & (n3 ^= n3 >>> 13)) + (59797 * (n3 >>> 16) << 16)) ^ n3 >>> 15) >>> 0).toString(36);
-  }(o2) + l2;
+  })(o2) + l2;
   return true ? { name: u2, styles: o2, map: a2, next: be, toString: function() {
     return "You have tried to stringify object returned from `css` function. It isn't supposed to be used directly (e.g. as value of the `className` prop), but rather handed to emotion so it can handle it (e.g. as value of `css` prop).";
   } } : { name: u2, styles: o2, next: be };
@@ -631,10 +631,10 @@ function Ee(e3, r2, n2) {
   }), t2;
 }
 var xe = function(e3, r2, n2) {
-  !function(e4, r3, n3) {
+  !(function(e4, r3, n3) {
     var t3 = e4.key + "-" + r3.name;
     false === n3 && void 0 === e4.registered[t3] && (e4.registered[t3] = r3.styles);
-  }(e3, r2, n2);
+  })(e3, r2, n2);
   var t2 = e3.key + "-" + r2.name;
   if (void 0 === e3.inserted[r2.name]) {
     var o2 = r2;
@@ -675,8 +675,8 @@ var De = function e2(r2) {
   }
   return n2;
 };
-var Ve = function(e3) {
-  var r2 = function(e4) {
+var Ve = (function(e3) {
+  var r2 = (function(e4) {
     var r3 = e4.key;
     if (!r3) throw new Error("You have to configure `key` for your cache. Please make sure it's unique (and not equal to 'css') as it's used for linking styles to your cache.\nIf multiple caches share the same key they might \"fight\" for each other's style elements.");
     if ("css" === r3) {
@@ -693,7 +693,7 @@ var Ve = function(e3) {
       c2.push(e5);
     });
     var l2 = [J, K];
-    l2.push(/* @__PURE__ */ function(e5) {
+    l2.push(/* @__PURE__ */ (function(e5) {
       return function(r4, n2, t4) {
         if ("rule" === r4.type && !e5.compat) {
           var o3 = r4.value.match(/(:first|:nth|:nth-last)-child/g);
@@ -712,7 +712,7 @@ var Ve = function(e3) {
           }
         }
       };
-    }({ get compat() {
+    })({ get compat() {
       return v2.compat;
     } }), ee);
     var u2, d2, f2 = [U, true ? function(e5) {
@@ -721,13 +721,13 @@ var Ve = function(e3) {
       u2.insert(e5);
     }, function(e5) {
       e5.root || (e5 = e5.return) && d2(e5);
-    })], p2 = function(e5) {
+    })], p2 = (function(e5) {
       var r4 = h(e5);
       return function(n2, t4, o3, a3) {
         for (var i3 = "", s3 = 0; s3 < r4; s3++) i3 += e5[s3](n2, t4, o3, a3) || "";
         return i3;
       };
-    }(l2.concat(o2, f2));
+    })(l2.concat(o2, f2));
     i2 = function(e5, r4, n2, t4) {
       u2 = n2, void 0 !== r4.map && (u2 = { insert: function(e6) {
         n2.insert(e6 + r4.map);
@@ -735,7 +735,7 @@ var Ve = function(e3) {
     };
     var v2 = { key: r3, sheet: new n({ key: r3, container: a2, nonce: e4.nonce, speedy: e4.speedy, prepend: e4.prepend, insertionPoint: e4.insertionPoint }), nonce: e4.nonce, inserted: s2, registered: {}, insert: i2 };
     return v2.sheet.hydrate(c2), v2;
-  }({ key: "css" });
+  })({ key: "css" });
   r2.sheet.speedy = function(e4) {
     if (0 !== this.ctr) throw new Error("speedy must be changed before any rules are inserted");
     this.isSpeedy = e4;
@@ -763,7 +763,7 @@ var Ve = function(e3) {
   }, flush: function() {
     r2.registered = {}, r2.inserted = {}, r2.sheet.flush();
   }, sheet: r2.sheet, cache: r2, getRegisteredStyles: Ee.bind(null, r2.registered), merge: Oe.bind(null, r2.registered, t2) };
-}();
+})();
 var Ie = Ve.cx;
 var Re = Ve.css;
 var ze = Re(_e || (_e = r(["\n  content: '';\n  position: absolute;\n  top: 0;\n  height: var(--tree-line-height);\n  box-sizing: border-box;\n"])));
