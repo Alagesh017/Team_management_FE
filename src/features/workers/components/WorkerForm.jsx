@@ -17,12 +17,12 @@ export const workerFormSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().optional().refine((val) => !val || phoneRegex.test(val), {
+  phone: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "").refine((val) => !val || phoneRegex.test(val), {
     message: "Phone number must be 10 digits",
   }),
   role_type: z.enum(["team_leader", "worker"]),
-  job_title: z.string().optional(),
-  department: z.string().optional(),
+  job_title: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
+  department: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
   experience_years: z.preprocess(
     (val) => {
       if (val === "" || val === null || val === undefined) return 0;
@@ -31,25 +31,25 @@ export const workerFormSchema = z.object({
     },
     z.number().min(0, "Experience must be at least 0").default(0)
   ),
-  working_hours: z.string().optional(),
-  work_mode: z.string().optional(),
-  office_location: z.string().optional(),
-  github_url: z.string().url("Invalid Github URL").or(z.literal("")).optional(),
-  linkedin_url: z.string().url("Invalid LinkedIn URL").or(z.literal("")).optional(),
-  portfolio_url: z.string().url("Invalid Portfolio URL").or(z.literal("")).optional(),
-  address_line1: z.string().optional(),
-  address_line2: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  country: z.string().optional(),
-  pincode: z.string().optional().refine((val) => !val || /^[0-9]{6}$/.test(val), {
+  working_hours: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
+  work_mode: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "OFFICE"),
+  office_location: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
+  github_url: z.union([z.string().url("Invalid Github URL"), z.literal(""), z.null()]).optional().transform((val) => val ?? ""),
+  linkedin_url: z.union([z.string().url("Invalid LinkedIn URL"), z.literal(""), z.null()]).optional().transform((val) => val ?? ""),
+  portfolio_url: z.union([z.string().url("Invalid Portfolio URL"), z.literal(""), z.null()]).optional().transform((val) => val ?? ""),
+  address_line1: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
+  address_line2: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
+  city: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
+  state: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
+  country: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "India"),
+  pincode: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "").refine((val) => !val || /^[0-9]{6}$/.test(val), {
     message: "Pincode must be 6 digits",
   }),
   status: z.string().default("ACTIVE"),
-  employment_type: z.string().optional(),
-  joining_date: z.string().optional(),
-  remark: z.string().optional(),
-  avatar_url: z.string().optional(),
+  employment_type: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "FULL_TIME"),
+  joining_date: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
+  remark: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
+  avatar_url: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
 });
 
 const WorkerForm = ({ onSubmit, initialData, submitting, error }) => {

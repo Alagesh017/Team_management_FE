@@ -851,6 +851,7 @@ const TaskDetailPage = () => {
 
             <div className="space-y-1.5">
               <Label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Assigned To</Label>
+              {console.log("TaskDetailPage availableMembers:", availableMembers)} {/* Debug log */}
               <Select
                 value={subTaskForm.role ? `${subTaskForm.role}-${subTaskForm.role_id}` : ""}
                 onValueChange={(val) => {
@@ -865,7 +866,7 @@ const TaskDetailPage = () => {
                 <SelectTrigger className="border-slate-200"><SelectValue placeholder="Select member" /></SelectTrigger>
                 <SelectContent>
                   {availableMembers.map(m => (
-                    <SelectItem key={`${m.type}-${m.user_id}`} value={`${m.type}-${m.user_id}`}>
+                    <SelectItem key={`${m.role}-${m.user_id}`} value={`${m.role}-${m.user_id}`}>
                       {m.first_name} {m.last_name}
                     </SelectItem>
                   ))}

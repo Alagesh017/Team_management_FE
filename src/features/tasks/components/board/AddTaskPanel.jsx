@@ -16,6 +16,8 @@ const AddTaskPanel = ({
   setNewTaskPriority,
   newTaskEstimatedHours,
   setNewTaskEstimatedHours,
+  newTaskActualHours,
+  setNewTaskActualHours,
   selectedMembers,
   getSelectedMembersData,
   isSaving,
@@ -72,7 +74,7 @@ const AddTaskPanel = ({
             type="date"
             value={newTaskStartDate}
             onChange={(e) => setNewTaskStartDate(e.target.value)}
-            className="h-8 text-xs px-2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:ml-1"
+            className="h-8 text-xs px-2 pr-12"
           />
         </div>
         <div>
@@ -81,22 +83,35 @@ const AddTaskPanel = ({
             type="date"
             value={newTaskDueDate}
             onChange={(e) => setNewTaskDueDate(e.target.value)}
-            className="h-8 text-xs px-2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:ml-1"
+            className="h-8 text-xs px-2 pr-8"
           />
         </div>
       </div>
 
-      {/* Hours input */}
-      <div>
-        <label className="text-[10px] font-medium text-slate-500 mb-1 block">Estimated Hours</label>
-        <Input
-          type="number"
-          step="0.5"
-          value={newTaskEstimatedHours}
-          onChange={(e) => setNewTaskEstimatedHours(e.target.value)}
-          className="h-7 text-xs"
-          placeholder="e.g., 4"
-        />
+      {/* Hours inputs */}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] font-medium text-slate-500 mb-1 block">Estimated Hours</label>
+          <Input
+            type="number"
+            step="0.5"
+            value={newTaskEstimatedHours}
+            onChange={(e) => setNewTaskEstimatedHours(e.target.value)}
+            className="h-7 text-xs"
+            placeholder="e.g., 4"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] font-medium text-slate-500 mb-1 block">Actual Hours</label>
+          <Input
+            type="number"
+            step="0.5"
+            value={newTaskActualHours}
+            onChange={(e) => setNewTaskActualHours(e.target.value)}
+            className="h-7 text-xs"
+            placeholder="e.g., 5"
+          />
+        </div>
       </div>
 
       {/* assigned members mini-row */}

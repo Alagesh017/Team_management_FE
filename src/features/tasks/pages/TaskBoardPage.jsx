@@ -13,66 +13,68 @@ const TaskBoardPage = () => {
   const navigate = useNavigate();
   const { sidebarWidth } = useSidebar();
   const {
-    id: projectId,
-    project,
-    searchQuery,
-    setSearchQuery,
-    meMode,
-    setMeMode,
-    availableMembers,
-    statuses,
-    loading,
-    draggedTask,
-    canAddEditDelete,
-    canMoveCards,
-    activeColumn,
-    newTaskTitle,
-    setNewTaskTitle,
-    newTaskStartDate,
-    setNewTaskStartDate,
-    newTaskDueDate,
-    setNewTaskDueDate,
-    newTaskPriority,
-    setNewTaskPriority,
-    newTaskEstimatedHours,
-    setNewTaskEstimatedHours,
-    selectedMembers,
-    getSelectedMembersData,
-    isSaving,
-    columnRefs,
-    openAddPanel,
-    closeAddPanel,
-    handleAddTask,
-    isMemberDialogOpen,
-    setIsMemberDialogOpen,
-    filteredMembers,
-    memberSearch,
-    setMemberSearch,
-    toggleMember,
-    handleDragStart,
-    handleDragEnd,
-    handleDrop,
-    openTaskDetails,
-    setTaskToDelete,
-    setIsDeleteDialogOpen,
-    isTaskDetailsOpen,
-    setIsTaskDetailsOpen,
-    selectedTask,
-    setSelectedTask,
-    isEditingTask,
-    setIsEditingTask,
-    editTaskData,
-    setEditTaskData,
-    editSelectedMembers,
-    setEditSelectedMembers,
-    handleEditTask,
-    toggleEditMember,
-    isDeleteDialogOpen,
-    setTaskToDelete: setTaskToDeleteFn,
-    taskToDelete,
-    handleDeleteTask,
-    user
-  } = useTaskBoard();
+  id: projectId,
+  project,
+  searchQuery,
+  setSearchQuery,
+  meMode,
+  setMeMode,
+  availableMembers,
+  statuses,
+  loading,
+  draggedTask,
+  canAddEditDelete,
+  canMoveCards,
+  activeColumn,
+  newTaskTitle,
+  setNewTaskTitle,
+  newTaskStartDate,
+  setNewTaskStartDate,
+  newTaskDueDate,
+  setNewTaskDueDate,
+  newTaskPriority,
+  setNewTaskPriority,
+  newTaskEstimatedHours,
+  setNewTaskEstimatedHours,
+  newTaskActualHours,
+  setNewTaskActualHours,
+  selectedMembers,
+  getSelectedMembersData,
+  isSaving,
+  columnRefs,
+  openAddPanel,
+  closeAddPanel,
+  handleAddTask,
+  isMemberDialogOpen,
+  setIsMemberDialogOpen,
+  filteredMembers,
+  memberSearch,
+  setMemberSearch,
+  toggleMember,
+  handleDragStart,
+  handleDragEnd,
+  handleDrop,
+  openTaskDetails,
+  setTaskToDelete,
+  setIsDeleteDialogOpen,
+  isTaskDetailsOpen,
+  setIsTaskDetailsOpen,
+  selectedTask,
+  setSelectedTask,
+  isEditingTask,
+  setIsEditingTask,
+  editTaskData,
+  setEditTaskData,
+  editSelectedMembers,
+  setEditSelectedMembers,
+  handleEditTask,
+  toggleEditMember,
+  isDeleteDialogOpen,
+  setTaskToDelete: setTaskToDeleteFn,
+  taskToDelete,
+  handleDeleteTask,
+  user
+} = useTaskBoard();
 
   /* ── loading ── */
   if (loading) {
@@ -126,42 +128,44 @@ const TaskBoardPage = () => {
 
             return (
               <BoardColumn
-                key={status.status_id}
-                status={status}
-                statusTasks={statusTasks}
-                draggedTask={draggedTask}
-                canAddEditDelete={canAddEditDelete}
-                canMoveCards={canMoveCards}
-                isAddOpen={activeColumn === status.status_id}
-                columnRef={(el) => (columnRefs.current[status.status_id] = el)}
-                // add task props
-                newTaskTitle={newTaskTitle}
-                setNewTaskTitle={setNewTaskTitle}
-                newTaskStartDate={newTaskStartDate}
-                setNewTaskStartDate={setNewTaskStartDate}
-                newTaskDueDate={newTaskDueDate}
-                setNewTaskDueDate={setNewTaskDueDate}
-                newTaskPriority={newTaskPriority}
-                setNewTaskPriority={setNewTaskPriority}
-                newTaskEstimatedHours={newTaskEstimatedHours}
-                setNewTaskEstimatedHours={setNewTaskEstimatedHours}
-                selectedMembers={selectedMembers}
-                getSelectedMembersData={getSelectedMembersData}
-                isSaving={isSaving}
-                // handlers
-                onOpenAddPanel={openAddPanel}
-                onCloseAddPanel={closeAddPanel}
-                onAddTask={handleAddTask}
-                onOpenMemberDialog={() => setIsMemberDialogOpen(true)}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                onDrop={handleDrop}
-                onTaskClick={openTaskDetails}
-                onDeleteClick={(task) => {
-                  setTaskToDeleteFn(task);
-                  setIsDeleteDialogOpen(true);
-                }}
-              />
+              key={status.status_id}
+              status={status}
+              statusTasks={statusTasks}
+              draggedTask={draggedTask}
+              canAddEditDelete={canAddEditDelete}
+              canMoveCards={canMoveCards}
+              isAddOpen={activeColumn === status.status_id}
+              columnRef={(el) => (columnRefs.current[status.status_id] = el)}
+              // add task props
+              newTaskTitle={newTaskTitle}
+              setNewTaskTitle={setNewTaskTitle}
+              newTaskStartDate={newTaskStartDate}
+              setNewTaskStartDate={setNewTaskStartDate}
+              newTaskDueDate={newTaskDueDate}
+              setNewTaskDueDate={setNewTaskDueDate}
+              newTaskPriority={newTaskPriority}
+              setNewTaskPriority={setNewTaskPriority}
+              newTaskEstimatedHours={newTaskEstimatedHours}
+              setNewTaskEstimatedHours={setNewTaskEstimatedHours}
+              newTaskActualHours={newTaskActualHours}
+              setNewTaskActualHours={setNewTaskActualHours}
+              selectedMembers={selectedMembers}
+              getSelectedMembersData={getSelectedMembersData}
+              isSaving={isSaving}
+              // handlers
+              onOpenAddPanel={openAddPanel}
+              onCloseAddPanel={closeAddPanel}
+              onAddTask={handleAddTask}
+              onOpenMemberDialog={() => setIsMemberDialogOpen(true)}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDrop={handleDrop}
+              onTaskClick={openTaskDetails}
+              onDeleteClick={(task) => {
+                setTaskToDeleteFn(task);
+                setIsDeleteDialogOpen(true);
+              }}
+            />
             );
           })}
 

@@ -84,12 +84,16 @@ export const useTaskDetail = () => {
         ...(projectTaskData.all_admins || []),
         ...(projectTaskData.allocated_members || [])
       ];
+      console.log("=== ALL MEMBERS ===", allMembers); // Debug log
       allMembers.forEach(m => {
         if (!seen.has(m.user_id)) {
           seen.add(m.user_id);
-          members.push({ ...m, type: m.type || (m.is_admin || m.is_superadmin ? "admin" : "worker") });
+          const newMember = { ...m, type: m.type || (m.is_admin || m.is_superadmin ? "admin" : "worker") };
+          members.push(newMember);
+          console.log("Adding member:", newMember); // Debug log
         }
       });
+      console.log("=== FINAL availableMembers ===", members); // Debug log
       setAvailableMembers(members);
     } catch (err) {
       console.error("Failed to fetch data:", err);

@@ -22,6 +22,8 @@ const BoardColumn = ({
   setNewTaskPriority,
   newTaskEstimatedHours,
   setNewTaskEstimatedHours,
+  newTaskActualHours,
+  setNewTaskActualHours,
   selectedMembers,
   getSelectedMembersData,
   isSaving,
@@ -139,6 +141,8 @@ const BoardColumn = ({
             setNewTaskPriority={setNewTaskPriority}
             newTaskEstimatedHours={newTaskEstimatedHours}
             setNewTaskEstimatedHours={setNewTaskEstimatedHours}
+            newTaskActualHours={newTaskActualHours}
+            setNewTaskActualHours={setNewTaskActualHours}
             selectedMembers={selectedMembers}
             getSelectedMembersData={getSelectedMembersData}
             isSaving={isSaving}
