@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useMsal } from "@azure/msal-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { toast } from "../../../common/hooks/use-toast";
 
 export default function MicrosoftRedirectHandler() {
   const { instance } = useMsal();
@@ -40,11 +41,30 @@ export default function MicrosoftRedirectHandler() {
             const apiResponse = await microsoftLogin(response.account.username);
             console.log("Microsoft login API response:", apiResponse);
             
+            toast({
+              title: "Success!",
+              description: "Logged in with Microsoft successfully.",
+              variant: "default",
+            });
+            
             navigate("/dashboard");
           }
         }
       } catch (error) {
         console.error("Microsoft redirect error:", error);
+        let errorMessage = "Microsoft Login failed. Please try again.";
+        
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (typeof error === "string") {
+          errorMessage = error;
+        }
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
       }
     };
 

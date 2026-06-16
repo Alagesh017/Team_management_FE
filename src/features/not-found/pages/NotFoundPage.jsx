@@ -17,10 +17,10 @@ const NotFoundPage = () => {
           />
         </div>
         <Button 
-          onClick={() => navigate("/dashboard")} 
+          onClick={() => navigate("/")} 
           className="bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all active:scale-95 px-8 py-6 text-lg"
         >
-          Go to Dashboard
+          Go to Login
         </Button>
       </div>
     </div>

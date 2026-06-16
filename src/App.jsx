@@ -7,7 +7,7 @@ import { Toaster } from './common/components/Toaster'
 
 function App() {
 	return (
-		<Router>
+		<Router basename="/taskmanagement/">
 			<MicrosoftRedirectHandler />
 			<ProjectProvider>
 				<ProjectAllocationProvider>

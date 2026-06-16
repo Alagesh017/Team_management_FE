@@ -11,3 +11,13 @@ if (fs.existsSync(indexPath)) {
 } else {
   console.error('dist/index.html not found!');
 }
+
+// Copy .htaccess file to dist directory for server deployment
+const htaccessSrc = '.htaccess';
+const htaccessDest = path.join('dist', '.htaccess');
+if (fs.existsSync(htaccessSrc)) {
+  fs.copyFileSync(htaccessSrc, htaccessDest);
+  console.log('Copied .htaccess file to dist directory');
+} else {
+  console.warn('.htaccess file not found in root directory');
+}
