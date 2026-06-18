@@ -2,6 +2,7 @@ import React from "react";
 import { Flame, Calendar, Clock, Trash2 } from "lucide-react";
 import { PRIORITY, formatDate } from "./constants";
 import AvatarStack from "./AvatarStack";
+import InlineEditTaskPanel from "./InlineEditTaskPanel";
 
 const TaskCard = ({
   task,
@@ -12,9 +13,45 @@ const TaskCard = ({
   onDragStart,
   onDragEnd,
   onClick,
+  onDoubleClick,
   onDeleteClick,
+  isEditing,
+  editTaskPriority,
+  setEditTaskPriority,
+  editTaskStartDate,
+  setEditTaskStartDate,
+  editTaskDueDate,
+  setEditTaskDueDate,
+  editTaskEstimatedHours,
+  setEditTaskEstimatedHours,
+  editTaskActualHours,
+  setEditTaskActualHours,
+  isSaving,
+  onSave,
+  onCancel,
 }) => {
   const p = PRIORITY[task.priority] || PRIORITY.medium;
+
+  if (isEditing) {
+    return (
+      <InlineEditTaskPanel
+        task={task}
+        editTaskPriority={editTaskPriority}
+        setEditTaskPriority={setEditTaskPriority}
+        editTaskStartDate={editTaskStartDate}
+        setEditTaskStartDate={setEditTaskStartDate}
+        editTaskDueDate={editTaskDueDate}
+        setEditTaskDueDate={setEditTaskDueDate}
+        editTaskEstimatedHours={editTaskEstimatedHours}
+        setEditTaskEstimatedHours={setEditTaskEstimatedHours}
+        editTaskActualHours={editTaskActualHours}
+        setEditTaskActualHours={setEditTaskActualHours}
+        isSaving={isSaving}
+        onSave={onSave}
+        onCancel={onCancel}
+      />
+    );
+  }
 
   return (
     <div
@@ -31,6 +68,7 @@ const TaskCard = ({
       onDragStart={canMoveCards ? () => onDragStart(task) : undefined}
       onDragEnd={onDragEnd}
       onClick={(e) => onClick(task, e)}
+      onDoubleClick={(e) => onDoubleClick && onDoubleClick(task, e)}
       onMouseEnter={(e) => {
         if (draggedTask?.task_id !== task.task_id) {
           e.currentTarget.style.background = "#ffffff";
@@ -89,28 +127,20 @@ const TaskCard = ({
       )}
 
       {/* meta */}
-      {(task.start_date || task.due_date || task.estimated_hours) && (
-        <div className="flex items-center gap-3 flex-wrap">
-          {task.start_date && (
-            <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600">
-              <Calendar className="h-3 w-3" />
-              <span>Start: {formatDate(task.start_date)}</span>
-            </div>
-          )}
-          {task.due_date && (
-            <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600">
-              <Calendar className="h-3 w-3" />
-              <span>Due: {formatDate(task.due_date)}</span>
-            </div>
-          )}
-          {task.estimated_hours && (
-            <div className="flex items-center gap-1 text-[11px] font-medium text-slate-600">
-              <Clock className="h-3 w-3" />
-              <span>{task.estimated_hours}h</span>
-            </div>
-          )}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400">
+          <Calendar className="h-3 w-3" />
+          <span>Start: {task.start_date ? formatDate(task.start_date) : '-'}</span>
         </div>
-      )}
+        <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400">
+          <Calendar className="h-3 w-3" />
+          <span>Due: {task.due_date ? formatDate(task.due_date) : '-'}</span>
+        </div>
+        <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400">
+          <Clock className="h-3 w-3" />
+          <span>{task.estimated_hours ? `${task.estimated_hours}h` : '-'}</span>
+        </div>
+      </div>
 
       {/* left accent bar on hover */}
       <div

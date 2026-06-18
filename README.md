@@ -9,7 +9,7 @@ This project provides a reusable React template with best practices for developm
 - Vite-based React setup for fast development.
 - Pre-configured ESLint and Prettier for code quality.
 - Environment-based API configuration.
-- Automated build and zip packaging for deployment.  
+- Automated build and zip packaging for deployment.
 
 ## Documentation
 

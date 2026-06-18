@@ -1,21 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragOverlay,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { DataTable } from "../../../common/components/DataTable";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import { taskStatusService } from "../services/taskStatusService";
@@ -49,35 +33,63 @@ import TaskStatusForm from "../components/TaskStatusForm";
 import TaskStatusDetails from "../components/TaskStatusDetails";
 import { useToast } from "../../../common/hooks/use-toast";
 
-// Sortable Row Wrapper for DataTable
-const SortableRow = ({ children, status, index }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: status.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition || "transform 200ms ease", // Add smooth transition
-    opacity: isDragging ? 0.4 : 1,
-    zIndex: isDragging ? 9999 : "auto",
-    backgroundColor: isDragging ? "#f8fafc" : "transparent",
-  };
-
+/**
+ * DraggableRow
+ *
+ * @hello-pangea/dnd gives us a `provided` object per Draggable item with:
+ *   - provided.innerRef / provided.draggableProps -> goes on the row itself
+ *   - provided.dragHandleProps -> goes ONLY on whatever you want to be
+ *     the grip; everything else in the row stays a normal, unaffected
+ *     click target.
+ *
+ * Same principle as before: only the grip button gets the drag
+ * handle props. The <tr> itself never gets drag listeners, so clicks
+ * on the dropdown, text, badges, etc. are always plain clicks —
+ * never racing against a drag gesture.
+ *
+ * snapshot.isDragging is this library's equivalent of dnd-kit's
+ * isDragging — it's true for exactly the row currently being
+ * dragged, and is what drives the "picked up" visual state.
+ */
+const DraggableRow = ({ children, id, index }) => {
   return (
-    <tr
-      ref={setNodeRef}
-      style={style}
-      className={`cursor-grab active:cursor-grabbing select-none ${isDragging ? "bg-slate-100 shadow-lg" : "hover:bg-slate-50 transition-colors"}`}
-      {...attributes}
-      {...listeners}
-    >
-      {children}
-    </tr>
+    <Draggable draggableId={id} index={index}>
+      {(provided, snapshot) => (
+        <tr
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          style={{
+            ...provided.draggableProps.style,
+            // @hello-pangea/dnd positions the dragged row with inline
+            // transforms already; we only add visual extras on top.
+            zIndex: snapshot.isDragging ? 50 : "auto",
+          }}
+          className={`select-none ${
+            snapshot.isDragging
+              ? "bg-blue-50 shadow-lg ring-2 ring-blue-400 ring-inset"
+              : "hover:bg-slate-50 transition-colors"
+          }`}
+        >
+          <td className="w-10 px-2 align-middle">
+            <button
+              type="button"
+              aria-label="Drag to reorder"
+              aria-pressed={snapshot.isDragging}
+              {...provided.dragHandleProps}
+              onClick={(e) => e.preventDefault()}
+              className={`flex h-8 w-8 items-center justify-center rounded-md touch-none transition-all duration-150 ${
+                snapshot.isDragging
+                  ? "scale-110 bg-blue-100 text-blue-600 ring-2 ring-blue-400 shadow-md cursor-grabbing"
+                  : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-grab active:scale-110 active:bg-blue-100 active:text-blue-600 active:cursor-grabbing"
+              }`}
+            >
+              <GripVertical className="h-4 w-4" />
+            </button>
+          </td>
+          {children}
+        </tr>
+      )}
+    </Draggable>
   );
 };
 
@@ -92,21 +104,7 @@ const TaskStatusPage = () => {
   const [statusToDelete, setStatusToDelete] = useState(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [activeId, setActiveId] = useState(null);
   const { toast } = useToast();
-
-  // DND Sensors - make drag and drop very easy and smooth
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 1, // Very low activation distance
-        tolerance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   const fetchStatuses = async () => {
     try {
@@ -185,124 +183,121 @@ const TaskStatusPage = () => {
   };
 
   // Drag & Drop Handler
-  const handleDragEnd = async (event) => {
-    const { active, over } = event;
+  // @hello-pangea/dnd's onDragEnd gives `source`/`destination` *indices*
+  // directly — no need to look up ids and compute indices ourselves like
+  // dnd-kit required. `destination` is null if the item was dropped
+  // outside any valid droppable area (e.g. dragged off the table), so we
+  // guard against that.
+  const handleDragEnd = async (result) => {
+    const { source, destination } = result;
 
-    if (active.id !== over.id) {
-      const oldIndex = statuses.findIndex((s) => s.id === active.id);
-      const newIndex = statuses.findIndex((s) => s.id === over.id);
-
-      // Optimistic UI update
-      const newStatuses = arrayMove(statuses, oldIndex, newIndex);
-      setStatuses(newStatuses);
-
-      // Prepare data for backend (update sort_order based on index)
-      const reorderedStatuses = newStatuses.map((status, index) => ({
-        id: status.id,
-        sort_order: index,
-      }));
-
-      try {
-        // Call backend to save new order
-        await taskStatusService.reorderTaskStatuses(reorderedStatuses);
-        toast({
-          title: "Success",
-          description: "Task statuses reordered successfully",
-          variant: "success",
-        });
-      } catch (err) {
-        console.error("Reorder failed:", err);
-        // Revert on error
-        fetchStatuses();
-        toast({
-          title: "Error",
-          description: "Failed to reorder task statuses",
-          variant: "destructive",
-        });
-      }
+    if (!destination || source.index === destination.index) {
+      return;
     }
-    setActiveId(null);
+
+    // Optimistic UI update — simple splice-based reorder
+    const previousStatuses = statuses;
+    const newStatuses = Array.from(statuses);
+    const [moved] = newStatuses.splice(source.index, 1);
+    newStatuses.splice(destination.index, 0, moved);
+    setStatuses(newStatuses);
+
+    // Prepare data for backend (update sort_order based on index)
+    const reorderedStatuses = newStatuses.map((status, index) => ({
+      id: status.id,
+      sort_order: index,
+    }));
+
+    try {
+      await taskStatusService.reorderTaskStatuses(reorderedStatuses);
+      toast({
+        title: "Success",
+        description: "Task statuses reordered successfully",
+        variant: "success",
+      });
+    } catch (err) {
+      console.error("Reorder failed:", err);
+      // Revert on error instead of refetching, so the UI doesn't flash
+      // back to a stale state while the network request is in flight.
+      setStatuses(previousStatuses);
+      toast({
+        title: "Error",
+        description: "Failed to reorder task statuses",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDragStart = (event) => {
-    setActiveId(event.active.id);
-  };
-
-  const columns = useMemo(() => [
-    {
-      accessorKey: "name",
-      header: "Status Name",
-      cell: ({ row }) => {
-        const status = row.original;
-        return (
-          <div className="flex items-center gap-3">
-            <div
-              className="h-3 w-3 rounded-full shadow-sm"
-              style={{ backgroundColor: status.color || "#000000" }}
-            />
-            <span className="font-semibold text-slate-900">{status.name}</span>
-          </div>
-        );
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "name",
+        header: "Status Name",
+        cell: ({ row }) => {
+          const status = row.original;
+          return (
+            <div className="flex items-center gap-3">
+              <div
+                className="h-3 w-3 rounded-full shadow-sm"
+                style={{ backgroundColor: status.color || "#000000" }}
+              />
+              <span className="font-semibold text-slate-900">{status.name}</span>
+            </div>
+          );
+        },
       },
-    },
-    {
-      accessorKey: "sort_order",
-      header: "Order",
-      cell: ({ row }) => {
-        const index = statuses.findIndex((s) => s.id === row.original.id);
-        return (
-          <span className="inline-flex items-center justify-center bg-slate-100 text-slate-700 text-xs font-bold px-2 py-1 rounded-full border border-slate-200">
-            {index + 1}
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: "remark",
-      header: "Remark",
-      cell: ({ row }) => {
-        const remark = row.getValue("remark");
-        return (
-          <span className="text-slate-500 text-sm truncate max-w-[200px] block">
-            {remark || <span className="italic text-slate-300">No remark</span>}
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: "is_confidential",
-      header: "Confidential",
-      cell: ({ row }) => {
-        const isConfidential = row.getValue("is_confidential");
-        return (
-          <div className="flex items-center gap-2">
-            <div
-              className={`h-2 w-2 rounded-full ${
-                isConfidential ? "bg-red-500" : "bg-slate-300"
-              }`}
-            />
-            <span
-              className={`text-xs font-bold ${
-                isConfidential ? "text-red-600" : "text-slate-400"
-              }`}
-            >
-              {isConfidential ? "YES" : "NO"}
+      {
+        accessorKey: "sort_order",
+        header: "Order",
+        cell: ({ row }) => {
+          const index = statuses.findIndex((s) => s.id === row.original.id);
+          return (
+            <span className="inline-flex items-center justify-center bg-slate-100 text-slate-700 text-xs font-bold px-2 py-1 rounded-full border border-slate-200">
+              {index + 1}
             </span>
-          </div>
-        );
+          );
+        },
       },
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        const status = row.original;
-        // Stop propagation on the dropdown to prevent drag
-        const stopDrag = (e) => {
-          e.stopPropagation();
-        };
-        
-        return (
-          <div onClick={stopDrag}>
+      {
+        accessorKey: "remark",
+        header: "Remark",
+        cell: ({ row }) => {
+          const remark = row.getValue("remark");
+          return (
+            <span className="text-slate-500 text-sm truncate max-w-[200px] block">
+              {remark || <span className="italic text-slate-300">No remark</span>}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: "is_confidential",
+        header: "Confidential",
+        cell: ({ row }) => {
+          const isConfidential = row.getValue("is_confidential");
+          return (
+            <div className="flex items-center gap-2">
+              <div
+                className={`h-2 w-2 rounded-full ${
+                  isConfidential ? "bg-red-500" : "bg-slate-300"
+                }`}
+              />
+              <span
+                className={`text-xs font-bold ${
+                  isConfidential ? "text-red-600" : "text-slate-400"
+                }`}
+              >
+                {isConfidential ? "YES" : "NO"}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        id: "actions",
+        cell: ({ row }) => {
+          const status = row.original;
+          return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0">
@@ -326,71 +321,46 @@ const TaskStatusPage = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-        );
+          );
+        },
       },
-    },
-  ], [statuses]);
+    ],
+    [statuses]
+  );
 
-  // Custom table component to wrap DataTable with drag and drop
+  // Custom table component to wrap DataTable with drag and drop.
+  // Note: this is defined inside the parent render, but does not need to
+  // be — pulling it to module scope would be a further improvement, since
+  // redefining a component function on every render can cause React to
+  // remount internals unnecessarily. Left inline here to keep the diff
+  // minimal and focused on the actual DnD bug.
   const CustomDataTable = () => {
     return (
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-        onDragStart={handleDragStart}
-      >
-        <SortableContext
-          items={statuses.map((s) => s.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          <DataTable
-            columns={columns}
-            data={statuses}
-            filterColumn="name"
-            rowComponent={(props) => {
-              const status = props.row.original;
-              return (
-                <SortableRow
-                  status={status}
-                  index={props.index}
-                >
-                  {props.children}
-                </SortableRow>
-              );
-            }}
-          />
-        </SortableContext>
-
-        {/* Drag Overlay */}
-        <DragOverlay dropAnimation={{ duration: 200, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
-          {activeId ? (
-            <div className="bg-white p-6 rounded-xl shadow-2xl border-2 border-blue-500/30 opacity-100 min-w-[400px]">
-              {(() => {
-                const status = statuses.find((s) => s.id === activeId);
-                const index = statuses.findIndex((s) => s.id === activeId);
-                return status ? (
-                  <div className="flex items-center justify-between gap-6">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="h-4 w-4 rounded-full shadow-md"
-                        style={{ backgroundColor: status.color || "#000000" }}
-                      />
-                      <span className="font-bold text-slate-900 text-lg">
-                        {status.name}
-                      </span>
-                    </div>
-                    <span className="inline-flex items-center justify-center bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">
-                      #{index + 1}
-                    </span>
-                  </div>
-                ) : null;
-              })()}
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="task-statuses">
+          {(droppableProvided) => (
+            <DataTable
+              columns={columns}
+              data={statuses}
+              filterColumn="name"
+              // tbodyRef/tbodyProps (added to DataTable.jsx) let us attach
+              // the Droppable's ref and droppableProps directly to the
+              // real <tbody> DOM node, which @hello-pangea/dnd requires
+              // for measuring drop targets correctly.
+              tbodyRef={droppableProvided.innerRef}
+              tbodyProps={droppableProvided.droppableProps}
+              rowComponent={(props) => {
+                const status = props.row.original;
+                return (
+                  <DraggableRow id={String(status.id)} index={props.index}>
+                    {props.children}
+                  </DraggableRow>
+                );
+              }}
+            />
+          )}
+        </Droppable>
+      </DragDropContext>
     );
   };
 

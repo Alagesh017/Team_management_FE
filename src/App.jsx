@@ -6,8 +6,9 @@ import MicrosoftRedirectHandler from './features/auth/components/MicrosoftRedire
 import { Toaster } from './common/components/Toaster'
 
 function App() {
+	const basePath = import.meta.env.VITE_BASE_PATH || '/taskmanagement'
 	return (
-		<Router basename="/taskmanagement/">
+		<Router basename={basePath}>
 			<MicrosoftRedirectHandler />
 			<ProjectProvider>
 				<ProjectAllocationProvider>

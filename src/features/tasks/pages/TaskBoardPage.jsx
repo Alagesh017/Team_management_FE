@@ -55,6 +55,7 @@ const TaskBoardPage = () => {
   handleDragEnd,
   handleDrop,
   openTaskDetails,
+  openEditTask,
   setTaskToDelete,
   setIsDeleteDialogOpen,
   isTaskDetailsOpen,
@@ -73,7 +74,21 @@ const TaskBoardPage = () => {
   setTaskToDelete: setTaskToDeleteFn,
   taskToDelete,
   handleDeleteTask,
-  user
+  user,
+  // Inline edit
+  editingTaskId,
+  editTaskPriority,
+  setEditTaskPriority,
+  editTaskStartDate,
+  setEditTaskStartDate,
+  editTaskDueDate,
+  setEditTaskDueDate,
+  editTaskEstimatedHours,
+  setEditTaskEstimatedHours,
+  editTaskActualHours,
+  setEditTaskActualHours,
+  cancelInlineEdit,
+  saveInlineEdit
 } = useTaskBoard();
 
   /* ── loading ── */
@@ -161,10 +176,25 @@ const TaskBoardPage = () => {
               onDragEnd={handleDragEnd}
               onDrop={handleDrop}
               onTaskClick={openTaskDetails}
+              onTaskDoubleClick={openEditTask}
               onDeleteClick={(task) => {
                 setTaskToDeleteFn(task);
                 setIsDeleteDialogOpen(true);
               }}
+              // inline edit props
+              editingTaskId={editingTaskId}
+              editTaskPriority={editTaskPriority}
+              setEditTaskPriority={setEditTaskPriority}
+              editTaskStartDate={editTaskStartDate}
+              setEditTaskStartDate={setEditTaskStartDate}
+              editTaskDueDate={editTaskDueDate}
+              setEditTaskDueDate={setEditTaskDueDate}
+              editTaskEstimatedHours={editTaskEstimatedHours}
+              setEditTaskEstimatedHours={setEditTaskEstimatedHours}
+              editTaskActualHours={editTaskActualHours}
+              setEditTaskActualHours={setEditTaskActualHours}
+              onSaveInlineEdit={saveInlineEdit}
+              onCancelInlineEdit={cancelInlineEdit}
             />
             );
           })}

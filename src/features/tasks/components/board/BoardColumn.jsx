@@ -36,7 +36,22 @@ const BoardColumn = ({
   onDragEnd,
   onDrop,
   onTaskClick,
+  onTaskDoubleClick,
   onDeleteClick,
+  // inline edit props
+  editingTaskId,
+  editTaskPriority,
+  setEditTaskPriority,
+  editTaskStartDate,
+  setEditTaskStartDate,
+  editTaskDueDate,
+  setEditTaskDueDate,
+  editTaskEstimatedHours,
+  setEditTaskEstimatedHours,
+  editTaskActualHours,
+  setEditTaskActualHours,
+  onSaveInlineEdit,
+  onCancelInlineEdit,
 }) => {
   const color = status.color || "#6366f1";
   const cantDropHere =
@@ -123,7 +138,22 @@ const BoardColumn = ({
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
             onClick={onTaskClick}
+            onDoubleClick={onTaskDoubleClick}
             onDeleteClick={onDeleteClick}
+            isEditing={editingTaskId === task.task_id}
+            editTaskPriority={editTaskPriority}
+            setEditTaskPriority={setEditTaskPriority}
+            editTaskStartDate={editTaskStartDate}
+            setEditTaskStartDate={setEditTaskStartDate}
+            editTaskDueDate={editTaskDueDate}
+            setEditTaskDueDate={setEditTaskDueDate}
+            editTaskEstimatedHours={editTaskEstimatedHours}
+            setEditTaskEstimatedHours={setEditTaskEstimatedHours}
+            editTaskActualHours={editTaskActualHours}
+            setEditTaskActualHours={setEditTaskActualHours}
+            isSaving={isSaving}
+            onSave={onSaveInlineEdit}
+            onCancel={onCancelInlineEdit}
           />
         ))}
 

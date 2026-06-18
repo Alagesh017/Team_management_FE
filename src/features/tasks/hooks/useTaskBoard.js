@@ -33,6 +33,14 @@ export const useTaskBoard = () => {
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [isSaving, setIsSaving]             = useState(false);
 
+  /* ── inline edit task state ── */
+  const [editingTaskId, setEditingTaskId]   = useState(null);
+  const [editTaskPriority, setEditTaskPriority] = useState("medium");
+  const [editTaskStartDate, setEditTaskStartDate] = useState("");
+  const [editTaskDueDate, setEditTaskDueDate] = useState("");
+  const [editTaskEstimatedHours, setEditTaskEstimatedHours] = useState("");
+  const [editTaskActualHours, setEditTaskActualHours] = useState("");
+
   /* ── member dialog ── */
   const [isMemberDialogOpen, setIsMemberDialogOpen] = useState(false);
   const [memberSearch, setMemberSearch]     = useState("");
@@ -267,10 +275,53 @@ export const useTaskBoard = () => {
     }
   };
 
+  /* ── inline edit functions ── */
+  const startInlineEdit = (task) => {
+    setEditingTaskId(task.task_id);
+    setEditTaskPriority(task.priority || "medium");
+    setEditTaskStartDate(task.start_date ? task.start_date.split("T")[0] : "");
+    setEditTaskDueDate(task.due_date ? task.due_date.split("T")[0] : "");
+    setEditTaskEstimatedHours(task.estimated_hours || "");
+    setEditTaskActualHours(task.actual_hours || "");
+  };
+
+  const cancelInlineEdit = () => {
+    setEditingTaskId(null);
+    setEditTaskPriority("medium");
+    setEditTaskStartDate("");
+    setEditTaskDueDate("");
+    setEditTaskEstimatedHours("");
+    setEditTaskActualHours("");
+  };
+
+  const saveInlineEdit = async (task) => {
+    try {
+      setIsSaving(true);
+      await taskService.updateTask(task.task_id, {
+        priority: editTaskPriority,
+        start_date: editTaskStartDate || null,
+        due_date: editTaskDueDate || null,
+        estimated_hours: editTaskEstimatedHours ? parseFloat(editTaskEstimatedHours) : null,
+        actual_hours: editTaskActualHours ? parseFloat(editTaskActualHours) : null,
+      });
+      cancelInlineEdit();
+      fetchData();
+    } catch (err) {
+      console.error("Failed to update task:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   /* ── task card click ── */
   const openTaskDetails = (task, e) => {
+    // Do nothing - no popup!
     if (e && e.target.closest("button")) return;
-    navigate(`/tasks/project/${id}/task/${task.task_id || task.id}`);
+  };
+
+  const openEditTask = (task, e) => {
+    if (e && e.target.closest("button")) return;
+    startInlineEdit(task);
   };
 
   return {
@@ -321,6 +372,22 @@ export const useTaskBoard = () => {
     handleDragStart,
     handleDragEnd,
     handleDrop,
-    openTaskDetails
+    openTaskDetails,
+    openEditTask,
+    // Inline edit
+    editingTaskId,
+    editTaskPriority,
+    setEditTaskPriority,
+    editTaskStartDate,
+    setEditTaskStartDate,
+    editTaskDueDate,
+    setEditTaskDueDate,
+    editTaskEstimatedHours,
+    setEditTaskEstimatedHours,
+    editTaskActualHours,
+    setEditTaskActualHours,
+    startInlineEdit,
+    cancelInlineEdit,
+    saveInlineEdit
   };
 };

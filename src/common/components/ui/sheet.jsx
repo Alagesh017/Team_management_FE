@@ -44,12 +44,16 @@ const sheetVariants = cva(
   }
 )
 
-const SheetContent = React.forwardRef(({ side = "right", className, children, ...props }, ref) => (
+const SheetContent = React.forwardRef(({ side = "right", className, children, onInteractOutside, ...props }, ref) => (
   <SheetPortal>
-    <SheetOverlay />
+    <SheetOverlay onClick={(e) => e.preventDefault()} />
     <SheetPrimitive.Content
       ref={ref}
       className={cn(sheetVariants({ side }), className)}
+      onInteractOutside={(event) => {
+        // Prevent closing from outside clicks
+        event.preventDefault();
+      }}
       {...props}
     >
       {children}

@@ -37,6 +37,8 @@ export function DataTable({
   onEdit,
   onDelete,
   rowComponent,
+  tbodyRef,
+  tbodyProps,
 }) {
   const [sorting, setSorting] = React.useState([])
   const [columnFilters, setColumnFilters] = React.useState([])
@@ -105,6 +107,19 @@ export function DataTable({
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
+                {/*
+                  ADDITIVE CHANGE (gated behind rowComponent, so every
+                  other DataTable usage in the app is unaffected):
+                  when a custom rowComponent is supplied, it may render
+                  one extra leading <td> per body row (e.g. a
+                  drag-and-drop grip handle that can't be expressed as
+                  a normal column because it needs direct access to
+                  dnd-kit's sortable attributes/listeners). This empty
+                  header cell keeps the header and body column counts
+                  in sync in that case. With no rowComponent, nothing
+                  changes.
+                */}
+                {rowComponent ? <TableHead className="w-10" /> : null}
                 {headerGroup.headers.map((header) => {
                   return (
                     <TableHead key={header.id}>
@@ -120,7 +135,17 @@ export function DataTable({
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody>
+          {/*
+            tbodyRef/tbodyProps are forwarded straight to TableBody, which
+            (assuming the standard shadcn ui/table.jsx pattern) forwards
+            refs and props to the underlying <tbody>. This is needed so an
+            external Droppable (e.g. from @hello-pangea/dnd) can attach
+            its ref and droppableProps directly to the real DOM <tbody> —
+            something that wasn't otherwise reachable from outside
+            DataTable. Both props are undefined/no-op unless explicitly
+            passed, so this doesn't change any other usage of DataTable.
+          */}
+          <TableBody ref={tbodyRef} {...tbodyProps}>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row, index) => {
                 const RowComponent = rowComponent || TableRow;
@@ -161,7 +186,7 @@ export function DataTable({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={rowComponent ? columns.length + 1 : columns.length}
                   className="h-24 text-center"
                 >
                   No results.
