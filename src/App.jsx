@@ -4,7 +4,7 @@ import { ProjectProvider } from './features/projects/contexts/ProjectContext'
 import { ProjectAllocationProvider } from './features/project-allocation/contexts/ProjectAllocationContext'
 import MicrosoftRedirectHandler from './features/auth/components/MicrosoftRedirectHandler'
 import { Toaster } from './common/components/Toaster'
-
+ 
 function App() {
 	const basePath = import.meta.env.VITE_BASE_PATH || '/taskmanagement'
 	return (

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAllocations } from "../hooks/useAllocations";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import { Button } from "../../../common/components/ui/button";
@@ -93,8 +93,13 @@ const ProjectAllocationPage = () => {
     loading, 
     addAllocation, 
     updateAllocation, 
-    deleteAllocation 
+    deleteAllocation,
+    fetchAllocations
   } = useAllocations();
+
+  useEffect(() => {
+    fetchAllocations();
+  }, [fetchAllocations]);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingAllocation, setEditingAllocation] = useState(null);

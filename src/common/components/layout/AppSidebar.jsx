@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import iconTop from "../../../assets/icon_top.png";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -176,7 +177,10 @@ const DroppableGroup = ({ group, projects, currentPath, searchQuery, isRestricte
             <span className={`font-bold tracking-tight ${isOver ? 'scale-105' : ''} transition-transform group-data-[collapsible=icon]:hidden`}>
               {group ? group.name : "Uncategorized"}
             </span>
-            <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-300 group-data-[state=open]/group-collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
+            <span className="ml-auto mr-2 text-[11px] font-black bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full group-data-[collapsible=icon]:hidden">
+              {groupedProjects.length}
+            </span>
+            <ChevronRight className="h-4 w-4 transition-transform duration-300 group-data-[state=open]/group-collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
@@ -348,8 +352,8 @@ export function AppSidebar() {
       <Sidebar collapsible="icon">
         <SidebarHeader className="border-b px-2 py-4 flex items-center justify-center group-data-[collapsible=icon]:px-0">
           <div className="flex items-center gap-3 font-bold text-xl px-4 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center w-full">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg transition-all duration-300">
-              T
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white shadow-lg transition-all duration-300 overflow-hidden">
+              <img src={iconTop} alt="Logo" className="h-full w-full object-cover" />
             </div>
             <span className="group-data-[collapsible=icon]:hidden whitespace-nowrap overflow-hidden">
               Team Manager

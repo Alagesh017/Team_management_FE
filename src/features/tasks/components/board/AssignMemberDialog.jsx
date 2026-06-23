@@ -4,6 +4,7 @@ import { Button } from "../../../../common/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../../common/components/ui/dialog";
 import { Input } from "../../../../common/components/ui/input";
 import { avatarColor, getMemberInitials, getMemberKey } from "./constants";
+import { getFullAvatarUrl } from "../../../../core/utils/utils";
 
 const AssignMemberDialog = ({
   open,
@@ -47,10 +48,14 @@ const AssignMemberDialog = ({
                   }`}
                 >
                   <div
-                    className="h-9 w-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm"
+                    className="h-9 w-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm overflow-hidden"
                     style={{ backgroundColor: avatarColor(member.user_id) }}
                   >
-                    {getMemberInitials(member)}
+                    {member.avatar_url ? (
+                      <img src={getFullAvatarUrl(member.avatar_url)} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      getMemberInitials(member)
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate ${selected ? "text-indigo-700" : "text-slate-800"}`}>

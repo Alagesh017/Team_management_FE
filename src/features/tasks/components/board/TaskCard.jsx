@@ -1,5 +1,5 @@
 import React from "react";
-import { Flame, Calendar, Clock, Trash2 } from "lucide-react";
+import { Flame, Calendar, Clock, Trash2, Edit } from "lucide-react";
 import { PRIORITY, formatDate } from "./constants";
 import AvatarStack from "./AvatarStack";
 import InlineEditTaskPanel from "./InlineEditTaskPanel";
@@ -15,6 +15,7 @@ const TaskCard = ({
   onClick,
   onDoubleClick,
   onDeleteClick,
+  onEditClick,
   isEditing,
   editTaskPriority,
   setEditTaskPriority,
@@ -106,15 +107,26 @@ const TaskCard = ({
             </span>
           )}
           {canAddEditDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteClick(task);
-              }}
-              className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditClick(task);
+                }}
+                className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
+              >
+                <Edit className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteClick(task);
+                }}
+                className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </>
           )}
         </div>
       </div>

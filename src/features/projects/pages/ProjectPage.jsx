@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjects } from "../hooks/useProjects";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
@@ -96,8 +96,15 @@ const ProjectPage = () => {
     loading, 
     addProject, 
     updateProject, 
-    deleteProject 
+    deleteProject,
+    fetchProjects,
+    fetchGroups
   } = useProjects();
+
+  useEffect(() => {
+    fetchProjects();
+    fetchGroups();
+  }, [fetchProjects, fetchGroups]);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
@@ -127,16 +134,15 @@ const ProjectPage = () => {
           description: "Project deleted successfully",
           variant: "success",
         });
+        setIsDeleteDialogOpen(false);
+        setProjectToDelete(null);
       } catch (err) {
         console.error("Delete failed:", err);
         toast({
           title: "Error",
-          description: err.response?.data?.msg || err.message || "Failed to delete project",
+          description: err.msg || err.error || err.message || "Failed to delete project",
           variant: "destructive",
         });
-      } finally {
-        setIsDeleteDialogOpen(false);
-        setProjectToDelete(null);
       }
     }
   };
@@ -164,7 +170,7 @@ const ProjectPage = () => {
       setIsSheetOpen(false);
       setEditingProject(null);
     } catch (err) {
-      const errorMsg = err.response?.data?.msg || err.msg || err.error || "Operation failed. Please try again.";
+      const errorMsg = err.msg || err.error || err.message || "Operation failed. Please try again.";
       setError(errorMsg);
       toast({
         title: "Error",

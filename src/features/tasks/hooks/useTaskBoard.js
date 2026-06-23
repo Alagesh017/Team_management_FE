@@ -315,8 +315,11 @@ export const useTaskBoard = () => {
 
   /* ── task card click ── */
   const openTaskDetails = (task, e) => {
-    // Do nothing - no popup!
+    // Don't open if clicking a button
     if (e && e.target.closest("button")) return;
+    
+    // Navigate to task detail page
+    navigate(`/tasks/project/${id}/task/${task.task_id}`);
   };
 
   const openEditTask = (task, e) => {

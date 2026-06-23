@@ -17,7 +17,7 @@ const ProjectAllocationDetailPage = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { projects, loading: projectsLoading } = useProjects();
-  const { allocations, addAllocation, updateAllocation, updateAllocationMembers, loading: allocationsLoading } = useAllocations();
+  const { allocations, addAllocation, updateAllocation, updateAllocationMembers, loading: allocationsLoading, fetchAllocations } = useAllocations();
   
   const [project, setProject] = useState(null);
   const [existingAllocation, setExistingAllocation] = useState(null);

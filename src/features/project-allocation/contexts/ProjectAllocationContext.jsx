@@ -4,18 +4,21 @@ import { allocationService } from "../services/allocationService";
 const ProjectAllocationContext = createContext();
 
 export const ProjectAllocationProvider = ({ children }) => {
+  console.log("ProjectAllocationProvider: rendering");
   const [allocations, setAllocations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const fetchAllocations = useCallback(async () => {
+    console.log("ProjectAllocationContext: fetchAllocations called");
     try {
       setLoading(true);
       setError(null);
       const data = await allocationService.getAllAllocations();
+      console.log("ProjectAllocationContext: fetchAllocations response:", data);
       setAllocations(data.allocations || []);
     } catch (err) {
-      console.error("Failed to fetch allocations:", err);
+      console.error("ProjectAllocationContext: Failed to fetch allocations:", err);
       setError(err.msg || err.error || "Failed to fetch allocations");
     } finally {
       setLoading(false);
@@ -23,6 +26,7 @@ export const ProjectAllocationProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    console.log("ProjectAllocationContext: useEffect running, calling fetchAllocations");
     fetchAllocations();
   }, [fetchAllocations]);
 
@@ -91,6 +95,7 @@ export const ProjectAllocationProvider = ({ children }) => {
       value={{
         allocations,
         loading,
+        allocationsLoading: loading,  // Alias for compatibility
         error,
         fetchAllocations,
         addAllocation,

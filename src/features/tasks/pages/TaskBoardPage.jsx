@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTaskBoard } from "../hooks/useTaskBoard";
@@ -12,6 +12,8 @@ import DeleteTaskDialog from "../components/board/DeleteTaskDialog";
 const TaskBoardPage = () => {
   const navigate = useNavigate();
   const { sidebarWidth } = useSidebar();
+  const scrollContainerRef = useRef(null);
+  const scrollIntervalRef = useRef(null);
   const {
   id: projectId,
   project,
@@ -52,7 +54,7 @@ const TaskBoardPage = () => {
   setMemberSearch,
   toggleMember,
   handleDragStart,
-  handleDragEnd,
+  handleDragEnd: handleDragEndFromHook,
   handleDrop,
   openTaskDetails,
   openEditTask,
@@ -91,6 +93,57 @@ const TaskBoardPage = () => {
   saveInlineEdit
 } = useTaskBoard();
 
+  /* ── Auto-scroll during drag ── */
+  const handleDragOver = (e) => {
+    if (!scrollContainerRef.current) return;
+    
+    const container = scrollContainerRef.current;
+    const rect = container.getBoundingClientRect();
+    
+    // Threshold for auto-scroll (100px from edges)
+    const scrollThreshold = 100;
+    const scrollSpeed = 15;
+    
+    const mouseX = e.clientX;
+    
+    // Clean up any existing interval
+    if (scrollIntervalRef.current) {
+      clearInterval(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
+    
+    // Check if mouse is near left edge
+    if (mouseX < rect.left + scrollThreshold) {
+      scrollIntervalRef.current = setInterval(() => {
+        container.scrollLeft -= scrollSpeed;
+      }, 16);
+    } 
+    // Check if mouse is near right edge
+    else if (mouseX > rect.right - scrollThreshold) {
+      scrollIntervalRef.current = setInterval(() => {
+        container.scrollLeft += scrollSpeed;
+      }, 16);
+    }
+  };
+
+  const handleDragEnd = () => {
+    if (scrollIntervalRef.current) {
+      clearInterval(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
+    // Also call the drag end from useTaskBoard
+    handleDragEndFromHook();
+  };
+
+  // Clean up interval on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollIntervalRef.current) {
+        clearInterval(scrollIntervalRef.current);
+      }
+    };
+  }, []);
+
   /* ── loading ── */
   if (loading) {
     return (
@@ -127,7 +180,14 @@ const TaskBoardPage = () => {
 
       {/* Columns */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <div className="flex gap-3 overflow-x-auto h-full px-5 py-4 pb-4">
+        <div 
+          ref={scrollContainerRef}
+          className="flex gap-3 overflow-x-auto h-full px-5 py-4 pb-4"
+          onDragOver={handleDragOver}
+          onDragEnd={() => {
+            handleDragEnd();
+          }}
+        >
           {statuses.map((status) => {
             let statusTasks = status.tasks || [];
             if (searchQuery) {
@@ -151,6 +211,7 @@ const TaskBoardPage = () => {
               canMoveCards={canMoveCards}
               isAddOpen={activeColumn === status.status_id}
               columnRef={(el) => (columnRefs.current[status.status_id] = el)}
+              user={user}
               // add task props
               newTaskTitle={newTaskTitle}
               setNewTaskTitle={setNewTaskTitle}
@@ -181,6 +242,7 @@ const TaskBoardPage = () => {
                 setTaskToDeleteFn(task);
                 setIsDeleteDialogOpen(true);
               }}
+              onEditClick={openEditTask}
               // inline edit props
               editingTaskId={editingTaskId}
               editTaskPriority={editTaskPriority}

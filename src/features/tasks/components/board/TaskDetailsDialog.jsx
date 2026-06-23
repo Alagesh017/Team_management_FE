@@ -4,6 +4,7 @@ import { Button } from "../../../../common/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../../common/components/ui/dialog";
 import { Input } from "../../../../common/components/ui/input";
 import { PRIORITY, formatDate, avatarColor, getMemberInitials, getMemberKey } from "./constants";
+import { getFullAvatarUrl } from "../../../../core/utils/utils";
 
 const TaskDetailsDialog = ({
   open,
@@ -212,10 +213,14 @@ const TaskDetailsDialog = ({
                       }`}
                     >
                       <div
-                        className="h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm"
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm overflow-hidden"
                         style={{ backgroundColor: avatarColor(member.user_id) }}
                       >
-                        {getMemberInitials(member)}
+                        {member.avatar_url ? (
+                          <img src={getFullAvatarUrl(member.avatar_url)} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          getMemberInitials(member)
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={`text-sm font-medium truncate ${selected ? "text-indigo-700" : "text-slate-800"}`}>
@@ -253,13 +258,17 @@ const TaskDetailsDialog = ({
                       <div
                         key={w.user_id}
                         title={`${w.first_name} ${w.last_name}`}
-                        className="h-8 w-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow"
+                        className="h-8 w-8 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow overflow-hidden"
                         style={{
                           backgroundColor: avatarColor(w.user_id),
                           zIndex: selectedTask.assigned_workers.length - i,
                         }}
                       >
-                        {getMemberInitials(w)}
+                        {w.avatar_url ? (
+                          <img src={getFullAvatarUrl(w.avatar_url)} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          getMemberInitials(w)
+                        )}
                       </div>
                     ))}
                   </div>

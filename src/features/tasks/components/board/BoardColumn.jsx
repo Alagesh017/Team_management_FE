@@ -11,6 +11,7 @@ const BoardColumn = ({
   canMoveCards,
   isAddOpen,
   columnRef,
+  user,
   // add task props
   newTaskTitle,
   setNewTaskTitle,
@@ -38,6 +39,7 @@ const BoardColumn = ({
   onTaskClick,
   onTaskDoubleClick,
   onDeleteClick,
+  onEditClick,
   // inline edit props
   editingTaskId,
   editTaskPriority,
@@ -54,13 +56,15 @@ const BoardColumn = ({
   onCancelInlineEdit,
 }) => {
   const color = status.color || "#6366f1";
+  const userRole = user?.role?.toLowerCase() || "";
   const cantDropHere =
     draggedTask &&
-    status.is_confidential;
+    status.is_confidential &&
+    userRole === "worker";
 
   return (
     <div
-      className={`flex-shrink-0 w-72 flex flex-col h-full rounded-lg overflow-hidden transition-all duration-200 ${
+      className={`flex-shrink-0 w-[298px] flex flex-col h-full rounded-xl overflow-hidden transition-all duration-200 ${
         cantDropHere
           ? "ring-2 ring-red-300 opacity-60"
           : draggedTask
@@ -140,6 +144,7 @@ const BoardColumn = ({
             onClick={onTaskClick}
             onDoubleClick={onTaskDoubleClick}
             onDeleteClick={onDeleteClick}
+            onEditClick={onEditClick}
             isEditing={editingTaskId === task.task_id}
             editTaskPriority={editTaskPriority}
             setEditTaskPriority={setEditTaskPriority}

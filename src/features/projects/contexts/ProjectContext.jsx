@@ -1,12 +1,14 @@
 import { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { projectService } from "../services/projectService";
 import { projectGroupService } from "../services/projectGroupService";
+import { useAuth } from "../../auth/contexts/AuthContext";
 
 const ProjectContext = createContext();
 
 export const useProjects = () => useContext(ProjectContext);
 
 export const ProjectProvider = ({ children }) => {
+  const { user } = useAuth();
   const [projects, setProjects] = useState([]);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -16,7 +18,8 @@ export const ProjectProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await projectService.getAllProjects();
+      const params = user ? { role: user.role, user_id: user.userId, role_id: user.roleId } : {};
+      const data = await projectService.getAllProjects(params);
       setProjects(data.projects || []);
     } catch (err) {
       console.error("Failed to fetch projects:", err);
@@ -24,7 +27,7 @@ export const ProjectProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const fetchGroups = useCallback(async () => {
     try {
