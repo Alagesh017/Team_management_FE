@@ -325,7 +325,6 @@ export function AppSidebar() {
   
   const menuItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "Reports", url: "/reports", icon: BarChart3 },
     ...(isRestrictedRole ? [] : [
       {
         title: "Master",
@@ -338,12 +337,9 @@ export function AppSidebar() {
         ],
       },
       { title: "Groups", url: "/groups", icon: Calendar },
-      { title: "Attendance", url: "/attendance", icon: Calendar },
       { title: "Clients", url: "/clients", icon: Users },
       { title: "Projects", url: "/projects", icon: FolderKanban },
       { title: "Project Allocation", url: "/project-allocation", icon: UserPlus },
-      { title: "Meetings", url: "/meetings", icon: MessageSquare },
-      { title: "Permission Request", url: "/permission-request", icon: ShieldAlert },
     ]),
   ];
 

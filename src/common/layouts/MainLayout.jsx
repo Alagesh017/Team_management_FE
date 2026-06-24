@@ -214,10 +214,10 @@ export function MainLayout({ children }) {
 
                 <DropdownMenuSeparator className="bg-slate-100" />
                 
-                <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-lg hover:bg-red-50 text-red-600 transition-colors" onClick={() => navigate('/404')}>
+                {/* <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-lg hover:bg-red-50 text-red-600 transition-colors" onClick={() => navigate('/404')}>
                   <Trash2 className="h-4 w-4" />
                   <span className="font-bold text-sm">Delete Account</span>
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
 
                 <DropdownMenuItem 
                   onClick={handleLogout}
