@@ -14,7 +14,6 @@ export const useProjectBacklog = (projectId) => {
   const [allocatedMembers, setAllocatedMembers] = useState([]);
   const [allAdmins, setAllAdmins] = useState([]);
   const [selectedTasks, setSelectedTasks] = useState(new Set());
-  const [draggedTask, setDraggedTask] = useState(null);
   const [draggedTasks, setDraggedTasks] = useState([]);
   const { user } = useAuth();
 
@@ -122,8 +121,6 @@ export const useProjectBacklog = (projectId) => {
   };
 
   const handleDragStart = (e, task) => {
-    setDraggedTask(task);
-    
     // If task is selected, drag all selected tasks
     if (selectedTasks.has(task.task_id)) {
       setDraggedTasks(Array.from(selectedTasks));
@@ -135,7 +132,6 @@ export const useProjectBacklog = (projectId) => {
   };
 
   const handleDragEnd = () => {
-    setDraggedTask(null);
     setDraggedTasks([]);
   };
 
@@ -386,7 +382,7 @@ export const useProjectBacklog = (projectId) => {
     backlogTasks,
     sprints,
     selectedTasks,
-    draggedTask,
+    setSelectedTasks,
     draggedTasks,
     toggleTaskSelection,
     handleDragStart,

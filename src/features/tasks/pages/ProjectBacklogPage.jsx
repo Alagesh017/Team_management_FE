@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSidebar } from '../../../common/components/ui/sidebar';
 import { useProjectBacklog } from '../hooks/useProjectBacklog';
-import { Loader2, LayoutGrid, Flame, Calendar, Clock, ListTodo, Plus } from 'lucide-react';
+import { Loader2, LayoutGrid, Flame, Calendar, Clock, ListTodo, Plus, Edit } from "lucide-react";
 import { Button } from '../../../common/components/ui/button';
 import AddTaskPanel from '../components/board/AddTaskPanel';
 import AssignMemberDialog from '../components/board/AssignMemberDialog';
@@ -22,12 +22,59 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
-const TaskItem = ({ task, isSelected, isDragging, onDragStart, onDragEnd, onClick, color, onContextMenu, todoStatusId, backlogStatusId }) => {
+const TaskItem = ({ 
+  task, 
+  isSelected, 
+  isDragging, 
+  onDragStart, 
+  onDragEnd, 
+  onClick, 
+  color, 
+  onContextMenu, 
+  todoStatusId, 
+  backlogStatusId,
+  isEditing,
+  editTaskPriority,
+  setEditTaskPriority,
+  editTaskStartDate,
+  setEditTaskStartDate,
+  editTaskDueDate,
+  setEditTaskDueDate,
+  editTaskEstimatedHours,
+  setEditTaskEstimatedHours,
+  editTaskActualHours,
+  setEditTaskActualHours,
+  isSaving,
+  onSave,
+  onCancel,
+  onEditClick
+}) => {
   const p = PRIORITY[task.priority] || PRIORITY.medium;
   const displayColor = task.status_color || color || "#6366f1";
   
   // Only allow dragging if it's a backlog task OR a todo status task in a sprint
   const isDraggable = task.status_id === backlogStatusId || task.status_id === todoStatusId;
+
+  if (isEditing) {
+    return (
+      <InlineEditTaskPanel
+        task={task}
+        editTaskPriority={editTaskPriority}
+        setEditTaskPriority={setEditTaskPriority}
+        editTaskStartDate={editTaskStartDate}
+        setEditTaskStartDate={setEditTaskStartDate}
+        editTaskDueDate={editTaskDueDate}
+        setEditTaskDueDate={setEditTaskDueDate}
+        editTaskEstimatedHours={editTaskEstimatedHours}
+        setEditTaskEstimatedHours={setEditTaskEstimatedHours}
+        editTaskActualHours={editTaskActualHours}
+        setEditTaskActualHours={setEditTaskActualHours}
+        isSaving={isSaving}
+        onSave={onSave}
+        onCancel={onCancel}
+      />
+    );
+  }
 
   return (
     <div
@@ -79,6 +126,15 @@ const TaskItem = ({ task, isSelected, isDragging, onDragStart, onDragEnd, onClic
               {p.label}
             </span>
           )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditClick(task);
+            }}
+            className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
+          >
+            <Edit className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
 
@@ -153,7 +209,7 @@ const ProjectBacklogPage = () => {
     backlogTasks,
     sprints,
     selectedTasks,
-    draggedTask,
+    setSelectedTasks,
     draggedTasks,
     toggleTaskSelection,
     handleDragStart,
@@ -182,13 +238,27 @@ const ProjectBacklogPage = () => {
     setIsMemberDialogOpen,
     memberSearch,
     setMemberSearch,
-    availableMembers,
     filteredMembers,
     openAddPanel,
     closeAddPanel,
     handleAddTask,
     toggleMember,
-    getSelectedMembersData
+    getSelectedMembersData,
+    // Inline edit props
+    editingTaskId,
+    editTaskPriority,
+    setEditTaskPriority,
+    editTaskStartDate,
+    setEditTaskStartDate,
+    editTaskDueDate,
+    setEditTaskDueDate,
+    editTaskEstimatedHours,
+    setEditTaskEstimatedHours,
+    editTaskActualHours,
+    setEditTaskActualHours,
+    startInlineEdit,
+    cancelInlineEdit,
+    saveInlineEdit
   } = useProjectBacklog(projectId);
 
   const handleRightClick = (e, task) => {
@@ -316,6 +386,7 @@ const ProjectBacklogPage = () => {
           {backlogTasks.map(task => {
             const isSelected = selectedTasks.has(task.task_id);
             const isDragging = draggedTasks.includes(task.task_id);
+            const isEditing = editingTaskId === task.task_id;
             
             return (
               <TaskItem
@@ -330,6 +401,21 @@ const ProjectBacklogPage = () => {
                 color={backlogStatus?.color}
                 todoStatusId={todoStatus?.id}
                 backlogStatusId={backlogStatus?.id}
+                isEditing={isEditing}
+                editTaskPriority={editTaskPriority}
+                setEditTaskPriority={setEditTaskPriority}
+                editTaskStartDate={editTaskStartDate}
+                setEditTaskStartDate={setEditTaskStartDate}
+                editTaskDueDate={editTaskDueDate}
+                setEditTaskDueDate={setEditTaskDueDate}
+                editTaskEstimatedHours={editTaskEstimatedHours}
+                setEditTaskEstimatedHours={setEditTaskEstimatedHours}
+                editTaskActualHours={editTaskActualHours}
+                setEditTaskActualHours={setEditTaskActualHours}
+                isSaving={isSaving}
+                onSave={saveInlineEdit}
+                onCancel={cancelInlineEdit}
+                onEditClick={startInlineEdit}
               />
             );
           })}
@@ -425,6 +511,7 @@ const ProjectBacklogPage = () => {
                         return tasks.map(task => {
                             const isSelected = selectedTasks.has(task.task_id);
                             const isDragging = draggedTasks.includes(task.task_id);
+                            const isEditing = editingTaskId === task.task_id;
                             
                             return (
                               <div key={task.task_id} className="mb-2 last:mb-0">
@@ -439,6 +526,21 @@ const ProjectBacklogPage = () => {
                                   color="#6366f1"
                                   todoStatusId={todoStatus?.id}
                                   backlogStatusId={backlogStatus?.id}
+                                  isEditing={isEditing}
+                                  editTaskPriority={editTaskPriority}
+                                  setEditTaskPriority={setEditTaskPriority}
+                                  editTaskStartDate={editTaskStartDate}
+                                  setEditTaskStartDate={setEditTaskStartDate}
+                                  editTaskDueDate={editTaskDueDate}
+                                  setEditTaskDueDate={setEditTaskDueDate}
+                                  editTaskEstimatedHours={editTaskEstimatedHours}
+                                  setEditTaskEstimatedHours={setEditTaskEstimatedHours}
+                                  editTaskActualHours={editTaskActualHours}
+                                  setEditTaskActualHours={setEditTaskActualHours}
+                                  isSaving={isSaving}
+                                  onSave={saveInlineEdit}
+                                  onCancel={cancelInlineEdit}
+                                  onEditClick={startInlineEdit}
                                 />
                               </div>
                             );
