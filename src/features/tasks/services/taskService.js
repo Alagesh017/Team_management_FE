@@ -18,6 +18,15 @@ const getTasksByProjectId = async (projectId) => {
   }
 };
 
+const getTasksBySprintId = async (sprintId) => {
+  try {
+    const response = await api.get(`/tasks/sprint/${sprintId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
 const getTaskById = async (id) => {
   try {
     const response = await api.get(`/tasks/${id}`);
@@ -63,12 +72,23 @@ const getDashboardTasks = async () => {
   }
 };
 
+const getProjectBacklog = async (projectId) => {
+  try {
+    const response = await api.get(`/tasks/project/${projectId}/backlog`);
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
 export const taskService = {
   getAllTasks,
   getTasksByProjectId,
+  getTasksBySprintId,
   getTaskById,
   createTask,
   updateTask,
   deleteTask,
   getDashboardTasks,
+  getProjectBacklog,
 };

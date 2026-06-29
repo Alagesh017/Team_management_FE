@@ -12,6 +12,7 @@ import {
   Lock,
   LogOut,
   ChevronRight,
+  ChevronDown,
   UserCog,
   HardHat,
   Settings,
@@ -27,8 +28,18 @@ import {
   MoreHorizontal,
   GripVertical,
   Search,
-  BarChart3
+  BarChart3,
+  PlayCircle,
+  Calendar as CalendarIcon,
 } from "lucide-react";
+import SprintForm from "../../../features/sprints/components/SprintForm";
+import { sprintService } from "../../../features/sprints/services/sprintService";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "../ui/dropdown-menu";
 
 import {
   Sidebar,
@@ -87,13 +98,15 @@ import { useProjects } from "../../../features/projects/contexts/ProjectContext"
 import { useToast } from "../../hooks/use-toast";
 
 // Draggable Project Component
-const DraggableProject = ({ project, isActive, isRestricted }) => {
+const DraggableProject = ({ project, isActive, isRestricted, onToggleExpand, isExpanded, onOpenCreateSprint, onOpenEditSprint, closeSidebarOnMobile, sidebarState }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `project-${project.id}`,
     data: { project },
     disabled: isRestricted,
   });
+  const navigate = useNavigate();
   const { state } = useSidebar();
+  const effectiveSidebarState = sidebarState || state;
 
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
@@ -105,50 +118,261 @@ const DraggableProject = ({ project, isActive, isRestricted }) => {
       style={style}
       {...(isRestricted ? {} : listeners)}
       {...(isRestricted ? {} : attributes)}
-      className={`group/project-item transition-all duration-200 ${
-        isDragging ? 'opacity-40 grayscale-[0.5]' : 'opacity-100'
-      }`}
+      className={`group/project-item ${isDragging ? 'opacity-40 grayscale-[0.5]' : 'opacity-100'}`}
     >
-      <SidebarMenuSubItem className="list-none group-data-[collapsible=icon]:hidden">
-        <SidebarMenuSubButton 
-          asChild 
-          isActive={isActive}
-          className="group/project-link flex items-center gap-2.5 py-2 px-3 rounded-xl hover:bg-slate-50 border-2 border-transparent transition-all duration-200 relative pr-6"
-        >
-          <Link to={`/tasks/project/${project.id}`}>
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-slate-50 group-hover/project-link:bg-white transition-colors">
-                <Folder className="h-4.5 w-4.5 text-slate-400 group-hover/project-link:text-blue-500 transition-colors" />
+      <div className="list-none">
+        {effectiveSidebarState === 'icon' ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuButton
+                tooltip={project.name}
+                className={`py-[5px] px-2 rounded-md transition-colors ${
+                  isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <div className={`h-4.5 w-4.5 rounded flex items-center justify-center shrink-0 ${
+                  isActive ? 'bg-slate-900' : 'bg-slate-200'
+                }`}>
+                  <Folder className={`h-3.5 w-3.5 ${isActive ? 'text-white' : 'text-yellow-500'}`} />
+                </div>
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="start" className="w-[240px]">
+              <div className="p-2">
+                <DropdownMenuItem
+                  onClick={() => {
+                    navigate(`/tasks/project/${project.id}`);
+                    closeSidebarOnMobile();
+                  }}
+                  className={`cursor-pointer flex items-center gap-2 mb-1 ${
+                    isActive ? 'bg-blue-50 text-blue-600' : ''
+                  }`}
+                >
+                  <Folder className="h-4 w-4 text-yellow-500" />
+                  <span className="text-sm font-medium">View Project</span>
+                </DropdownMenuItem>
+                {(project.sprints || []).length > 0 && (
+                  <>
+                    <div className="my-2 border-t border-slate-200" />
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
+                      Sprints
+                    </div>
+                    {(project.sprints || []).map((sprint) => (
+                      <DropdownMenuItem
+                        key={sprint.id}
+                        onClick={() => {
+                          navigate(`/tasks/project/${project.id}/sprint/${sprint.id}`);
+                          closeSidebarOnMobile();
+                        }}
+                        className="cursor-pointer flex items-center gap-2"
+                      >
+                        <PlayCircle className={`h-3.5 w-3.5 shrink-0 ${
+                        sprint.sprint_status === 1 ? 'text-emerald-500' :
+                        sprint.sprint_status === 2 ? 'text-blue-500' :
+                        'text-slate-400'
+                      }`} />
+                      <span className="text-sm truncate flex-1">{sprint.sprint_name}</span>
+                      {sprint.sprint_status === 1 && (
+                        <span className="text-[10px] font-bold text-white bg-emerald-500 rounded-full h-4 min-w-[32px] px-1 flex items-center justify-center">
+                          LIVE
+                        </span>
+                      )}
+                      {typeof sprint.task_count === 'number' && sprint.task_count > 0 && (
+                        <span className="text-[10px] font-bold text-white bg-pink-500 rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center">
+                          {sprint.task_count > 99 ? '99+' : sprint.task_count}
+                        </span>
+                      )}
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+                {!isRestricted && (
+                  <>
+                    <div className="my-2 border-t border-slate-200" />
+                    <DropdownMenuItem
+                      onClick={() => onOpenCreateSprint(project.id)}
+                      className="cursor-pointer flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span className="text-sm">Create Sprint</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate(`/projects/${project.id}/sprints`)}
+                      className="cursor-pointer flex items-center gap-2"
+                    >
+                      <CalendarIcon className="h-4 w-4" />
+                      <span className="text-sm">Sprint Management</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
               </div>
-              <span className="text-[13px] font-semibold text-slate-600 group-hover/project-link:text-slate-900 truncate">
-                {project.name}
-              </span>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <>
+            <div
+              className={`flex items-center gap-2 py-[5px] px-2 rounded-md hover:bg-slate-100 transition-colors cursor-pointer ${
+                isActive ? 'bg-slate-100' : ''
+              }`}
+            >
+              {/* Expand/Collapse button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleExpand(project.id);
+                }}
+                className="p-0.5 rounded hover:bg-slate-200 shrink-0"
+              >
+                {isExpanded ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
+              </button>
+
+              {/* Project icon */}
+              <div className={`h-4.5 w-4.5 rounded flex items-center justify-center shrink-0 ${
+                isActive ? 'bg-slate-900' : ''
+              }`}>
+                <Folder className={`h-3.5 w-3.5 ${isActive ? 'text-white' : 'text-yellow-500'}`} />
+              </div>
+
+              {/* Project Link */}
+              <Link
+                to={`/tasks/project/${project.id}`}
+                className="flex-1 min-w-0"
+                onClick={closeSidebarOnMobile}
+              >
+                <span className="text-[13px] font-medium text-slate-600 group-hover/project-item:text-slate-900 truncate block">
+                  {project.name}
+                </span>
+              </Link>
+
+              {/* Actions: "..." and "+" appear on hover */}
+              <div className="flex items-center gap-0.5 opacity-0 group-hover/project-item:opacity-100 transition-opacity shrink-0">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1 rounded hover:bg-slate-200"
+                      title="More"
+                    >
+                      <MoreHorizontal className="h-3.5 w-3.5 text-slate-400" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-[180px]">
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/projects/${project.id}/sprints`);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <CalendarIcon className="h-3.5 w-3.5 mr-2" />
+                      Sprint Management
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onOpenCreateSprint(project.id);
+                  }}
+                  className="p-1 rounded hover:bg-slate-200"
+                  title="Create Sprint"
+                >
+                  <Plus className="h-3.5 w-3.5 text-slate-400" />
+                </button>
+                {!isRestricted && (
+                  <GripVertical className="h-3.5 w-3.5 text-slate-300 cursor-grab" />
+                )}
+              </div>
             </div>
-            {isActive && (
-              <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-600">
-                <ChevronRight className="h-3 w-3" />
+
+            {/* Sprints List */}
+            {isExpanded && (
+              <div className="ml-[26px] mt-0.5 space-y-0.5">
+                {(project.sprints || []).map((sprint) => (
+                  <div
+                    key={sprint.id}
+                    className="flex items-center gap-2 py-[5px] px-2 rounded-md hover:bg-slate-100 cursor-pointer text-[13px] group/sprint"
+                  >
+                    <div
+                      onClick={() => {
+                        navigate(`/tasks/project/${project.id}/sprint/${sprint.id}`);
+                        closeSidebarOnMobile();
+                      }}
+                      className="flex items-center gap-2 flex-1"
+                    >
+                      <PlayCircle className={`h-3.5 w-3.5 shrink-0 ${
+                        sprint.sprint_status === 1 ? 'text-emerald-500' :
+                        sprint.sprint_status === 2 ? 'text-blue-500' :
+                        'text-slate-400'
+                      }`} />
+                      <span className="text-slate-500 group-hover/sprint:text-slate-900 truncate flex-1">
+                        {sprint.sprint_name}
+                      </span>
+                      {sprint.sprint_status === 1 && (
+                        <span className="text-[10px] font-bold text-white bg-emerald-500 rounded-full h-4 min-w-[32px] px-1 flex items-center justify-center">
+                          LIVE
+                        </span>
+                      )}
+                      {typeof sprint.task_count === 'number' && sprint.task_count > 0 && (
+                        <span className="text-[10px] font-bold text-white bg-pink-500 rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center">
+                          {sprint.task_count > 99 ? '99+' : sprint.task_count}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenEditSprint(sprint);
+                      }}
+                      className="p-0.5 rounded hover:bg-slate-200 shrink-0 opacity-0 group-hover/sprint:opacity-100 transition-opacity"
+                    >
+                      <MoreHorizontal className="h-3.5 w-3.5 text-slate-400" />
+                    </button>
+                  </div>
+                ))}
+
+                {/* Create Sprint inline action */}
+                {!isRestricted && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onOpenCreateSprint(project.id);
+                    }}
+                    className="flex items-center gap-2 py-[5px] px-2 rounded-md hover:bg-slate-100 text-[13px] text-slate-400 w-full"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Create Sprint</span>
+                  </button>
+                )}
               </div>
             )}
-            {!isRestricted && (
-              <GripVertical className="h-4 w-4 ml-auto opacity-0 group-hover/project-link:opacity-40 text-slate-300 transition-opacity" />
-            )}
-          </Link>
-        </SidebarMenuSubButton>
-      </SidebarMenuSubItem>
+          </>
+        )}
+      </div>
     </div>
   );
 };
 
 // Droppable Group Component
-const DroppableGroup = ({ group, projects, currentPath, searchQuery, isRestricted }) => {
+const DroppableGroup = ({ group, projects, currentPath, searchQuery, isRestricted, expandedProjects, onToggleExpand, onOpenCreateSprint, onOpenEditSprint, closeSidebarOnMobile, sidebarState }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: group ? group.id.toString() : "uncategorized",
     disabled: isRestricted,
   });
   const { state } = useSidebar();
+  const effectiveSidebarState = sidebarState || state;
+  const navigate = useNavigate();
 
   const groupedProjects = projects.filter(p => group ? p.group_id === group.id : !p.group_id);
-  const hasMatchingProjects = searchQuery && groupedProjects.some(p => 
+  const hasMatchingProjects = searchQuery && groupedProjects.some(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
   const isActiveGroup = groupedProjects.some(p => currentPath === `/tasks/project/${p.id}`);
@@ -162,50 +386,128 @@ const DroppableGroup = ({ group, projects, currentPath, searchQuery, isRestricte
   }, [hasMatchingProjects]);
 
   return (
-    <SidebarMenuItem ref={setNodeRef} className="mb-1">
-      <Collapsible open={open} onOpenChange={setOpen} className="group/group-collapsible">
-        <CollapsibleTrigger asChild>
-          <SidebarMenuButton 
-            tooltip={group ? group.name : "Uncategorized"} 
-            className={`font-medium transition-all duration-300 py-3 px-4 rounded-xl ${
-              isOver ? 'text-blue-600 bg-blue-50/20 shadow-sm' : 'text-slate-600 hover:bg-slate-100/50'
-            }`}
-          >
-            <div className={`h-8 w-8 rounded-xl ${group ? getGroupColor(group.name) : 'bg-slate-900'} flex items-center justify-center text-[12px] font-black text-white shadow-lg group-hover/group-collapsible:scale-110 group-hover/group-collapsible:rotate-3 transition-all duration-300`}>
-              {group ? group.name[0].toUpperCase() : 'U'}
-            </div>
-            <span className={`font-bold tracking-tight ${isOver ? 'scale-105' : ''} transition-transform group-data-[collapsible=icon]:hidden`}>
-              {group ? group.name : "Uncategorized"}
-            </span>
-            <span className="ml-auto mr-2 text-[11px] font-black bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full group-data-[collapsible=icon]:hidden">
-              {groupedProjects.length}
-            </span>
-            <ChevronRight className="h-4 w-4 transition-transform duration-300 group-data-[state=open]/group-collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
-          </SidebarMenuButton>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
-          <SidebarMenuSub className="ml-4 border-l-2 border-slate-200/50 pl-4 py-2 space-y-1">
-            {groupedProjects.length > 0 ? (
-              groupedProjects
-                .filter(p => 
-                  !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .map((project) => (
-                  <DraggableProject 
-                    key={project.id} 
-                    project={project} 
-                    isActive={currentPath === `/tasks/project/${project.id}`}
-                    isRestricted={isRestricted}
-                  />
-                ))
-            ) : (
-              <div className="text-[11px] font-medium text-slate-400 italic px-3 py-4 bg-slate-50/50 rounded-lg border border-dashed border-slate-200 flex items-center justify-center">
-                {isOver ? 'Drop here' : 'Empty group'}
+    <SidebarMenuItem ref={setNodeRef} className="mb-0.5">
+      {effectiveSidebarState === 'icon' ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              tooltip={group ? group.name : "Uncategorized"}
+              className={`group/group-trigger font-medium py-[5px] px-2 rounded-md transition-colors ${
+                isOver ? 'text-blue-600 bg-blue-50' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <div className={`h-4.5 w-4.5 rounded flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${group ? getGroupColor(group.name) : 'bg-slate-900'}`}>
+                {group ? group.name[0].toUpperCase() : 'U'}
               </div>
-            )}
-          </SidebarMenuSub>
-        </CollapsibleContent>
-      </Collapsible>
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="right" align="start" className="w-[220px]">
+            <div className="p-2">
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
+                {group ? group.name : "Uncategorized"}
+              </div>
+              {groupedProjects.length > 0 ? (
+                groupedProjects
+                  .filter(p =>
+                    !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((project) => (
+                    <DropdownMenuItem
+                      key={project.id}
+                      onClick={() => {
+                        navigate(`/tasks/project/${project.id}`);
+                        closeSidebarOnMobile();
+                      }}
+                      className={`cursor-pointer flex items-center gap-2 ${
+                        currentPath === `/tasks/project/${project.id}` ? 'bg-blue-50 text-blue-600' : ''
+                      }`}
+                    >
+                      <div className={`h-4 w-4 rounded flex items-center justify-center shrink-0 ${
+                        currentPath === `/tasks/project/${project.id}` ? 'bg-slate-900' : 'bg-slate-200'
+                      }`}>
+                        <Folder className={`h-3 w-3 ${
+                          currentPath === `/tasks/project/${project.id}` ? 'text-white' : 'text-yellow-500'
+                        }`} />
+                      </div>
+                      <span className="text-sm truncate flex-1">{project.name}</span>
+                    </DropdownMenuItem>
+                  ))
+              ) : (
+                <div className="text-[11px] font-medium text-slate-400 italic px-1">
+                  Empty group
+                </div>
+              )}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <Collapsible open={open} onOpenChange={setOpen} className="group/group-collapsible">
+          <CollapsibleTrigger asChild>
+            <SidebarMenuButton
+              tooltip={group ? group.name : "Uncategorized"}
+              className={`group/group-trigger font-medium py-[5px] px-2 rounded-md transition-colors ${
+                isOver ? 'text-blue-600 bg-blue-50' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <div className={`h-4.5 w-4.5 rounded flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${group ? getGroupColor(group.name) : 'bg-slate-900'}`}>
+                {group ? group.name[0].toUpperCase() : 'U'}
+              </div>
+              <span className="font-medium text-[13px] truncate group-data-[collapsible=icon]:hidden">
+                {group ? group.name : "Uncategorized"}
+              </span>
+
+              <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/group-trigger:opacity-100 transition-opacity group-data-[collapsible=icon]:hidden">
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  className="p-1 rounded hover:bg-slate-200"
+                  title="More"
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5 text-slate-400" />
+                </button>
+                {!isRestricted && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    className="p-1 rounded hover:bg-slate-200"
+                    title="Add"
+                  >
+                    <Plus className="h-3.5 w-3.5 text-slate-400" />
+                  </button>
+                )}
+              </div>
+            </SidebarMenuButton>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
+            <SidebarMenuSub className="ml-[9px] border-l border-slate-200 pl-2.5 py-0.5 space-y-0.5">
+              {groupedProjects.length > 0 ? (
+                groupedProjects
+                  .filter(p =>
+                    !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((project) => (
+                    <DraggableProject
+                      key={project.id}
+                      project={project}
+                      isActive={currentPath === `/tasks/project/${project.id}`}
+                      isRestricted={isRestricted}
+                      onToggleExpand={onToggleExpand}
+                      isExpanded={expandedProjects[project.id]}
+                      onOpenCreateSprint={onOpenCreateSprint}
+                      onOpenEditSprint={onOpenEditSprint}
+                      closeSidebarOnMobile={closeSidebarOnMobile}
+                      sidebarState={effectiveSidebarState}
+                    />
+                  ))
+              ) : (
+                <div className="text-[11px] font-medium text-slate-400 italic px-2 py-2.5 rounded-md border border-dashed border-slate-200 flex items-center justify-center">
+                  {isOver ? 'Drop here' : 'Empty group'}
+                </div>
+              )}
+            </SidebarMenuSub>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
     </SidebarMenuItem>
   );
 };
@@ -238,7 +540,14 @@ export function AppSidebar() {
   const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
   const [groupError, setGroupError] = useState("");
   const [activeProject, setActiveProject] = useState(null);
+  const [isSprintSheetOpen, setIsSprintSheetOpen] = useState(false);
+  const [currentProjectForSprint, setCurrentProjectForSprint] = useState(null);
+  const [currentSprintForEdit, setCurrentSprintForEdit] = useState(null);
+  const [isSubmittingSprint, setIsSubmittingSprint] = useState(false);
+  const [sprintError, setSprintError] = useState("");
+  const [expandedProjects, setExpandedProjects] = useState({});
   const { toast } = useToast();
+  const { state: sidebarState } = useSidebar();
 
   const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -263,6 +572,18 @@ export function AppSidebar() {
       fetchProjects();
     }
   }, [user, fetchProjects]);
+
+  // Auto-expand projects that have active sprints (sprint_status === 1)
+  useEffect(() => {
+    const newExpanded = {};
+    projects.forEach(project => {
+      const hasActiveSprint = (project.sprints || []).some(sprint => sprint.sprint_status === 1);
+      if (hasActiveSprint) {
+        newExpanded[project.id] = true;
+      }
+    });
+    setExpandedProjects(prev => ({ ...prev, ...newExpanded }));
+  }, [projects]);
 
   const handleCreateGroup = async (data) => {
     try {
@@ -316,13 +637,66 @@ export function AppSidebar() {
     }
   };
 
+  const handleCreateSprint = async (data) => {
+    try {
+      setIsSubmittingSprint(true);
+      setSprintError("");
+      if (currentSprintForEdit) {
+        await sprintService.updateSprint(currentSprintForEdit.id, data);
+        toast({
+          title: "Success",
+          description: "Sprint updated successfully",
+          variant: "success",
+        });
+      } else {
+        await sprintService.createSprint(data);
+        toast({
+          title: "Success",
+          description: "Sprint created successfully",
+          variant: "success",
+        });
+      }
+      await fetchProjects(); // Refresh project data
+      setIsSprintSheetOpen(false);
+    } catch (err) {
+      const errorMsg = err.response?.data?.msg || err.msg || err.error || "Failed to save sprint";
+      setSprintError(errorMsg);
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingSprint(false);
+    }
+  };
+
+  const openCreateSprint = (projectId) => {
+    setCurrentProjectForSprint(projectId);
+    setCurrentSprintForEdit(null);
+    setIsSprintSheetOpen(true);
+  };
+
+  const openEditSprint = (sprint) => {
+    setCurrentSprintForEdit(sprint);
+    setCurrentProjectForSprint(sprint.project_id);
+    setIsSprintSheetOpen(true);
+  };
+
+  const toggleProjectExpand = (projectId) => {
+    setExpandedProjects(prev => ({
+      ...prev,
+      [projectId]: !prev[projectId]
+    }));
+  };
+
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
   const isRestrictedRole = user?.role === "team_leader" || user?.role === "worker";
-  
+
   const menuItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     ...(isRestrictedRole ? [] : [
@@ -357,7 +731,7 @@ export function AppSidebar() {
           </div>
         </SidebarHeader>
         <SidebarContent>
-          <DndContext 
+          <DndContext
             sensors={sensors}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
@@ -387,140 +761,57 @@ export function AppSidebar() {
                   {/* Render Master menu next */}
                   {!isRestrictedRole && menuItems.find(item => item.title === "Master") && (
                     <SidebarMenuItem key="master">
-                      <Collapsible defaultOpen className="group/collapsible">
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuButton tooltip="Master">
-                            <Settings />
-                            <span>Master</span>
-                            <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                          </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <SidebarMenuSub>
-                            {[
-                              { title: "Admin", url: "/admin", icon: UserCog },
-                              { title: "Workers", url: "/workers", icon: HardHat },
-                              { title: "Task Status", url: "/task-status", icon: ClipboardList },
-                              { title: "Project Grouping", url: "/project-grouping", icon: LayoutGrid },
-                            ].map((subItem) => {
-                              const isActive = location.pathname === subItem.url;
-                              return (
-                                <SidebarMenuSubItem key={subItem.title}>
-                                  <SidebarMenuSubButton asChild isActive={isActive} className="relative pr-6">
-                                    <Link to={subItem.url} onClick={closeSidebarOnMobile} className="w-full flex items-center">
-                                      {subItem.icon && <subItem.icon className="h-4 w-4" />}
-                                      <span>{subItem.title}</span>
-                                      {isActive && (
-                                        <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-600">
-                                          <ChevronRight className="h-3 w-3" />
-                                        </div>
-                                      )}
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              );
-                            })}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    </SidebarMenuItem>
-                  )}
-
-                  {/* Always show Project Groups section here */}
-                  <div key="groups-section" className="mt-2 mb-4 group-data-[collapsible=icon]:mt-0">
-                    <div className="px-4 py-2 mb-3 group-data-[collapsible=icon]:hidden">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => navigate("/tasks-dashboard")}
-                            className={`p-1.5 rounded-md transition-all ${
-                              location.pathname === "/tasks-dashboard" 
-                                ? "bg-blue-100 text-blue-600" 
-                                : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                            }`}
-                            title="Task Dashboard"
-                          >
-                            <LayoutDashboard className="h-4 w-4" />
-                          </button>
-                          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Groups</span>
-                        </div>
-                        {!isRestrictedRole && (
-                          <button 
-                            onClick={() => setIsNewGroupSheetOpen(true)}
-                            className="h-5 w-5 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors"
-                          >
-                            <Plus className="h-3 w-3 text-slate-500" />
-                          </button>
-                        )}
-                      </div>
-                      <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                        <Input 
-                          placeholder="Search projects..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-8 bg-slate-50/50 focus:bg-white transition-all"
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Grouped Projects */}
-                    {groups
-                      .filter((group) => {
-                        if (!searchQuery) return true;
-                        const groupProjects = projects.filter(p => p.group_id === group.id);
-                        return groupProjects.some(p => 
-                          p.name.toLowerCase().includes(searchQuery.toLowerCase())
-                        );
-                      })
-                      .map((group) => (
-                        <DroppableGroup 
-                          key={group.id}
-                          group={group} 
-                          projects={projects} 
-                          currentPath={location.pathname}
-                          searchQuery={searchQuery}
-                          isRestricted={isRestrictedRole}
-                        />
-                      ))}
-
-                    {/* Uncategorized Projects */}
-                    {(() => {
-                      const uncategorizedProjects = projects.filter(p => !p.group_id);
-                      if (searchQuery) {
-                        const hasMatching = uncategorizedProjects.some(p => 
-                          p.name.toLowerCase().includes(searchQuery.toLowerCase())
-                        );
-                        if (!hasMatching) return null;
-                      }
-                      return (
-                        <DroppableGroup 
-                          group={null} 
-                          projects={projects} 
-                          currentPath={location.pathname}
-                          searchQuery={searchQuery}
-                          isRestricted={isRestrictedRole}
-                        />
-                      );
-                    })()}
-                  </div>
-
-                  {/* Render remaining menu items (exclude Groups since we show project groups) */}
-                  {menuItems.filter(item => item.title !== "Dashboard" && item.title !== "Master" && item.title !== "Groups").map((item) => {
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        {item.subItems ? (
+                      {(() => {
+                        const masterSubItems = [
+                          { title: "Admin", url: "/admin", icon: UserCog },
+                          { title: "Workers", url: "/workers", icon: HardHat },
+                          { title: "Task Status", url: "/task-status", icon: ClipboardList },
+                          { title: "Project Grouping", url: "/project-grouping", icon: LayoutGrid },
+                        ];
+                        
+                        if (sidebarState === 'icon') {
+                          return (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <SidebarMenuButton tooltip="Master">
+                                  <Settings />
+                                  <span>Master</span>
+                                </SidebarMenuButton>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent side="right" align="start" className="w-[180px]">
+                                {masterSubItems.map((subItem) => {
+                                  const isActive = location.pathname === subItem.url;
+                                  return (
+                                    <DropdownMenuItem
+                                      key={subItem.title}
+                                      onClick={() => {
+                                        navigate(subItem.url);
+                                        closeSidebarOnMobile();
+                                      }}
+                                      className={`cursor-pointer ${isActive ? 'bg-blue-50 text-blue-600' : ''}`}
+                                    >
+                                      {subItem.icon && <subItem.icon className="h-4 w-4 mr-2" />}
+                                      {subItem.title}
+                                    </DropdownMenuItem>
+                                  );
+                                })}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          );
+                        }
+                        
+                        return (
                           <Collapsible defaultOpen className="group/collapsible">
                             <CollapsibleTrigger asChild>
-                              <SidebarMenuButton tooltip={item.title}>
-                                <item.icon />
-                                <span>{item.title}</span>
+                              <SidebarMenuButton tooltip="Master">
+                                <Settings />
+                                <span>Master</span>
                                 <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                               </SidebarMenuButton>
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                               <SidebarMenuSub>
-                                {item.subItems.map((subItem) => {
+                                {masterSubItems.map((subItem) => {
                                   const isActive = location.pathname === subItem.url;
                                   return (
                                     <SidebarMenuSubItem key={subItem.title}>
@@ -541,19 +832,190 @@ export function AppSidebar() {
                               </SidebarMenuSub>
                             </CollapsibleContent>
                           </Collapsible>
-                        ) : (
-                          <SidebarMenuButton asChild tooltip={item.title} isActive={location.pathname === item.url} className="relative pr-6">
-                            <Link to={item.url} onClick={closeSidebarOnMobile}>
-                              <item.icon />
-                              <span>{item.title}</span>
-                              {location.pathname === item.url && (
-                                <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-600">
-                                  <ChevronRight className="h-3 w-3" />
-                                </div>
-                              )}
-                            </Link>
-                          </SidebarMenuButton>
+                        );
+                      })()}
+                    </SidebarMenuItem>
+                  )}
+
+                  {/* Always show Project Groups section here */}
+                  <div key="groups-section" className="mt-1 mb-2 group-data-[collapsible=icon]:mt-0">
+                    <div className="px-2 py-1 mb-2 group-data-[collapsible=icon]:hidden">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => navigate("/tasks-dashboard")}
+                            className={`p-1.5 rounded-md transition-all ${
+                              location.pathname === "/tasks-dashboard"
+                                ? "bg-blue-100 text-blue-600"
+                                : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                            }`}
+                            title="Task Dashboard"
+                          >
+                            <LayoutDashboard className="h-4 w-4" />
+                          </button>
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Groups</span>
+                        </div>
+                        {!isRestrictedRole && (
+                          <button
+                            onClick={() => setIsNewGroupSheetOpen(true)}
+                            className="h-5 w-5 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors"
+                          >
+                            <Plus className="h-3 w-3 text-slate-500" />
+                          </button>
                         )}
+                      </div>
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                        <Input
+                          placeholder="Search projects..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-8 bg-slate-50/50 focus:bg-white transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Grouped Projects */}
+                    <div className="space-y-0.5">
+                      {groups
+                        .filter((group) => {
+                          if (!searchQuery) return true;
+                          const groupProjects = projects.filter(p => p.group_id === group.id);
+                          return groupProjects.some(p =>
+                            p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                          );
+                        })
+                        .map((group) => (
+                          <DroppableGroup
+                            key={group.id}
+                            group={group}
+                            projects={projects}
+                            currentPath={location.pathname}
+                            searchQuery={searchQuery}
+                            isRestricted={isRestrictedRole}
+                            expandedProjects={expandedProjects}
+                            onToggleExpand={toggleProjectExpand}
+                            onOpenCreateSprint={openCreateSprint}
+                            onOpenEditSprint={openEditSprint}
+                            closeSidebarOnMobile={closeSidebarOnMobile}
+                            sidebarState={sidebarState}
+                          />
+                        ))}
+
+                      {/* Uncategorized Projects */}
+                      {(() => {
+                        const uncategorizedProjects = projects.filter(p => !p.group_id);
+                        if (searchQuery) {
+                          const hasMatching = uncategorizedProjects.some(p =>
+                            p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                          );
+                          if (!hasMatching) return null;
+                        }
+                        return (
+                          <DroppableGroup
+                            group={null}
+                            projects={projects}
+                            currentPath={location.pathname}
+                            searchQuery={searchQuery}
+                            isRestricted={isRestrictedRole}
+                            expandedProjects={expandedProjects}
+                            onToggleExpand={toggleProjectExpand}
+                            onOpenCreateSprint={openCreateSprint}
+                            onOpenEditSprint={openEditSprint}
+                            closeSidebarOnMobile={closeSidebarOnMobile}
+                            sidebarState={sidebarState}
+                          />
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Render remaining menu items (exclude Groups since we show project groups) */}
+                  {menuItems.filter(item => item.title !== "Dashboard" && item.title !== "Master" && item.title !== "Groups").map((item) => {
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        {(() => {
+                          if (item.subItems) {
+                            if (sidebarState === 'icon') {
+                              return (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <SidebarMenuButton tooltip={item.title}>
+                                      <item.icon />
+                                      <span>{item.title}</span>
+                                    </SidebarMenuButton>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent side="right" align="start" className="w-[180px]">
+                                    {item.subItems.map((subItem) => {
+                                      const isActive = location.pathname === subItem.url;
+                                      return (
+                                        <DropdownMenuItem
+                                          key={subItem.title}
+                                          onClick={() => {
+                                            navigate(subItem.url);
+                                            closeSidebarOnMobile();
+                                          }}
+                                          className={`cursor-pointer ${isActive ? 'bg-blue-50 text-blue-600' : ''}`}
+                                        >
+                                          {subItem.icon && <subItem.icon className="h-4 w-4 mr-2" />}
+                                          {subItem.title}
+                                        </DropdownMenuItem>
+                                      );
+                                    })}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              );
+                            }
+                            
+                            return (
+                              <Collapsible defaultOpen className="group/collapsible">
+                                <CollapsibleTrigger asChild>
+                                  <SidebarMenuButton tooltip={item.title}>
+                                    <item.icon />
+                                    <span>{item.title}</span>
+                                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                  </SidebarMenuButton>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                  <SidebarMenuSub>
+                                    {item.subItems.map((subItem) => {
+                                      const isActive = location.pathname === subItem.url;
+                                      return (
+                                        <SidebarMenuSubItem key={subItem.title}>
+                                          <SidebarMenuSubButton asChild isActive={isActive} className="relative pr-6">
+                                            <Link to={subItem.url} onClick={closeSidebarOnMobile} className="w-full flex items-center">
+                                              {subItem.icon && <subItem.icon className="h-4 w-4" />}
+                                              <span>{subItem.title}</span>
+                                              {isActive && (
+                                                <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-600">
+                                                  <ChevronRight className="h-3 w-3" />
+                                                </div>
+                                              )}
+                                            </Link>
+                                          </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+                                      );
+                                    })}
+                                  </SidebarMenuSub>
+                                </CollapsibleContent>
+                              </Collapsible>
+                            );
+                          }
+                          
+                          return (
+                            <SidebarMenuButton asChild tooltip={item.title} isActive={location.pathname === item.url} className="relative pr-6">
+                              <Link to={item.url} onClick={closeSidebarOnMobile}>
+                                <item.icon />
+                                <span>{item.title}</span>
+                                {location.pathname === item.url && (
+                                  <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-600">
+                                    <ChevronRight className="h-3 w-3" />
+                                  </div>
+                                )}
+                              </Link>
+                            </SidebarMenuButton>
+                          );
+                        })()}
                       </SidebarMenuItem>
                     );
                   })}
@@ -572,11 +1034,11 @@ export function AppSidebar() {
                 }),
               }}>
                 {activeProject ? (
-                  <div className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white shadow-2xl ring-1 ring-slate-200 border-2 border-blue-500/20 scale-105 opacity-90 cursor-grabbing min-w-[200px]">
-                    <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-blue-50">
-                      <Folder className="h-4.5 w-4.5 text-blue-500" />
+                  <div className="flex items-center gap-2 py-1.5 px-2 rounded-md bg-white shadow-2xl ring-1 ring-slate-200 border border-blue-500/20 scale-105 opacity-90 cursor-grabbing min-w-[180px]">
+                    <div className="h-4.5 w-4.5 rounded flex items-center justify-center bg-slate-900">
+                      <Folder className="h-3.5 w-3.5 text-white" />
                     </div>
-                    <span className="text-[13px] font-bold text-slate-900">
+                    <span className="text-[13px] font-medium text-slate-900">
                       {activeProject.name}
                     </span>
                   </div>
@@ -633,10 +1095,39 @@ export function AppSidebar() {
               Groups help you categorize and manage multiple related projects together.
             </SheetDescription>
           </SheetHeader>
-          <ProjectGroupForm 
-            onSubmit={handleCreateGroup} 
+          <ProjectGroupForm
+            onSubmit={handleCreateGroup}
             submitting={isSubmittingGroup}
             error={groupError}
+          />
+        </SheetContent>
+      </Sheet>
+
+      {/* Sprint Sheet */}
+      <Sheet open={isSprintSheetOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsSprintSheetOpen(false);
+          setCurrentSprintForEdit(null);
+          setCurrentProjectForSprint(null);
+        } else {
+          setIsSprintSheetOpen(true);
+        }
+      }}>
+        <SheetContent className="sm:max-w-[500px]">
+          <SheetHeader className="border-b pb-4">
+            <SheetTitle className="text-xl font-black uppercase tracking-tight">
+              {currentSprintForEdit ? 'Edit Sprint' : 'Create New Sprint'}
+            </SheetTitle>
+            <SheetDescription className="font-medium">
+              {currentSprintForEdit ? 'Update the sprint details.' : 'Add a new sprint to this project.'}
+            </SheetDescription>
+          </SheetHeader>
+          <SprintForm
+            onSubmit={handleCreateSprint}
+            initialData={currentSprintForEdit}
+            submitting={isSubmittingSprint}
+            error={sprintError}
+            projectId={currentProjectForSprint}
           />
         </SheetContent>
       </Sheet>

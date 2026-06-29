@@ -1,8 +1,12 @@
 import api from "../../../core/interceptors/axiosInterceptor";
 
-const getProjectTaskData = async (projectId) => {
+const getProjectTaskData = async (projectId, sprintId) => {
   try {
-    const response = await api.get(`/project-tasks/project/${projectId}`);
+    let url = `/project-tasks/project/${projectId}`;
+    if (sprintId) {
+      url += `?sprintId=${sprintId}`;
+    }
+    const response = await api.get(url);
     return response.data;
   } catch (error) {
     throw error.response ? error.response.data : new Error("Network error");

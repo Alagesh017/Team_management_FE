@@ -100,7 +100,7 @@ const BoardColumn = ({
             >
               {statusTasks.length}
             </span>
-            {canAddEditDelete && (
+            {canAddEditDelete && status.is_todo && (
               <button
                 onClick={() => onOpenAddPanel(status.status_id)}
                 className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
@@ -186,7 +186,7 @@ const BoardColumn = ({
             onOpenMemberDialog={onOpenMemberDialog}
           />
         ) : (
-          canAddEditDelete && (
+          canAddEditDelete && status.is_todo && (
             <button
               onClick={() => onOpenAddPanel(status.status_id)}
               className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all text-sm font-medium border-2 border-dashed border-slate-100 hover:border-slate-200 group"

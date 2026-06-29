@@ -25,6 +25,8 @@ const AddTaskPanel = ({
   onClose,
   onOpenMemberDialog,
 }) => {
+  const today = new Date().toISOString().split('T')[0];
+  
   return (
     <div
       className="rounded-xl border border-indigo-200 bg-white p-3 space-y-3"
@@ -75,6 +77,7 @@ const AddTaskPanel = ({
             value={newTaskStartDate}
             onChange={(e) => setNewTaskStartDate(e.target.value)}
             className="h-8 text-xs px-2 pr-12"
+            min={today}
           />
         </div>
         <div>
@@ -84,6 +87,7 @@ const AddTaskPanel = ({
             value={newTaskDueDate}
             onChange={(e) => setNewTaskDueDate(e.target.value)}
             className="h-8 text-xs px-2 pr-8"
+            min={today}
           />
         </div>
       </div>

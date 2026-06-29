@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronRight, Search, FileSpreadsheet } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 import { Input } from "../../../../common/components/ui/input";
 import { Button } from "../../../../common/components/ui/button";
 import { avatarColor, getMemberInitials } from "./constants";
@@ -8,13 +8,13 @@ import { getFullAvatarUrl } from "../../../../core/utils/utils";
 
 const BoardHeader = ({
   project,
+  sprint,
   statuses,
   searchQuery,
   setSearchQuery,
   meMode,
   setMeMode,
   availableMembers,
-  onExportClick,
 }) => {
   return (
     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white/70 backdrop-blur shrink-0 lg:px-5">
@@ -24,8 +24,16 @@ const BoardHeader = ({
             <h1 className="text-lg lg:text-xl font-bold tracking-tight text-slate-900 truncate">
               {project ? project.name : "Project Tasks"}
             </h1>
-            <ChevronRight className="h-4 w-4 text-slate-300" />
-            <span className="text-sm text-slate-400 font-medium">Board</span>
+            {sprint && (
+              <>
+                <ChevronRight className="h-4 w-4 text-slate-300" />
+                <h2 className="text-lg lg:text-xl font-bold tracking-tight text-slate-700 truncate">
+                  {sprint.sprint_name}
+                </h2>
+              </>
+            )}
+            <ChevronRight className="h-4 w-4 text-slate-300 hidden lg:block" />
+            <span className="text-sm text-slate-400 font-medium hidden lg:block">Board</span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
             {statuses.reduce((acc, s) => acc + (s.tasks?.length || 0), 0)} tasks across{" "}
@@ -45,18 +53,7 @@ const BoardHeader = ({
             className="pl-8 w-64 bg-slate-50/50 focus:bg-white transition-all"
           />
         </div>
-        {/* Excel export button */}
-        {onExportClick && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-            onClick={onExportClick}
-            title="Export to Excel"
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-          </Button>
-        )}
+
 
         {/* me mode toggle */}
         <div className="flex items-center gap-2 border-l border-slate-200 pl-3 lg:pl-3">

@@ -19,6 +19,8 @@ const InlineEditTaskPanel = ({
   onSave,
   onCancel,
 }) => {
+  const today = new Date().toISOString().split('T')[0];
+  
   return (
     <div
       className="rounded-xl border border-indigo-200 bg-white p-3 space-y-3"
@@ -59,6 +61,7 @@ const InlineEditTaskPanel = ({
             value={editTaskStartDate}
             onChange={(e) => setEditTaskStartDate(e.target.value)}
             className="h-8 text-xs px-2 pr-12"
+            min={today}
           />
         </div>
         <div>
@@ -68,6 +71,7 @@ const InlineEditTaskPanel = ({
             value={editTaskDueDate}
             onChange={(e) => setEditTaskDueDate(e.target.value)}
             className="h-8 text-xs px-2 pr-8"
+            min={today}
           />
         </div>
       </div>

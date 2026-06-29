@@ -17,6 +17,8 @@ import TaskDetailPage from '../features/tasks/pages/TaskDetailPage'
 import TaskDashboardPage from '../features/tasks/pages/TaskDashboardPage'
 import TaskExportPage from '../features/tasks/pages/TaskExportPage'
 import TaskExcelEditorPage from '../features/tasks/pages/TaskExcelEditorPage'
+import ProjectBacklogPage from '../features/tasks/pages/ProjectBacklogPage'
+import SprintManagementPage from '../features/sprints/pages/SprintManagementPage'
 import ReportPage from '../features/reports/pages/ReportPage'
 import NotFoundPage from '../features/not-found/pages/NotFoundPage'
 import { ProtectedRoute } from '../common/components/ProtectedRoute'
@@ -40,10 +42,13 @@ export default function AppRoutes() {
 			<Route path="/projects" element={<ProtectedRoute><ProjectPage /></ProtectedRoute>} />
 			<Route path="/project-grouping" element={<ProtectedRoute><ProjectGroupPage /></ProtectedRoute>} />
 			<Route path="/projects/:id" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
-			<Route path="/project-allocation" element={<ProtectedRoute><ProjectAllocationPage /></ProtectedRoute>} />
+            <Route path="/projects/:projectId/sprints" element={<ProtectedRoute><SprintManagementPage /></ProtectedRoute>} />
+            <Route path="/project-allocation" element={<ProtectedRoute><ProjectAllocationPage /></ProtectedRoute>} />
 			<Route path="/project-allocation/:projectId" element={<ProtectedRoute><ProjectAllocationDetailPage /></ProtectedRoute>} />
 			<Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-			<Route path="/tasks/project/:id" element={<ProtectedRoute><TaskBoardPage /></ProtectedRoute>} />
+			<Route path="/tasks/project/:projectId" element={<ProtectedRoute><ProjectBacklogPage /></ProtectedRoute>} />
+			<Route path="/tasks/project/:projectId/board" element={<ProtectedRoute><TaskBoardPage /></ProtectedRoute>} />
+			<Route path="/tasks/project/:projectId/sprint/:sprintId" element={<ProtectedRoute><TaskBoardPage /></ProtectedRoute>} />
 			<Route path="/tasks/project/:projectId/task/:taskId" element={<ProtectedRoute><TaskDetailPage /></ProtectedRoute>} />
 			<Route path="/tasks-dashboard" element={<ProtectedRoute><TaskDashboardPage /></ProtectedRoute>} />
 			<Route path="/tasks/export" element={<ProtectedRoute><TaskExportPage /></ProtectedRoute>} />

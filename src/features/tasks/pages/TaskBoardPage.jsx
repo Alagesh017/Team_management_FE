@@ -17,6 +17,7 @@ const TaskBoardPage = () => {
   const {
   id: projectId,
   project,
+  sprint,
   searchQuery,
   setSearchQuery,
   meMode,
@@ -167,15 +168,13 @@ const TaskBoardPage = () => {
       {/* Header */}
       <BoardHeader
         project={project}
+        sprint={sprint}
         statuses={statuses}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         meMode={meMode}
         setMeMode={setMeMode}
         availableMembers={availableMembers}
-        onExportClick={() => {
-          navigate(`/tasks/export?projectId=${projectId}`);
-        }}
       />
 
       {/* Columns */}
@@ -188,7 +187,7 @@ const TaskBoardPage = () => {
             handleDragEnd();
           }}
         >
-          {statuses.map((status) => {
+          {statuses.filter(status => !status.is_backlog).map((status) => {
             let statusTasks = status.tasks || [];
             if (searchQuery) {
               statusTasks = statusTasks.filter((t) =>

@@ -9,12 +9,18 @@ import { Checkbox } from "../../../common/components/ui/checkbox";
 import { Alert, AlertDescription } from "../../../common/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { SheetFooter, SheetClose } from "../../../common/components/ui/sheet";
+import { taskStatusService } from "../services/taskStatusService";
+import { useToast } from "../../../common/hooks/use-toast";
 
 export const taskStatusFormSchema = z.object({
   name: z.string().min(1, "Status name is required"),
   color: z.string().default("#000000"),
   remark: z.string().default(""),
   is_confidential: z.boolean().default(false),
+  is_backlog: z.boolean().default(false),
+  is_todo: z.boolean().default(false),
+  is_in_progress: z.boolean().default(false),
+  is_completed: z.boolean().default(false),
 });
 
 const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
@@ -32,14 +38,24 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
       color: "#000000",
       remark: "",
       is_confidential: false,
+      is_backlog: false,
+      is_todo: false,
+      is_in_progress: false,
+      is_completed: false,
     },
   });
+  
+  const { toast } = useToast();
 
   React.useEffect(() => {
     if (initialData) {
       reset({
         ...initialData,
         is_confidential: Boolean(initialData.is_confidential),
+        is_backlog: Boolean(initialData.is_backlog),
+        is_todo: Boolean(initialData.is_todo),
+        is_in_progress: Boolean(initialData.is_in_progress),
+        is_completed: Boolean(initialData.is_completed),
         color: initialData.color || "#000000",
         remark: initialData.remark || "",
       });
@@ -49,11 +65,43 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
         color: "#000000",
         remark: "",
         is_confidential: false,
+        is_backlog: false,
+        is_todo: false,
+        is_in_progress: false,
+        is_completed: false,
       });
     }
   }, [initialData, reset]);
 
   const currentColor = watch("color");
+  const watchBacklog = watch("is_backlog");
+  const watchTodo = watch("is_todo");
+  const watchInProgress = watch("is_in_progress");
+  const watchCompleted = watch("is_completed");
+
+  // Handle only one flag being true at a time and check API
+  const handleFlagChange = async (flagName, checked) => {
+    if (checked) {
+      // Check if another status already has this flag marked
+      try {
+        await taskStatusService.checkTaskStatusFlag(flagName, initialData?.id);
+      } catch (err) {
+        toast({
+          title: "Warning",
+          description: err.msg || "Another status already has this flag marked",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // If turning this flag on, turn others off
+      if (flagName !== "is_backlog") setValue("is_backlog", false);
+      if (flagName !== "is_todo") setValue("is_todo", false);
+      if (flagName !== "is_in_progress") setValue("is_in_progress", false);
+      if (flagName !== "is_completed") setValue("is_completed", false);
+    }
+    setValue(flagName, checked);
+  };
   
   console.log("Form errors:", errors);
   console.log("Form values:", watch());
@@ -133,7 +181,7 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Checkbox
                 id="is_confidential"
@@ -143,6 +191,47 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
               <Label htmlFor="is_confidential" className="font-bold">Is Confidential</Label>
             </div>
             <p className="text-xs text-slate-500">Mark this status as confidential</p>
+          </div>
+
+          <div className="space-y-4">
+            <Label className="font-bold">Status Type (Select only one)</Label>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="is_backlog"
+                  checked={watchBacklog}
+                  onCheckedChange={(checked) => handleFlagChange("is_backlog", checked)}
+                />
+                <Label htmlFor="is_backlog">Is Backlog</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="is_todo"
+                  checked={watchTodo}
+                  onCheckedChange={(checked) => handleFlagChange("is_todo", checked)}
+                />
+                <Label htmlFor="is_todo">Is Todo</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="is_in_progress"
+                  checked={watchInProgress}
+                  onCheckedChange={(checked) => handleFlagChange("is_in_progress", checked)}
+                />
+                <Label htmlFor="is_in_progress">Is In Progress</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="is_completed"
+                  checked={watchCompleted}
+                  onCheckedChange={(checked) => handleFlagChange("is_completed", checked)}
+                />
+                <Label htmlFor="is_completed">Is Completed</Label>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500">
+              Only one of these can be selected at a time
+            </p>
           </div>
         </div>
       </div>

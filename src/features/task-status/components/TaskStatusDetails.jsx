@@ -84,6 +84,46 @@ const TaskStatusDetails = ({ status, open, onOpenChange }) => {
                 </div>
               </div>
 
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Is Backlog</p>
+                <div className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full ${status.is_backlog ? 'bg-blue-500' : 'bg-slate-300'}`} />
+                  <p className="text-sm font-bold text-slate-900">
+                    {status.is_backlog ? "Yes" : "No"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Is Todo</p>
+                <div className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full ${status.is_todo ? 'bg-cyan-500' : 'bg-slate-300'}`} />
+                  <p className="text-sm font-bold text-slate-900">
+                    {status.is_todo ? "Yes" : "No"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Is In Progress</p>
+                <div className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full ${status.is_in_progress ? 'bg-yellow-500' : 'bg-slate-300'}`} />
+                  <p className="text-sm font-bold text-slate-900">
+                    {status.is_in_progress ? "Yes" : "No"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Is Completed</p>
+                <div className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full ${status.is_completed ? 'bg-green-500' : 'bg-slate-300'}`} />
+                  <p className="text-sm font-bold text-slate-900">
+                    {status.is_completed ? "Yes" : "No"}
+                  </p>
+                </div>
+              </div>
+
               <div className="col-span-2 space-y-1">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Created At</p>
                 <p className="text-sm font-bold text-slate-900">

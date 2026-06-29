@@ -54,6 +54,18 @@ const reorderTaskStatuses = async (statuses) => {
   }
 };
 
+const checkTaskStatusFlag = async (flagName, currentStatusId) => {
+  try {
+    const response = await api.post("/task-statuses/check-flag", {
+      flag_name: flagName,
+      current_status_id: currentStatusId
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
 export const taskStatusService = {
   getAllTaskStatuses,
   getTaskStatusById,
@@ -61,4 +73,5 @@ export const taskStatusService = {
   updateTaskStatus,
   deleteTaskStatus,
   reorderTaskStatuses,
+  checkTaskStatusFlag,
 };

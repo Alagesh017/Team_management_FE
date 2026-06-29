@@ -3,15 +3,18 @@ import { useParams, useNavigate } from "react-router-dom";
 import { projectService } from "../../projects/services/projectService";
 import { taskService } from "../services/taskService";
 import { projectTaskService } from "../services/projectTaskService";
+import { sprintService } from "../../sprints/services/sprintService";
 import { useAuth } from "../../auth/contexts/AuthContext";
 import { getMemberKey } from "../components/board/constants";
 
 export const useTaskBoard = () => {
-  const { id } = useParams();
+  const { projectId, sprintId, id } = useParams();
+  const currentProjectId = projectId || id;
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const [project, setProject]               = useState(null);
+  const [sprint, setSprint]                 = useState(null);
   const [searchQuery, setSearchQuery]       = useState("");
   const [meMode, setMeMode]                 = useState(false);
   const [allocation, setAllocation]         = useState(null);
@@ -77,16 +80,21 @@ export const useTaskBoard = () => {
   /* ── derived members ── */
   const availableMembers = useMemo(() => {
     const seen = new Set();
-    const combined = [];
+    const uniqueMembersMap = {};
     [...allAdmins, ...allocatedMembers].forEach((m) => {
       const memberType = m.type || (m.is_admin || m.is_superadmin ? "admin" : "worker");
       const uniqueKey = `${memberType}-${m.user_id}`;
       if (!seen.has(uniqueKey)) {
         seen.add(uniqueKey);
-        combined.push({ ...m, type: memberType });
+        uniqueMembersMap[uniqueKey] = { ...m, type: memberType };
       }
     });
-    return combined;
+    
+    // Sort: workers first, then admins
+    return Object.values(uniqueMembersMap).sort((a, b) => {
+      const typeOrder = { worker: 0, admin: 1 };
+      return typeOrder[a.type] - typeOrder[b.type];
+    });
   }, [allAdmins, allocatedMembers]);
 
   const filteredMembers = useMemo(() =>
@@ -99,16 +107,31 @@ export const useTaskBoard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [projectData, projectTaskData] = await Promise.all([
-        projectService.getProjectById(id),
-        projectTaskService.getProjectTaskData(id),
-      ]);
+      const promises = [
+        projectService.getProjectById(currentProjectId),
+        projectTaskService.getProjectTaskData(currentProjectId, sprintId),
+        projectService.getAvailableUsersByProject(currentProjectId),
+      ];
+      
+      if (sprintId) {
+        promises.push(sprintService.getSprintById(sprintId));
+      }
+      
+      const [projectData, projectTaskData, availableUsersData, sprintData] = await Promise.all(promises);
       const proj = projectData.project || projectData;
       setProject(proj);
+      if (sprintData) {
+        setSprint(sprintData.sprint || sprintData);
+      } else {
+        setSprint(null);
+      }
       setAllocation(projectTaskData.allocation);
       setStatuses(projectTaskData.statuses || []);
-      setAllocatedMembers(projectTaskData.allocated_members || []);
-      setAllAdmins(projectTaskData.all_admins || []);
+      
+      // Update available members from the new API
+      const availableUsers = availableUsersData.available_users || [];
+      setAllocatedMembers(availableUsers.filter(m => m.type === "worker"));
+      setAllAdmins(availableUsers.filter(m => m.type === "admin"));
     } catch (err) {
       console.error("Failed to fetch data:", err);
     } finally {
@@ -116,7 +139,7 @@ export const useTaskBoard = () => {
     }
   };
 
-  useEffect(() => { if (id) fetchData(); }, [id]);
+  useEffect(() => { if (currentProjectId) fetchData(); }, [currentProjectId, sprintId]);
 
   useEffect(() => {
     if (newTaskEstimatedHours) setNewTaskActualHours(newTaskEstimatedHours);
@@ -159,7 +182,8 @@ export const useTaskBoard = () => {
           })
         : null;
       await taskService.createTask({
-        project_id: parseInt(id),
+        project_id: parseInt(currentProjectId),
+        sprint_id: sprintId ? parseInt(sprintId) : null,
         allocation_id: allocation?.allocation_id || null,
         status_id: statusId,
         title: newTaskTitle,
@@ -319,7 +343,7 @@ export const useTaskBoard = () => {
     if (e && e.target.closest("button")) return;
     
     // Navigate to task detail page
-    navigate(`/tasks/project/${id}/task/${task.task_id}`);
+    navigate(`/tasks/project/${currentProjectId}/task/${task.task_id}`);
   };
 
   const openEditTask = (task, e) => {
@@ -328,10 +352,11 @@ export const useTaskBoard = () => {
   };
 
   return {
-    id,
+    id: currentProjectId,
     navigate,
     user,
     project, setProject,
+    sprint, setSprint,
     searchQuery, setSearchQuery,
     meMode, setMeMode,
     allocation, setAllocation,
