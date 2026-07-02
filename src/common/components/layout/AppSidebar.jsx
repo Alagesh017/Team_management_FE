@@ -31,6 +31,7 @@ import {
   BarChart3,
   PlayCircle,
   Calendar as CalendarIcon,
+  FileText,
 } from "lucide-react";
 import SprintForm from "../../../features/sprints/components/SprintForm";
 import { sprintService } from "../../../features/sprints/services/sprintService";
@@ -699,6 +700,9 @@ export function AppSidebar() {
 
   const menuItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    // { title: "Task Dashboard", url: "/tasks-dashboard", icon: BarChart3 },
+    { title: "Reports", url: "/reports", icon: FileText },
+    { title: "Leave & Permissions", url: "/leave", icon: Calendar },
     ...(isRestrictedRole ? [] : [
       {
         title: "Master",
@@ -842,17 +846,6 @@ export function AppSidebar() {
                     <div className="px-2 py-1 mb-2 group-data-[collapsible=icon]:hidden">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => navigate("/tasks-dashboard")}
-                            className={`p-1.5 rounded-md transition-all ${
-                              location.pathname === "/tasks-dashboard"
-                                ? "bg-blue-100 text-blue-600"
-                                : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                            }`}
-                            title="Task Dashboard"
-                          >
-                            <LayoutDashboard className="h-4 w-4" />
-                          </button>
                           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Groups</span>
                         </div>
                         {!isRestrictedRole && (

@@ -87,7 +87,7 @@ const AddTaskPanel = ({
             value={newTaskDueDate}
             onChange={(e) => setNewTaskDueDate(e.target.value)}
             className="h-8 text-xs px-2 pr-8"
-            min={today}
+            min={newTaskStartDate || today}
           />
         </div>
       </div>

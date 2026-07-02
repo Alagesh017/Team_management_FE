@@ -71,7 +71,7 @@ const InlineEditTaskPanel = ({
             value={editTaskDueDate}
             onChange={(e) => setEditTaskDueDate(e.target.value)}
             className="h-8 text-xs px-2 pr-8"
-            min={today}
+            min={editTaskStartDate || today}
           />
         </div>
       </div>

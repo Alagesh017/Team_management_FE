@@ -16,6 +16,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from "../../../common/components/ui/sheet";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import ProjectGroupForm from "../components/ProjectGroupForm";
@@ -172,15 +173,39 @@ const ProjectGroupPage = () => {
               className="pl-10 bg-white border-slate-200 focus-visible:ring-1 focus-visible:ring-slate-300 transition-all rounded-xl"
             />
           </div>
-          <Button 
-            onClick={() => {
+          <Sheet open={isSheetOpen} onOpenChange={(open) => {
+            setIsSheetOpen(open);
+            if (!open) {
               setEditingGroup(null);
-              setIsSheetOpen(true);
-            }}
-            className="bg-slate-900 hover:bg-slate-800 text-white font-black gap-2 px-6 transition-all active:scale-95 rounded-xl uppercase text-xs"
-          >
-            <Plus className="h-4 w-4" /> New Group
-          </Button>
+            }
+          }}>
+            <SheetTrigger asChild>
+              <Button 
+                className="bg-slate-900 hover:bg-slate-800 text-white font-black gap-2 px-6 transition-all active:scale-95 rounded-xl uppercase text-xs"
+                onClick={() => setEditingGroup(null)}
+              >
+                <Plus className="h-4 w-4" /> New Group
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="sm:max-w-[400px] md:max-w-[450px] lg:max-w-[500px] p-0 flex flex-col">
+              <SheetHeader className="border-b pb-4 px-6 pt-6">
+                <SheetTitle className="text-xl font-black uppercase tracking-tight">
+                  {editingGroup ? "Edit Project Group" : "Create New Group"}
+                </SheetTitle>
+                <SheetDescription className="font-medium">
+                  Groups help you categorize and manage multiple related projects together.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto px-6">
+                <ProjectGroupForm 
+                  onSubmit={onSubmit} 
+                  initialData={editingGroup} 
+                  submitting={submitting}
+                  error={error}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 
@@ -208,36 +233,17 @@ const ProjectGroupPage = () => {
           <h3 className="text-lg font-bold text-slate-900">No Groups Found</h3>
           <p className="text-sm text-slate-500 max-w-[250px] text-center mt-1">Create your first project group to start organizing your directories.</p>
           <Button 
-            onClick={() => setIsSheetOpen(true)}
             variant="outline"
             className="mt-6 font-bold gap-2"
+            onClick={() => {
+              setEditingGroup(null);
+              setIsSheetOpen(true);
+            }}
           >
             <Plus className="h-4 w-4" /> Create First Group
           </Button>
         </div>
       )}
-
-      {/* Group Form Sheet */}
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="sm:max-w-[400px] md:max-w-[450px] lg:max-w-[500px] p-0 flex flex-col">
-          <SheetHeader className="border-b pb-4 px-6 pt-6">
-            <SheetTitle className="text-xl font-black uppercase tracking-tight">
-              {editingGroup ? "Edit Project Group" : "Create New Group"}
-            </SheetTitle>
-            <SheetDescription className="font-medium">
-              Groups help you categorize and manage multiple related projects together.
-            </SheetDescription>
-          </SheetHeader>
-          <div className="flex-1 overflow-y-auto px-6">
-            <ProjectGroupForm 
-              onSubmit={onSubmit} 
-              initialData={editingGroup} 
-              submitting={submitting}
-              error={error}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {/* Delete Confirmation */}
       <ConfirmDialog

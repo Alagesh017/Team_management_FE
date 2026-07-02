@@ -5,6 +5,7 @@ import { taskService } from "../services/taskService";
 import { projectTaskService } from "../services/projectTaskService";
 import { sprintService } from "../../sprints/services/sprintService";
 import { useAuth } from "../../auth/contexts/AuthContext";
+import { useToast } from "../../../common/hooks/use-toast";
 import { getMemberKey } from "../components/board/constants";
 
 export const useTaskBoard = () => {
@@ -12,6 +13,7 @@ export const useTaskBoard = () => {
   const currentProjectId = projectId || id;
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const [project, setProject]               = useState(null);
   const [sprint, setSprint]                 = useState(null);
@@ -201,6 +203,11 @@ export const useTaskBoard = () => {
       fetchData();
     } catch (err) {
       console.error("Failed to create task:", err);
+      toast({
+        title: "Error",
+        description: err.message || err.msg || err.error || "Failed to create task",
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }
@@ -227,6 +234,11 @@ export const useTaskBoard = () => {
       setIsTaskDetailsOpen(false);
     } catch (err) {
       console.error("Failed to update task:", err);
+      toast({
+        title: "Error",
+        description: err.message || err.msg || err.error || "Failed to update task",
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }
@@ -243,6 +255,11 @@ export const useTaskBoard = () => {
       setTaskToDelete(null);
     } catch (err) {
       console.error("Failed to delete task:", err);
+      toast({
+        title: "Error",
+        description: err.message || err.msg || err.error || "Failed to delete task",
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }
@@ -295,6 +312,11 @@ export const useTaskBoard = () => {
       await taskService.updateTask(draggedTask.task_id, { status_id: statusId });
     } catch (err) {
       console.error("Failed to update task status:", err);
+      toast({
+        title: "Error",
+        description: err.message || err.msg || err.error || "Failed to update task status",
+        variant: "destructive"
+      });
       await fetchData();
     }
   };
@@ -332,6 +354,11 @@ export const useTaskBoard = () => {
       fetchData();
     } catch (err) {
       console.error("Failed to update task:", err);
+      toast({
+        title: "Error",
+        description: err.message || err.msg || err.error || "Failed to update task",
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }

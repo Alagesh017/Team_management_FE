@@ -269,7 +269,11 @@ const ProjectBacklogPage = () => {
       setSelectedTasks(new Set([task.task_id]));
     }
     
-    setContextMenu({ x: e.clientX, y: e.clientY });
+    // Check if selected tasks are eligible for moving
+    const areEligible = areTasksEligibleForMoving();
+    if (areEligible) {
+      setContextMenu({ x: e.clientX, y: e.clientY });
+    }
   };
 
   const handleCloseContextMenu = () => {
@@ -279,6 +283,21 @@ const ProjectBacklogPage = () => {
   const handleMoveToSprint = async (sprintId) => {
     await handleMoveTasksToSprint(sprintId);
     setContextMenu(null);
+  };
+
+  // Helper to check if selected tasks are eligible for moving (backlog or todo status)
+  const areTasksEligibleForMoving = () => {
+    if (selectedTasks.size === 0) return false;
+    
+    const allTasks = [
+      ...backlogTasks,
+      ...sprints.flatMap(s => s.tasks || [])
+    ];
+    
+    return Array.from(selectedTasks).every(taskId => {
+      const task = allTasks.find(t => t.task_id === taskId);
+      return task && (task.status_id === backlogStatus?.id || task.status_id === todoStatus?.id);
+    });
   };
 
   // Helper to check if selected tasks are eligible for moving to backlog

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   ChevronLeft,
   Plus,
@@ -19,13 +19,16 @@ import {
   PanelRightOpen,
   PanelRightClose,
   Menu,
+  FileText,
+  Download,
+  Image as ImageIcon,
+  Upload,
 } from "lucide-react";
 import { Button } from "../../../common/components/ui/button";
 import { Input } from "../../../common/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../common/components/ui/select";
 import { Label } from "../../../common/components/ui/label";
 import { Badge } from "../../../common/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "../../../common/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +36,8 @@ import {
   DropdownMenuTrigger,
 } from "../../../common/components/ui/dropdown-menu";
 import { useTaskDetail } from "../hooks/useTaskDetail";
+import api from "../../../core/interceptors/axiosInterceptor";
+import AddEditSubTaskPanel from "../components/board/AddEditSubTaskPanel";
 
 const PRIORITY = {
   high:   { label: "High",   bg: "#fff1f2", text: "#e11d48", dot: "#e11d48", border: "#fecdd3" },
@@ -73,6 +78,7 @@ const TaskDetailPage = () => {
     subTasks,
     statuses,
     availableMembers,
+    attachments,
     loading,
     editingField,
     setEditingField,
@@ -83,19 +89,42 @@ const TaskDetailPage = () => {
     handleStatusChange,
     handlePriorityChange,
     canAddEditDelete,
-    isSubTaskSheetOpen,
-    setIsSubTaskSheetOpen,
     isSubTaskSidebarOpen,
     setIsSubTaskSidebarOpen,
-    editingSubTask,
-    subTaskForm,
-    setSubTaskForm,
+    isAddingSubTask,
+    editingSubTaskId,
+    newSubTaskTitle,
+    setNewSubTaskTitle,
+    newSubTaskDescription,
+    setNewSubTaskDescription,
+    newSubTaskPriority,
+    setNewSubTaskPriority,
+    newSubTaskStartDate,
+    setNewSubTaskStartDate,
+    newSubTaskDueDate,
+    setNewSubTaskDueDate,
+    newSubTaskEstimatedHours,
+    setNewSubTaskEstimatedHours,
+    newSubTaskActualHours,
+    setNewSubTaskActualHours,
+    newSubTaskRole,
+    setNewSubTaskRole,
+    newSubTaskRoleId,
+    setNewSubTaskRoleId,
+    newSubTaskRemark,
+    setNewSubTaskRemark,
+    newSubTaskStatusId,
+    setNewSubTaskStatusId,
     isSavingSubTask,
     openAddSubTask,
     openEditSubTask,
+    closeSubTaskForm,
     handleSaveSubTask,
     handleDeleteSubTask,
     handleSubTaskStatusChange,
+    handleUploadAttachment,
+    handleDownloadAttachment,
+    handleDeleteAttachment,
   } = useTaskDetail();
 
   const titleInputRef = useRef(null);
@@ -104,6 +133,54 @@ const TaskDetailPage = () => {
   const remarkInputRef = useRef(null);
   const estHoursRef = useRef(null);
   const actHoursRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
+  const [imageUrls, setImageUrls] = useState({}); // key: attachment.id, value: object URL
+
+  const loadImage = async (attachment) => {
+    try {
+      let response;
+      let url;
+      
+      // If it's a /src/assets/ URL, use the static file route
+      if (attachment.file_url && attachment.file_url.startsWith("/src/assets/")) {
+        // Extract the filename
+        const filename = attachment.file_url.split("/").pop();
+        response = await api.get(`/src/assets/attachments/${filename}`, {
+          responseType: "blob",
+        });
+      } 
+      // Else, use the download endpoint
+      else {
+        const filename = attachment.file_url?.split("/").pop() || attachment.file_url;
+        response = await api.get(`/task_attachments/download/${filename}`, {
+          responseType: "blob",
+        });
+      }
+      
+      url = URL.createObjectURL(response.data);
+      setImageUrls(prev => ({ ...prev, [attachment.id]: url }));
+    } catch (err) {
+      console.error("Failed to load image:", err);
+    }
+  };
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(imageUrls).forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [imageUrls]);
+
+  // Load images when attachments change
+  useEffect(() => {
+    attachments.forEach(attachment => {
+      if (isImageFile(attachment.file_name) && !imageUrls[attachment.id]) {
+        loadImage(attachment);
+      }
+    });
+  }, [attachments]);
 
   useEffect(() => {
     if (editingField === 'title' && titleInputRef.current) titleInputRef.current.focus();
@@ -130,9 +207,10 @@ const TaskDetailPage = () => {
   const currentTaskStatus = statuses.find(s => s.status_id === task?.status_id);
   const completedSubTasks = subTasks.filter(st => {
     const s = statuses.find(x => x.status_id === st.status_id);
-    return s?.name?.toLowerCase().includes("done") || s?.name?.toLowerCase().includes("complete");
+    return s?.is_completed;
   }).length;
   const progress = subTasks.length > 0 ? Math.round((completedSubTasks / subTasks.length) * 100) : 0;
+  const today = new Date().toISOString().split('T')[0];
 
   const formatDate = (d) => {
     if (!d) return "";
@@ -153,6 +231,36 @@ const TaskDetailPage = () => {
 
   const canEdit = canAddEditDelete();
 
+  const isImageFile = (filename) => {
+    const ext = filename.toLowerCase().split('.').pop();
+    return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext);
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        setUploadError('File size exceeds 10MB limit');
+        setSelectedFile(null);
+        return;
+      }
+      setSelectedFile(file);
+      setUploadError(null);
+    }
+  };
+
+  const handleFileUpload = async () => {
+    if (!selectedFile) return;
+    try {
+      await handleUploadAttachment(selectedFile);
+      setSelectedFile(null);
+      setUploadError(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err) {
+      setUploadError(err.message || 'Failed to upload file');
+    }
+  };
+
   const handleKeyDown = (e, field) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       setEditingField(null);
@@ -171,7 +279,15 @@ const TaskDetailPage = () => {
       {/* ── Top bar ───────────────────────────────────────────── */}
       <div className="flex items-center gap-2 md:gap-3 px-3 md:px-5 py-2 h-[56px] border-b border-slate-200 bg-white/80 backdrop-blur-sm shrink-0">
         <button
-          onClick={() => navigate(`/tasks/project/${projectId}`)}
+          onClick={() => {
+            // If task has a sprint_id, go back to that specific sprint page
+            if (task?.sprint_id) {
+              navigate(`/tasks/project/${projectId}/sprint/${task.sprint_id}`);
+            } else {
+              // Otherwise, go to the project board
+              navigate(`/tasks/project/${projectId}/board`);
+            }
+          }}
           className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-800"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -193,7 +309,7 @@ const TaskDetailPage = () => {
           </DropdownMenuTrigger>
           {canEdit && (
             <DropdownMenuContent align="start" className="w-44">
-              {statuses.map(status => (
+              {statuses.filter(s => !s.is_backlog).map(status => (
                 <DropdownMenuItem key={status.status_id} onClick={() => handleStatusChange(status.status_id)} className="cursor-pointer">
                   <span className="h-2 w-2 rounded-full mr-2" style={{ backgroundColor: status.color }} />
                   {status.name}
@@ -312,7 +428,7 @@ const TaskDetailPage = () => {
                   </DropdownMenuTrigger>
                   {canEdit && (
                     <DropdownMenuContent align="start" className="w-44">
-                      {statuses.map(status => (
+                      {statuses.filter(s => !s.is_backlog).map(status => (
                         <DropdownMenuItem key={status.status_id} onClick={() => handleStatusChange(status.status_id)} className="cursor-pointer">
                           <span className="h-2 w-2 rounded-full mr-2" style={{ backgroundColor: status.color }} />
                           {status.name}
@@ -533,6 +649,140 @@ const TaskDetailPage = () => {
               )}
             </div>
 
+            {/* Attachments */}
+            <div className="space-y-3">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                <FileText className="h-3 w-3" /> Attachments
+              </p>
+
+              {/* Upload area */}
+              {canEdit && (
+                <div className="space-y-2">
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/50 transition-all"
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
+                    {selectedFile ? (
+                      <div className="w-full">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <span className="text-sm font-medium text-slate-700 truncate">{selectedFile.name}</span>
+                          <span className="text-[10px] text-slate-400">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white h-7 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleFileUpload();
+                            }}
+                            disabled={isSaving}
+                          >
+                            {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />}
+                            Upload
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs text-slate-500 hover:text-slate-700"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedFile(null);
+                              if (fileInputRef.current) fileInputRef.current.value = '';
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <FileText className="h-8 w-8 text-slate-300 mb-2" />
+                        <span className="text-sm font-medium text-slate-500">Click to upload a file</span>
+                        <span className="text-xs text-slate-400 mt-1">Max 10MB</span>
+                      </>
+                    )}
+                  </div>
+                  {uploadError && (
+                    <p className="text-xs text-red-500 font-medium">{uploadError}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Attachment list */}
+              {attachments.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {attachments.map((attachment) => {
+                    const isImg = isImageFile(attachment.file_name);
+                    return (
+                      <div
+                        key={attachment.id}
+                        className="group relative bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-indigo-200 hover:shadow-md transition-all"
+                      >
+                        {isImg ? (
+                          <div className="aspect-video bg-slate-100">
+                            {imageUrls[attachment.id] ? (
+                              <img
+                                src={imageUrls[attachment.id]}
+                                alt={attachment.file_name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Loader2 className="h-6 w-6 text-slate-300 animate-spin" />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="aspect-video bg-slate-100 flex items-center justify-center">
+                            <FileText className="h-10 w-10 text-slate-300" />
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-slate-700 truncate">{attachment.file_name}</p>
+                              {attachment.file_size && (
+                                <p className="text-[10px] text-slate-400 mt-0.5">{(attachment.file_size / 1024 / 1024).toFixed(2)} MB</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleDownloadAttachment(attachment.file_url, attachment.file_name)}
+                                className="h-7 w-7 flex items-center justify-center rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                                title="Download"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </button>
+                              {canEdit && (
+                                <button
+                                  onClick={() => handleDeleteAttachment(attachment.id)}
+                                  className="h-7 w-7 flex items-center justify-center rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {attachments.length === 0 && !canEdit && (
+                <p className="text-sm text-slate-400 italic">No attachments</p>
+              )}
+            </div>
+
             {/* Divider */}
             <div className="border-t border-dashed border-slate-200" />
 
@@ -633,7 +883,7 @@ const TaskDetailPage = () => {
 
           {/* Subtask list */}
           <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2.5">
-            {subTasks.length === 0 ? (
+            {subTasks.length === 0 && !isAddingSubTask ? (
               <div className="flex flex-col items-center justify-center py-12 md:py-16 text-center px-4">
                 <div className="h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center mb-4">
                   <CheckSquare className="h-6 w-6 text-slate-300" />
@@ -643,9 +893,46 @@ const TaskDetailPage = () => {
               </div>
             ) : (
               subTasks.map((subTask) => {
+                const isEditing = editingSubTaskId === subTask.id;
                 const status = statuses.find(s => s.status_id === subTask.status_id);
                 const pCfg = PRIORITY[subTask.priority] || PRIORITY.medium;
                 const overdue = isOverdue(subTask.due_date);
+
+                if (isEditing) {
+                  return (
+                    <AddEditSubTaskPanel
+                      key={subTask.id}
+                      isEditing={true}
+                      subTaskTitle={newSubTaskTitle}
+                      setSubTaskTitle={setNewSubTaskTitle}
+                      subTaskDescription={newSubTaskDescription}
+                      setSubTaskDescription={setNewSubTaskDescription}
+                      subTaskPriority={newSubTaskPriority}
+                      setSubTaskPriority={setNewSubTaskPriority}
+                      subTaskStartDate={newSubTaskStartDate}
+                      setSubTaskStartDate={setNewSubTaskStartDate}
+                      subTaskDueDate={newSubTaskDueDate}
+                      setSubTaskDueDate={setNewSubTaskDueDate}
+                      subTaskEstimatedHours={newSubTaskEstimatedHours}
+                      setSubTaskEstimatedHours={setNewSubTaskEstimatedHours}
+                      subTaskActualHours={newSubTaskActualHours}
+                      setSubTaskActualHours={setNewSubTaskActualHours}
+                      subTaskRole={newSubTaskRole}
+                      setSubTaskRole={setNewSubTaskRole}
+                      subTaskRoleId={newSubTaskRoleId}
+                      setSubTaskRoleId={setNewSubTaskRoleId}
+                      subTaskRemark={newSubTaskRemark}
+                      setSubTaskRemark={setNewSubTaskRemark}
+                      subTaskStatusId={newSubTaskStatusId}
+                      setSubTaskStatusId={setNewSubTaskStatusId}
+                      statuses={statuses}
+                      availableMembers={availableMembers}
+                      isSaving={isSavingSubTask}
+                      onSave={handleSaveSubTask}
+                      onCancel={closeSubTaskForm}
+                    />
+                  );
+                }
 
                 return (
                   <div
@@ -768,136 +1055,47 @@ const TaskDetailPage = () => {
                 );
               })
             )}
+
+            {/* Inline add subtask form */}
+            {isAddingSubTask && (
+              <AddEditSubTaskPanel
+                isEditing={false}
+                subTaskTitle={newSubTaskTitle}
+                setSubTaskTitle={setNewSubTaskTitle}
+                subTaskDescription={newSubTaskDescription}
+                setSubTaskDescription={setNewSubTaskDescription}
+                subTaskPriority={newSubTaskPriority}
+                setSubTaskPriority={setNewSubTaskPriority}
+                subTaskStartDate={newSubTaskStartDate}
+                setSubTaskStartDate={setNewSubTaskStartDate}
+                subTaskDueDate={newSubTaskDueDate}
+                setSubTaskDueDate={setNewSubTaskDueDate}
+                subTaskEstimatedHours={newSubTaskEstimatedHours}
+                setSubTaskEstimatedHours={setNewSubTaskEstimatedHours}
+                subTaskActualHours={newSubTaskActualHours}
+                setSubTaskActualHours={setNewSubTaskActualHours}
+                subTaskRole={newSubTaskRole}
+                setSubTaskRole={setNewSubTaskRole}
+                subTaskRoleId={newSubTaskRoleId}
+                setSubTaskRoleId={setNewSubTaskRoleId}
+                subTaskRemark={newSubTaskRemark}
+                setSubTaskRemark={setNewSubTaskRemark}
+                subTaskStatusId={newSubTaskStatusId}
+                setSubTaskStatusId={setNewSubTaskStatusId}
+                statuses={statuses}
+                availableMembers={availableMembers}
+                isSaving={isSavingSubTask}
+                onSave={handleSaveSubTask}
+                onCancel={closeSubTaskForm}
+              />
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── Sheet: Add / Edit Subtask ─────────────────────────── */}
-      <Sheet open={isSubTaskSheetOpen} onOpenChange={setIsSubTaskSheetOpen}>
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto bg-white p-0">
-          <SheetHeader className="sticky top-0 bg-white z-10 px-6 py-4 border-b border-slate-100">
-            <SheetTitle className="text-base font-bold text-slate-900">
-              {editingSubTask ? "Edit Subtask" : "New Subtask"}
-            </SheetTitle>
-          </SheetHeader>
 
-          <div className="space-y-5 px-6 mt-6 pb-24">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Title *</Label>
-              <Input
-                value={subTaskForm.title}
-                onChange={(e) => setSubTaskForm({ ...subTaskForm, title: e.target.value })}
-                placeholder="Subtask title"
-                className="border-slate-200 focus:ring-indigo-500"
-              />
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Status</Label>
-                <Select value={subTaskForm.status_id?.toString()} onValueChange={(val) => setSubTaskForm({ ...subTaskForm, status_id: parseInt(val) })}>
-                  <SelectTrigger className="border-slate-200"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {statuses.map(s => (
-                      <SelectItem key={s.status_id} value={s.status_id.toString()}>
-                        <span className="flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />{s.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Priority</Label>
-                <Select value={subTaskForm.priority} onValueChange={(val) => setSubTaskForm({ ...subTaskForm, priority: val })}>
-                  <SelectTrigger className="border-slate-200"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Start Date</Label>
-                <Input type="date" value={subTaskForm.start_date} onChange={(e) => setSubTaskForm({ ...subTaskForm, start_date: e.target.value })} className="border-slate-200" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Due Date</Label>
-                <Input type="date" value={subTaskForm.due_date} onChange={(e) => setSubTaskForm({ ...subTaskForm, due_date: e.target.value })} className="border-slate-200" />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Description</Label>
-              <textarea value={subTaskForm.description} onChange={(e) => setSubTaskForm({ ...subTaskForm, description: e.target.value })} placeholder="What needs to be done?" className={`${textareaClass} min-h-[80px]`} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Est. Hours</Label>
-                <Input type="number" step="0.5" value={subTaskForm.estimated_hours} onChange={(e) => setSubTaskForm({ ...subTaskForm, estimated_hours: e.target.value })} placeholder="0" className="border-slate-200" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Actual Hours</Label>
-                <Input type="number" step="0.5" value={subTaskForm.actual_hours} onChange={(e) => setSubTaskForm({ ...subTaskForm, actual_hours: e.target.value })} placeholder="0" className="border-slate-200" />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Assigned To</Label>
-              {console.log("TaskDetailPage availableMembers:", availableMembers)} {/* Debug log */}
-              <Select
-                value={subTaskForm.role ? `${subTaskForm.role}-${subTaskForm.role_id}` : ""}
-                onValueChange={(val) => {
-                  if (val) {
-                    const [role, roleId] = val.split("-");
-                    setSubTaskForm({ ...subTaskForm, role, role_id: parseInt(roleId) });
-                  } else {
-                    setSubTaskForm({ ...subTaskForm, role: null, role_id: null });
-                  }
-                }}
-              >
-                <SelectTrigger className="border-slate-200"><SelectValue placeholder="Select member" /></SelectTrigger>
-                <SelectContent>
-                  {availableMembers.map(m => (
-                    <SelectItem key={`${m.role}-${m.user_id}`} value={`${m.role}-${m.user_id}`}>
-                      {m.first_name} {m.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Remarks</Label>
-              <textarea value={subTaskForm.remark} onChange={(e) => setSubTaskForm({ ...subTaskForm, remark: e.target.value })} placeholder="Any notes…" className={`${textareaClass} min-h-[60px]`} />
-            </div>
-          </div>
-
-          <SheetFooter className="sticky bottom-0 bg-white z-10 px-6 py-4 border-t border-slate-100 flex gap-2">
-            <button
-              onClick={() => setIsSubTaskSheetOpen(false)}
-              className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSaveSubTask}
-              disabled={isSavingSubTask || !subTaskForm.title}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSavingSubTask ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {editingSubTask ? "Update" : "Create"}
-            </button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 };

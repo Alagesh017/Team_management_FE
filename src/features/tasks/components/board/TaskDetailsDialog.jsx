@@ -24,6 +24,7 @@ const TaskDetailsDialog = ({
   onToggleEditMember,
 }) => {
   if (!selectedTask) return null;
+  const today = new Date().toISOString().split('T')[0];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -132,6 +133,7 @@ const TaskDetailsDialog = ({
                   value={editTaskData.start_date}
                   onChange={(e) => setEditTaskData({ ...editTaskData, start_date: e.target.value })}
                   className="text-sm"
+                  min={today}
                 />
               ) : (
                 <p className="text-sm text-slate-700">
@@ -147,6 +149,7 @@ const TaskDetailsDialog = ({
                   value={editTaskData.due_date}
                   onChange={(e) => setEditTaskData({ ...editTaskData, due_date: e.target.value })}
                   className="text-sm"
+                  min={editTaskData.start_date || today}
                 />
               ) : (
                 <p className="text-sm text-slate-700">

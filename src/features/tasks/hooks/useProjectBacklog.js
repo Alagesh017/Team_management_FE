@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { projectService } from "../../projects/services/projectService";
 import { taskService } from "../services/taskService";
 import { useAuth } from "../../auth/contexts/AuthContext";
+import { useToast } from "../../../common/hooks/use-toast";
 import { getMemberKey } from "../components/board/constants";
 
 export const useProjectBacklog = (projectId) => {
@@ -16,6 +17,7 @@ export const useProjectBacklog = (projectId) => {
   const [selectedTasks, setSelectedTasks] = useState(new Set());
   const [draggedTasks, setDraggedTasks] = useState([]);
   const { user } = useAuth();
+  const { toast } = useToast();
 
   // Add task state
   const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
@@ -157,6 +159,11 @@ export const useProjectBacklog = (projectId) => {
       
     } catch (err) {
       console.error("Failed to update tasks:", err);
+      toast({
+        title: "Error",
+        description: err.message || err.msg || err.error || "Failed to update tasks",
+        variant: "destructive"
+      });
     }
     
     handleDragEnd();
@@ -209,6 +216,11 @@ export const useProjectBacklog = (projectId) => {
       
     } catch (err) {
       console.error("Failed to update tasks:", err);
+      toast({
+        title: "Error",
+        description: err.message || err.msg || err.error || "Failed to update tasks",
+        variant: "destructive"
+      });
     }
     
     handleDragEnd();
@@ -235,6 +247,11 @@ export const useProjectBacklog = (projectId) => {
       
     } catch (err) {
       console.error("Failed to update tasks:", err);
+      toast({
+        title: "Error",
+        description: err.message || err.msg || err.error || "Failed to update tasks",
+        variant: "destructive"
+      });
     }
   };
 
@@ -268,6 +285,11 @@ export const useProjectBacklog = (projectId) => {
       
     } catch (err) {
       console.error("Failed to update tasks:", err);
+      toast({
+        title: "Error",
+        description: err.message || err.msg || err.error || "Failed to update tasks",
+        variant: "destructive"
+      });
     }
   };
 
@@ -321,6 +343,11 @@ export const useProjectBacklog = (projectId) => {
       fetchData();
     } catch (err) {
       console.error("Failed to create task:", err);
+      toast({
+        title: "Error",
+        description: err.message || err.msg || err.error || "Failed to create task",
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }
@@ -369,6 +396,11 @@ export const useProjectBacklog = (projectId) => {
       fetchData();
     } catch (err) {
       console.error("Failed to update task:", err);
+      toast({
+        title: "Error",
+        description: err.message || err.msg || err.error || "Failed to update task",
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }

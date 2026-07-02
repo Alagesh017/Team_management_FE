@@ -20,6 +20,7 @@ import TaskExcelEditorPage from '../features/tasks/pages/TaskExcelEditorPage'
 import ProjectBacklogPage from '../features/tasks/pages/ProjectBacklogPage'
 import SprintManagementPage from '../features/sprints/pages/SprintManagementPage'
 import ReportPage from '../features/reports/pages/ReportPage'
+import LeavePage from '../features/leave/pages/LeavePage'
 import NotFoundPage from '../features/not-found/pages/NotFoundPage'
 import { ProtectedRoute } from '../common/components/ProtectedRoute'
 
@@ -34,6 +35,7 @@ export default function AppRoutes() {
 			
 			{/* Protected Routes */}
 			<Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+			<Route path="/leave" element={<ProtectedRoute><LeavePage /></ProtectedRoute>} />
 			<Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
 			<Route path="/workers" element={<ProtectedRoute><WorkerPage /></ProtectedRoute>} />
 			<Route path="/task-status" element={<ProtectedRoute><TaskStatusPage /></ProtectedRoute>} />

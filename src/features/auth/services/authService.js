@@ -52,10 +52,40 @@ const refreshToken = async (token) => {
   }
 };
 
+const forgotPassword = async (email) => {
+  try {
+    const response = await api.post("/auth/forgot-password", { email });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
+const verifyOtp = async (email, otp) => {
+  try {
+    const response = await api.post("/auth/verify-otp", { email, otp });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
+const resetPassword = async (email, otp, newPassword) => {
+  try {
+    const response = await api.post("/auth/reset-password", { email, otp, new_password: newPassword });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
 export const authService = {
   login,
   googleLogin,
   microsoftLogin,
   register,
   refreshToken,
+  forgotPassword,
+  verifyOtp,
+  resetPassword,
 };

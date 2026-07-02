@@ -1,21 +1,27 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/contexts/AuthContext";
+import { useToast } from "../../../common/hooks/use-toast";
 import { taskService } from "../services/taskService";
 import { subTaskService } from "../services/subTaskService";
 import { projectTaskService } from "../services/projectTaskService";
 import { projectService } from "../../projects/services/projectService";
+import { taskAttachmentService } from "../services/taskAttachmentService";
+import api from "../../../core/interceptors/axiosInterceptor";
 
 export const useTaskDetail = () => {
   const { taskId, projectId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const [task, setTask] = useState(null);
   const [project, setProject] = useState(null);
   const [subTasks, setSubTasks] = useState([]);
   const [statuses, setStatuses] = useState([]);
-  const [availableMembers, setAvailableMembers] = useState([]);
+  const [allocatedMembers, setAllocatedMembers] = useState([]);
+  const [allAdmins, setAllAdmins] = useState([]);
+  const [attachments, setAttachments] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Per-field editing state
@@ -25,10 +31,21 @@ export const useTaskDetail = () => {
   const [lastSaved, setLastSaved] = useState(null);
 
   // Subtask state
-  const [isSubTaskSheetOpen, setIsSubTaskSheetOpen] = useState(false);
   const [isSubTaskSidebarOpen, setIsSubTaskSidebarOpen] = useState(false);
-  const [editingSubTask, setEditingSubTask] = useState(null);
-  const [subTaskForm, setSubTaskForm] = useState({});
+  const [isAddingSubTask, setIsAddingSubTask] = useState(false);
+  const [editingSubTaskId, setEditingSubTaskId] = useState(null);
+  // New subtask form state
+  const [newSubTaskTitle, setNewSubTaskTitle] = useState("");
+  const [newSubTaskDescription, setNewSubTaskDescription] = useState("");
+  const [newSubTaskPriority, setNewSubTaskPriority] = useState("medium");
+  const [newSubTaskStartDate, setNewSubTaskStartDate] = useState("");
+  const [newSubTaskDueDate, setNewSubTaskDueDate] = useState("");
+  const [newSubTaskEstimatedHours, setNewSubTaskEstimatedHours] = useState("");
+  const [newSubTaskActualHours, setNewSubTaskActualHours] = useState("");
+  const [newSubTaskRole, setNewSubTaskRole] = useState(null);
+  const [newSubTaskRoleId, setNewSubTaskRoleId] = useState(null);
+  const [newSubTaskRemark, setNewSubTaskRemark] = useState("");
+  const [newSubTaskStatusId, setNewSubTaskStatusId] = useState(null);
   const [isSavingSubTask, setIsSavingSubTask] = useState(false);
 
   const debounceTimerRef = useRef(null);
@@ -43,13 +60,34 @@ export const useTaskDetail = () => {
     return false;
   }, [project, user?.role]);
 
+  // Derived available members (like useTaskBoard)
+  const availableMembers = useMemo(() => {
+    const seen = new Set();
+    const uniqueMembersMap = {};
+    [...allAdmins, ...allocatedMembers].forEach((m) => {
+      const memberType = m.type || (m.is_admin || m.is_superadmin ? "admin" : "worker");
+      const uniqueKey = `${memberType}-${m.user_id}`;
+      if (!seen.has(uniqueKey)) {
+        seen.add(uniqueKey);
+        uniqueMembersMap[uniqueKey] = { ...m, type: memberType };
+      }
+    });
+    
+    // Sort: workers first, then admins
+    return Object.values(uniqueMembersMap).sort((a, b) => {
+      const typeOrder = { worker: 0, admin: 1 };
+      return typeOrder[a.type] - typeOrder[b.type];
+    });
+  }, [allAdmins, allocatedMembers]);
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [taskData, projectTaskData, projectData] = await Promise.all([
+      const [taskData, projectTaskData, projectData, availableUsersData] = await Promise.all([
         taskService.getTaskById(taskId),
         projectTaskService.getProjectTaskData(projectId),
         projectService.getProjectById(projectId),
+        projectService.getAvailableUsersByProject(projectId),
       ]);
       
       setProject(projectData.project || projectData);
@@ -78,23 +116,17 @@ export const useTaskDetail = () => {
         setSubTasks([]);
       }
 
-      const members = [];
-      const seen = new Set();
-      const allMembers = [
-        ...(projectTaskData.all_admins || []),
-        ...(projectTaskData.allocated_members || [])
-      ];
-      console.log("=== ALL MEMBERS ===", allMembers); // Debug log
-      allMembers.forEach(m => {
-        if (!seen.has(m.user_id)) {
-          seen.add(m.user_id);
-          const newMember = { ...m, type: m.type || (m.is_admin || m.is_superadmin ? "admin" : "worker") };
-          members.push(newMember);
-          console.log("Adding member:", newMember); // Debug log
-        }
-      });
-      console.log("=== FINAL availableMembers ===", members); // Debug log
-      setAvailableMembers(members);
+      try {
+        const attachmentsData = await taskAttachmentService.getAttachmentsByTaskId(taskObj.task_id || taskObj.id || taskId);
+        setAttachments(attachmentsData.attachments || []);
+      } catch (err) {
+        setAttachments([]);
+      }
+
+      // Update available members from dedicated API (like useTaskBoard)
+      const availableUsers = availableUsersData.available_users || [];
+      setAllocatedMembers(availableUsers.filter(m => m.type === "worker"));
+      setAllAdmins(availableUsers.filter(m => m.type === "admin"));
     } catch (err) {
       console.error("Failed to fetch data:", err);
     } finally {
@@ -130,12 +162,17 @@ export const useTaskDetail = () => {
         setLastSaved(new Date());
       } catch (err) {
         console.error(`Failed to auto-save ${field}:`, err);
+        toast({
+          title: "Error",
+          description: err.message || err.msg || err.error || `Failed to update ${field}`,
+          variant: "destructive"
+        });
       } finally {
         setIsSaving(false);
         debounceTimerRef.current = null;
       }
     }, 1000); // 1 second debounce
-  }, [task]);
+  }, [task, toast]);
 
   const handleFieldChange = (field, value) => {
     setEditValues(prev => ({ ...prev, [field]: value }));
@@ -151,6 +188,11 @@ export const useTaskDetail = () => {
       setLastSaved(new Date());
     } catch (err) {
       console.error("Failed to update status:", err);
+      toast({
+        title: "Error",
+        description: err.message || err.msg || err.error || "Failed to update status",
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }
@@ -165,6 +207,11 @@ export const useTaskDetail = () => {
       setLastSaved(new Date());
     } catch (err) {
       console.error("Failed to update priority:", err);
+      toast({
+        title: "Error",
+        description: err.message || err.msg || err.error || "Failed to update priority",
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }
@@ -172,48 +219,82 @@ export const useTaskDetail = () => {
 
   // Subtask handlers
   const openAddSubTask = () => {
-    setEditingSubTask(null);
-    setSubTaskForm({
-      title: "", description: "", priority: "medium",
-      start_date: "", due_date: "", role_id: null, role: null,
-      estimated_hours: "", actual_hours: "", remark: "",
-      status_id: statuses[0]?.status_id || 1
-    });
-    setIsSubTaskSheetOpen(true);
+    // Find is_todo status as default, or first non-backlog status
+    const todoStatus = statuses.find(s => s.is_todo);
+    const nonBacklogStatuses = statuses.filter(s => !s.is_backlog);
+    const defaultStatus = todoStatus || nonBacklogStatuses[0];
+    setIsAddingSubTask(true);
+    setEditingSubTaskId(null);
+    setNewSubTaskTitle("");
+    setNewSubTaskDescription("");
+    setNewSubTaskPriority("medium");
+    setNewSubTaskStartDate("");
+    setNewSubTaskDueDate("");
+    setNewSubTaskEstimatedHours("");
+    setNewSubTaskActualHours("");
+    setNewSubTaskRole(null);
+    setNewSubTaskRoleId(null);
+    setNewSubTaskRemark("");
+    setNewSubTaskStatusId(defaultStatus?.status_id || 1);
   };
 
   const openEditSubTask = (subTask) => {
-    setEditingSubTask(subTask);
-    setSubTaskForm({
-      title: subTask.title, description: subTask.description || "",
-      priority: subTask.priority || "medium",
-      start_date: subTask.start_date || "", due_date: subTask.due_date || "",
-      role_id: subTask.role_id || null, role: subTask.role || null,
-      estimated_hours: subTask.estimated_hours || "", actual_hours: subTask.actual_hours || "",
-      remark: subTask.remark || "", status_id: subTask.status_id || statuses[0]?.status_id || 1
-    });
-    setIsSubTaskSheetOpen(true);
+    setEditingSubTaskId(subTask.id);
+    setIsAddingSubTask(false);
+    setNewSubTaskTitle(subTask.title);
+    setNewSubTaskDescription(subTask.description || "");
+    setNewSubTaskPriority(subTask.priority || "medium");
+    setNewSubTaskStartDate(subTask.start_date || "");
+    setNewSubTaskDueDate(subTask.due_date || "");
+    setNewSubTaskEstimatedHours(subTask.estimated_hours || "");
+    setNewSubTaskActualHours(subTask.actual_hours || "");
+    setNewSubTaskRole(subTask.role || null);
+    setNewSubTaskRoleId(subTask.role_id || null);
+    setNewSubTaskRemark(subTask.remark || "");
+    setNewSubTaskStatusId(subTask.status_id || 1);
+  };
+
+  const closeSubTaskForm = () => {
+    setIsAddingSubTask(false);
+    setEditingSubTaskId(null);
+    setNewSubTaskTitle("");
+    setNewSubTaskDescription("");
+    setNewSubTaskPriority("medium");
+    setNewSubTaskStartDate("");
+    setNewSubTaskDueDate("");
+    setNewSubTaskEstimatedHours("");
+    setNewSubTaskActualHours("");
+    setNewSubTaskRole(null);
+    setNewSubTaskRoleId(null);
+    setNewSubTaskRemark("");
+    setNewSubTaskStatusId(null);
   };
 
   const handleSaveSubTask = async () => {
     try {
       setIsSavingSubTask(true);
-      const data = { ...subTaskForm };
-      if (data.estimated_hours === "") data.estimated_hours = null;
-      if (data.actual_hours === "") data.actual_hours = null;
-      if (data.start_date === "") data.start_date = null;
-      if (data.due_date === "") data.due_date = null;
-      if (data.role_id === "" || data.role_id === undefined) data.role_id = null;
-      if (data.role === "" || data.role === undefined) data.role = null;
+      const data = {
+        title: newSubTaskTitle,
+        description: newSubTaskDescription,
+        priority: newSubTaskPriority,
+        start_date: newSubTaskStartDate || null,
+        due_date: newSubTaskDueDate || null,
+        role: newSubTaskRole,
+        role_id: newSubTaskRoleId,
+        estimated_hours: newSubTaskEstimatedHours ? parseFloat(newSubTaskEstimatedHours) : null,
+        actual_hours: newSubTaskActualHours ? parseFloat(newSubTaskActualHours) : null,
+        remark: newSubTaskRemark,
+        status_id: newSubTaskStatusId,
+      };
       data.parent_task_id = task.task_id || task.id;
       data.assigned_by = user?.userId;
       
-      if (editingSubTask) {
-        await subTaskService.updateSubTask(editingSubTask.id, data);
+      if (editingSubTaskId) {
+        await subTaskService.updateSubTask(editingSubTaskId, data);
       } else {
         await subTaskService.createSubTask(data);
       }
-      setIsSubTaskSheetOpen(false);
+      closeSubTaskForm();
       fetchData();
     } catch (err) {
       console.error("Failed to save subtask:", err);
@@ -242,6 +323,63 @@ export const useTaskDetail = () => {
     }
   };
 
+  // Attachment handlers
+  const handleUploadAttachment = async (file, remark) => {
+    try {
+      setIsSaving(true);
+      await taskAttachmentService.createAttachment(task.task_id || task.id, file, remark);
+      fetchData();
+    } catch (err) {
+      console.error("Failed to upload attachment:", err);
+      throw err;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDownloadAttachment = async (fileUrl, originalName) => {
+    try {
+      let response;
+      
+      // If it's a /src/assets/ URL, use the static file route
+      if (fileUrl && fileUrl.startsWith("/src/assets/")) {
+        // Extract the filename
+        const filename = fileUrl.split("/").pop();
+        response = await api.get(`/src/assets/attachments/${filename}`, {
+          responseType: "blob",
+        });
+      } 
+      // Else, use the download endpoint
+      else {
+        const filename = fileUrl?.split("/").pop() || fileUrl;
+        response = await taskAttachmentService.downloadFile(filename);
+      }
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', originalName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Failed to download attachment:", err);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId) => {
+    try {
+      setIsSaving(true);
+      await taskAttachmentService.deleteAttachment(attachmentId);
+      fetchData();
+    } catch (err) {
+      console.error("Failed to delete attachment:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return {
     taskId,
     projectId,
@@ -252,6 +390,7 @@ export const useTaskDetail = () => {
     subTasks,
     statuses,
     availableMembers,
+    attachments,
     loading,
     editingField,
     setEditingField,
@@ -264,18 +403,42 @@ export const useTaskDetail = () => {
     canAddEditDelete,
     fetchData,
     // Subtask stuff
-    isSubTaskSheetOpen,
-    setIsSubTaskSheetOpen,
     isSubTaskSidebarOpen,
     setIsSubTaskSidebarOpen,
-    editingSubTask,
-    subTaskForm,
-    setSubTaskForm,
+    isAddingSubTask,
+    editingSubTaskId,
+    newSubTaskTitle,
+    setNewSubTaskTitle,
+    newSubTaskDescription,
+    setNewSubTaskDescription,
+    newSubTaskPriority,
+    setNewSubTaskPriority,
+    newSubTaskStartDate,
+    setNewSubTaskStartDate,
+    newSubTaskDueDate,
+    setNewSubTaskDueDate,
+    newSubTaskEstimatedHours,
+    setNewSubTaskEstimatedHours,
+    newSubTaskActualHours,
+    setNewSubTaskActualHours,
+    newSubTaskRole,
+    setNewSubTaskRole,
+    newSubTaskRoleId,
+    setNewSubTaskRoleId,
+    newSubTaskRemark,
+    setNewSubTaskRemark,
+    newSubTaskStatusId,
+    setNewSubTaskStatusId,
     isSavingSubTask,
     openAddSubTask,
     openEditSubTask,
+    closeSubTaskForm,
     handleSaveSubTask,
     handleDeleteSubTask,
     handleSubTaskStatusChange,
+    // Attachment stuff
+    handleUploadAttachment,
+    handleDownloadAttachment,
+    handleDeleteAttachment,
   };
 };

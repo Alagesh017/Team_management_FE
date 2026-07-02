@@ -6,4 +6,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
 	plugins: [react(),  tailwindcss(),],
 	base: '/taskmanagement/',
+	server: {
+		historyApiFallback: {
+			index: '/taskmanagement/index.html'
+		}
+	}
 })
