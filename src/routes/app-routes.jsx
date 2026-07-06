@@ -6,6 +6,7 @@ import Dashboard from '../features/dashboard/pages/Dashboard'
 import AdminPage from '../features/admin/pages/AdminPage'
 import WorkerPage from '../features/workers/pages/WorkerPage'
 import TaskStatusPage from '../features/task-status/pages/TaskStatusPage'
+import AttendanceStatusPage from '../features/attendance-status/pages/AttendanceStatusPage'
 import ClientPage from '../features/clients/pages/ClientPage'
 import ProjectPage from '../features/projects/pages/ProjectPage'
 import ProjectDetailPage from '../features/projects/pages/ProjectDetailPage'
@@ -39,6 +40,7 @@ export default function AppRoutes() {
 			<Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
 			<Route path="/workers" element={<ProtectedRoute><WorkerPage /></ProtectedRoute>} />
 			<Route path="/task-status" element={<ProtectedRoute><TaskStatusPage /></ProtectedRoute>} />
+			<Route path="/attendance-status" element={<ProtectedRoute><AttendanceStatusPage /></ProtectedRoute>} />
 			<Route path="/attendance" element={<ProtectedRoute><Navigate to="/404" replace /></ProtectedRoute>} />
 			<Route path="/clients" element={<ProtectedRoute><ClientPage /></ProtectedRoute>} />
 			<Route path="/projects" element={<ProtectedRoute><ProjectPage /></ProtectedRoute>} />

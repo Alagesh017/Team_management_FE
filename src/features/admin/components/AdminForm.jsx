@@ -14,8 +14,8 @@ import { getFullAvatarUrl } from "../../../core/utils/utils";
 const phoneRegex = /^[0-9]{10}$/;
 
 export const adminFormSchema = z.object({
-  first_name: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
-  last_name: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
+  first_name: z.string().trim().min(1, "First name is required"),
+  last_name: z.union([z.string(), z.null()]).optional().transform((val) => (val ? val.trim() : "")),
   email: z.string().email("Invalid email address"),
   phone: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "").refine((val) => !val || phoneRegex.test(val), {
     message: "Phone number must be 10 digits",
@@ -27,7 +27,7 @@ export const adminFormSchema = z.object({
       const num = Number(val);
       return isNaN(num) ? 0 : Math.max(0, num);
     },
-    z.number().min(0, "Experience must be at least 0").default(0)
+    z.number().min(0, "Experience must be at least 0").max(50, "Experience must be at most 50").default(0)
   ),
   working_hours: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
   work_mode: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "OFFICE"),
@@ -42,7 +42,14 @@ export const adminFormSchema = z.object({
     message: "Pincode must be 6 digits",
   }),
   status: z.string().default("ACTIVE"),
-  joining_date: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
+  joining_date: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "").refine((val) => {
+    if (!val) return true;
+    const [year, month, day] = val.split("-").map(Number);
+    const selectedDate = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return selectedDate <= today;
+  }, "Joining date cannot be in the future"),
   remark: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
   avatar_url: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
 });
@@ -154,10 +161,17 @@ const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
+              <Label htmlFor="first_name" className="flex items-center gap-1 font-bold">First Name <span className="text-red-500">*</span></Label>
+              <Input id="first_name" {...register("first_name")} className="bg-slate-50/50 focus:bg-white transition-all" />
+              {errors.first_name && <p className="text-xs text-red-500 font-medium">{errors.first_name.message}</p>}
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-1 font-bold">Email <span className="text-red-500">*</span></Label>
               <Input id="email" type="email" {...register("email")} className="bg-slate-50/50 focus:bg-white transition-all" />
               {errors.email && <p className="text-xs text-red-500 font-medium">{errors.email.message}</p>}
             </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="role_type" className="flex items-center gap-1 font-bold">Role <span className="text-red-500">*</span></Label>
               <Select onValueChange={(val) => setValue("role_type", val)} value={watch("role_type")}>
@@ -181,10 +195,6 @@ const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="first_name">First Name</Label>
-              <Input id="first_name" {...register("first_name")} />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="last_name">Last Name</Label>
               <Input id="last_name" {...register("last_name")} />
             </div>
@@ -206,7 +216,8 @@ const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="joining_date">Joining Date</Label>
-              <Input id="joining_date" type="date" {...register("joining_date")} className="w-full h-10" />
+              <Input id="joining_date" type="date" {...register("joining_date")} max={new Date().toLocaleDateString('en-CA')} className="w-full h-10" />
+              {errors.joining_date && <p className="text-xs text-red-500 font-medium">{errors.joining_date.message}</p>}
             </div>
           </div>
 
@@ -218,6 +229,7 @@ const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
                 {...register("experience_years")} 
                 type="number"
                 min="0"
+                max="50"
                 step="0.1"
                 onChange={(e) => {
                   let val = e.target.value;
@@ -225,7 +237,7 @@ const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
                     setValue("experience_years", 0);
                   } else {
                     const num = Number(val);
-                    if (!isNaN(num) && num >= 0) {
+                    if (!isNaN(num) && num >= 0 && num <= 50) {
                       setValue("experience_years", num);
                     }
                   }

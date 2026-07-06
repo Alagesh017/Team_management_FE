@@ -7,13 +7,16 @@ import {
 import { getFullAvatarUrl } from "../../../core/utils/utils";
 
 const UserAvatar = ({ url, email, firstName, className = "h-10 w-10" }) => {
+  const [imgError, setImgError] = React.useState(false);
   const fullUrl = getFullAvatarUrl(url);
-  if (fullUrl) {
+  
+  if (fullUrl && !imgError) {
     return (
       <img 
         src={fullUrl}
         alt="Avatar" 
         className={`${className} rounded-full border-2 border-slate-100 shadow-sm object-cover`} 
+        onError={() => setImgError(true)}
       />
     );
   }

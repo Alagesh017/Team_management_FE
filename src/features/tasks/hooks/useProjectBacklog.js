@@ -315,7 +315,17 @@ export const useProjectBacklog = (projectId) => {
   };
 
   const handleAddTask = async () => {
-    if (!newTaskTitle.trim() || !backlogStatus) return;
+    console.log("handleAddTask called!");
+    console.log("newTaskTitle:", newTaskTitle);
+    console.log("backlogStatus:", backlogStatus);
+    if (!newTaskTitle.trim()) {
+      console.log("Title not provided!");
+      return;
+    }
+    if (!backlogStatus) {
+      console.log("No backlog status!");
+      return;
+    }
     try {
       setIsSaving(true);
       const workerIdsWithType = selectedMembers.length > 0
@@ -324,7 +334,7 @@ export const useProjectBacklog = (projectId) => {
             return { user_id: member?.user_id, type: member?.type || "worker" };
           })
         : null;
-      await taskService.createTask({
+      console.log("Creating task with data:", {
         project_id: parseInt(projectId),
         sprint_id: null,
         status_id: backlogStatus.id,
@@ -339,6 +349,22 @@ export const useProjectBacklog = (projectId) => {
         estimated_hours: newTaskEstimatedHours ? parseFloat(newTaskEstimatedHours) : null,
         actual_hours: newTaskActualHours ? parseFloat(newTaskActualHours) : null,
       });
+      const result = await taskService.createTask({
+        project_id: parseInt(projectId),
+        sprint_id: null,
+        status_id: backlogStatus.id,
+        title: newTaskTitle,
+        worker_ids: workerIdsWithType,
+        assigned_by: user?.userId || 1,
+        assigned_by_role_id: user?.roleId,
+        assigned_by_role: user?.role,
+        priority: newTaskPriority,
+        start_date: newTaskStartDate || null,
+        due_date: newTaskDueDate || null,
+        estimated_hours: newTaskEstimatedHours ? parseFloat(newTaskEstimatedHours) : null,
+        actual_hours: newTaskActualHours ? parseFloat(newTaskActualHours) : null,
+      });
+      console.log("Task created! Result:", result);
       closeAddPanel();
       fetchData();
     } catch (err) {

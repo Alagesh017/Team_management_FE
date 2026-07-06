@@ -29,7 +29,7 @@ export const workerFormSchema = z.object({
       const num = Number(val);
       return isNaN(num) ? 0 : Math.max(0, num);
     },
-    z.number().min(0, "Experience must be at least 0").default(0)
+    z.number().min(0, "Experience must be at least 0").max(50, "Experience must be at most 50").default(0)
   ),
   working_hours: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
   work_mode: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "OFFICE"),
@@ -47,7 +47,14 @@ export const workerFormSchema = z.object({
   }),
   status: z.string().default("ACTIVE"),
   employment_type: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "FULL_TIME"),
-  joining_date: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
+  joining_date: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "").refine((val) => {
+    if (!val) return true;
+    const [year, month, day] = val.split("-").map(Number);
+    const selectedDate = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return selectedDate <= today;
+  }, "Joining date cannot be in the future"),
   remark: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
   avatar_url: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
 });
@@ -227,7 +234,8 @@ const WorkerForm = ({ onSubmit, initialData, submitting, error }) => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="joining_date">Joining Date</Label>
-              <Input id="joining_date" type="date" {...register("joining_date")} className="w-full h-10" />
+              <Input id="joining_date" type="date" {...register("joining_date")} max={new Date().toLocaleDateString('en-CA')} className="w-full h-10" />
+              {errors.joining_date && <p className="text-sm text-red-500 font-medium">{errors.joining_date.message}</p>}
             </div>
           </div>
 
@@ -239,6 +247,7 @@ const WorkerForm = ({ onSubmit, initialData, submitting, error }) => {
                 {...register("experience_years")} 
                 type="number"
                 min="0"
+                max="50"
                 step="0.1"
                 onChange={(e) => {
                   let val = e.target.value;
@@ -246,7 +255,7 @@ const WorkerForm = ({ onSubmit, initialData, submitting, error }) => {
                     setValue("experience_years", 0);
                   } else {
                     const num = Number(val);
-                    if (!isNaN(num) && num >= 0) {
+                    if (!isNaN(num) && num >= 0 && num <= 50) {
                       setValue("experience_years", num);
                     }
                   }

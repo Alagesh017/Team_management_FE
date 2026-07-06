@@ -26,13 +26,16 @@ import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
 import { useToast } from "../../../common/hooks/use-toast";
 
 const UserAvatar = ({ url, email, firstName, className = "h-10 w-10" }) => {
+  const [imgError, setImgError] = React.useState(false);
   const fullUrl = getFullAvatarUrl(url);
-  if (fullUrl) {
+  
+  if (fullUrl && !imgError) {
     return (
       <img 
         src={fullUrl}
         alt="Avatar" 
         className={`${className} rounded-full border-2 border-slate-100 shadow-sm object-cover`} 
+        onError={() => setImgError(true)}
       />
     );
   }
@@ -198,12 +201,13 @@ const AdminPage = () => {
       },
     },
     {
-      accessorKey: "created_at",
-      header: "Joined Date",
-      cell: ({ row }) => formatDate(row.getValue("created_at")),
+      accessorKey: "joining_date",
+      header: "Joining Date",
+      cell: ({ row }) => formatDate(row.getValue("joining_date")),
     },
     {
       id: "actions",
+      header: "Actions",
       cell: ({ row }) => {
         const admin = row.original;
         return (
@@ -260,7 +264,10 @@ const AdminPage = () => {
                 onSubmit={onSubmit} 
                 initialData={editingAdmin ? {
                   ...editingAdmin,
-                  role_type: editingAdmin.is_superadmin ? "superadmin" : editingAdmin.is_scrum ? "scrum" : "admin"
+                  role_type: editingAdmin.is_superadmin ? "superadmin" : editingAdmin.is_scrum ? "scrum" : "admin",
+                  joining_date: editingAdmin.joining_date 
+                    ? new Date(editingAdmin.joining_date).toISOString().split('T')[0] 
+                    : ""
                 } : null}
                 submitting={submitting}
                 error={error}
