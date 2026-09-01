@@ -4,7 +4,7 @@ import {
   Dialog,
   DialogContent,
 } from "../../../common/components/ui/dialog";
-import { getFullAvatarUrl } from "../../../core/utils/utils";
+import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
 
 const UserAvatar = ({ url, email, firstName, className = "h-10 w-10" }) => {
   const [imgError, setImgError] = React.useState(false);
@@ -78,7 +78,7 @@ const AdminDetails = ({ admin, open, onOpenChange }) => {
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Joining Date</p>
-                <p className="text-sm font-bold text-slate-900">{admin.joining_date || "Not set"}</p>
+                <p className="text-sm font-bold text-slate-900">{formatDate(admin.joining_date)}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Experience</p>

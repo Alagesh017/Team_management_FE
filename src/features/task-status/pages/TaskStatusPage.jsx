@@ -233,6 +233,7 @@ const TaskStatusPage = () => {
       {
         accessorKey: "name",
         header: "Status Name",
+        meta: { displayName: "Status Name" },
         cell: ({ row }) => {
           const status = row.original;
           return (
@@ -249,6 +250,7 @@ const TaskStatusPage = () => {
       {
         accessorKey: "sort_order",
         header: "Order",
+        meta: { displayName: "Order" },
         cell: ({ row }) => {
           const index = statuses.findIndex((s) => s.id === row.original.id);
           return (
@@ -261,6 +263,7 @@ const TaskStatusPage = () => {
       {
         accessorKey: "remark",
         header: "Remark",
+        meta: { displayName: "Remark" },
         cell: ({ row }) => {
           const remark = row.getValue("remark");
           return (
@@ -273,6 +276,7 @@ const TaskStatusPage = () => {
       {
         accessorKey: "is_confidential",
         header: "Confidential",
+        meta: { displayName: "Confidential" },
         cell: ({ row }) => {
           const isConfidential = row.getValue("is_confidential");
           return (
@@ -295,6 +299,8 @@ const TaskStatusPage = () => {
       },
       {
         id: "actions",
+        header: "Actions",
+        meta: { displayName: "Actions" },
         cell: ({ row }) => {
           const status = row.original;
           return (

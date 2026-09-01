@@ -145,8 +145,10 @@ const AdminPage = () => {
 
   const columns = useMemo(() => [
     {
+      id: "profile",
       accessorKey: "avatar_url",
       header: "Profile",
+      meta: { displayName: "Profile" },
       cell: ({ row }) => (
         <UserAvatar 
           url={row.getValue("avatar_url")} 
@@ -162,6 +164,7 @@ const AdminPage = () => {
           Name <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
+      meta: { displayName: "Name" },
       cell: ({ row }) => {
         const first = row.original.first_name || "";
         const last = row.original.last_name || "";
@@ -171,10 +174,12 @@ const AdminPage = () => {
     {
       accessorKey: "email",
       header: "Email",
+      meta: { displayName: "Email" },
     },
     {
       accessorKey: "role",
       header: "Role",
+      meta: { displayName: "Role" },
       cell: ({ row }) => {
         const admin = row.original;
         if (admin.is_superadmin) return <span className="bg-slate-900 text-white px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Super Admin</span>;
@@ -185,11 +190,13 @@ const AdminPage = () => {
     {
       accessorKey: "phone",
       header: "Phone",
+      meta: { displayName: "Phone" },
       cell: ({ row }) => row.getValue("phone") || "-",
     },
     {
       accessorKey: "status",
       header: "Status",
+      meta: { displayName: "Status" },
       cell: ({ row }) => {
         const status = row.getValue("status");
         return (
@@ -203,11 +210,13 @@ const AdminPage = () => {
     {
       accessorKey: "joining_date",
       header: "Joining Date",
+      meta: { displayName: "Joining Date" },
       cell: ({ row }) => formatDate(row.getValue("joining_date")),
     },
     {
       id: "actions",
       header: "Actions",
+      meta: { displayName: "Actions" },
       cell: ({ row }) => {
         const admin = row.original;
         return (
@@ -267,7 +276,8 @@ const AdminPage = () => {
                   role_type: editingAdmin.is_superadmin ? "superadmin" : editingAdmin.is_scrum ? "scrum" : "admin",
                   joining_date: editingAdmin.joining_date 
                     ? new Date(editingAdmin.joining_date).toISOString().split('T')[0] 
-                    : ""
+                    : "",
+                  avatar_url: editingAdmin.avatar_url || ""
                 } : null}
                 submitting={submitting}
                 error={error}

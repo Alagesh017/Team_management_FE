@@ -15,14 +15,14 @@ import { projectGroupService } from "../services/projectGroupService";
 import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
 
 export const projectFormSchema = z.object({
-  name: z.string().min(1, "Project name is required"),
+  name: z.string().trim().min(1, "Project name is required"),
   description: z.string().optional(),
   start_date: z.string().min(1, "Start date is required"),
   end_date: z.string().optional(),
   status: z.enum(["active", "on_hold", "completed", "cancelled"]).default("active"),
   remark: z.string().optional(),
-  client_id: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? Number(val) : null),
-  group_id: z.union([z.string(), z.number()]).optional().nullable().transform(val => val ? Number(val) : null),
+  client_id: z.union([z.string(), z.number()]).refine(val => val !== null && val !== "", "Client is required").transform(val => val ? Number(val) : null),
+  group_id: z.union([z.string(), z.number()]).refine(val => val !== null && val !== "", "Project group is required").transform(val => val ? Number(val) : null),
   project_logo: z.string().optional(),
   by_tl_managed: z.boolean().default(false),
   team_managed: z.boolean().default(false),

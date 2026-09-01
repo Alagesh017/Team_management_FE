@@ -95,7 +95,7 @@ export function DataTable({
                       column.toggleVisibility(!!value)
                     }
                   >
-                    {column.id}
+                    {column.columnDef.meta?.displayName || column.id}
                   </DropdownMenuCheckboxItem>
                 )
               })}

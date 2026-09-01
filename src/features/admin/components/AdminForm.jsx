@@ -15,9 +15,9 @@ const phoneRegex = /^[0-9]{10}$/;
 
 export const adminFormSchema = z.object({
   first_name: z.string().trim().min(1, "First name is required"),
-  last_name: z.union([z.string(), z.null()]).optional().transform((val) => (val ? val.trim() : "")),
+  last_name: z.string().trim().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
-  phone: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "").refine((val) => !val || phoneRegex.test(val), {
+  phone: z.union([z.string(), z.null()]).optional().transform((val) => val ? val.trim() : "").refine((val) => !val || phoneRegex.test(val), {
     message: "Phone number must be 10 digits",
   }),
   role_type: z.enum(["superadmin", "admin", "scrum"]),
@@ -27,22 +27,29 @@ export const adminFormSchema = z.object({
       const num = Number(val);
       return isNaN(num) ? 0 : Math.max(0, num);
     },
-    z.number().min(0, "Experience must be at least 0").max(50, "Experience must be at most 50").default(0)
+    z.number().min(0, "Experience must be at least 0").max(70, "Experience must be at most 70").default(0)
   ),
-  working_hours: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
-  work_mode: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "OFFICE"),
-  office_location: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
-  linkedin_url: z.union([z.string().url("Invalid LinkedIn URL"), z.literal(""), z.null()]).optional().transform((val) => val ?? ""),
-  address_line1: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
-  address_line2: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
-  city: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
-  state: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
-  country: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "India"),
-  pincode: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "").refine((val) => !val || /^[0-9]{6}$/.test(val), {
+  working_hours: z.preprocess(
+    (val) => {
+      if (val === "" || val === null || val === undefined) return null;
+      const num = Number(val);
+      return isNaN(num) ? null : num;
+    },
+    z.number().min(0, "Working hours must be at least 0").max(14, "Working hours must be at most 14").nullable().optional()
+  ),
+  work_mode: z.union([z.string(), z.null()]).optional().transform((val) => val ? val.trim() : "OFFICE"),
+  office_location: z.union([z.string(), z.null()]).optional().transform((val) => val ? val.trim() : ""),
+  linkedin_url: z.union([z.string().url("Invalid LinkedIn URL"), z.literal(""), z.null()]).optional().transform((val) => val ? val.trim() : ""),
+  address_line1: z.union([z.string(), z.null()]).optional().transform((val) => val ? val.trim() : ""),
+  address_line2: z.union([z.string(), z.null()]).optional().transform((val) => val ? val.trim() : ""),
+  city: z.union([z.string(), z.null()]).optional().transform((val) => val ? val.trim() : ""),
+  state: z.union([z.string(), z.null()]).optional().transform((val) => val ? val.trim() : ""),
+  country: z.union([z.string(), z.null()]).optional().transform((val) => val ? val.trim() : "India"),
+  pincode: z.union([z.string(), z.null()]).optional().transform((val) => val ? val.trim() : "").refine((val) => !val || /^[0-9]{6}$/.test(val), {
     message: "Pincode must be 6 digits",
   }),
   status: z.string().default("ACTIVE"),
-  joining_date: z.union([z.string(), z.null()]).optional().transform((val) => val ?? "").refine((val) => {
+  joining_date: z.union([z.string(), z.null()]).optional().transform((val) => val ? val.trim() : "").refine((val) => {
     if (!val) return true;
     const [year, month, day] = val.split("-").map(Number);
     const selectedDate = new Date(year, month - 1, day);
@@ -50,8 +57,8 @@ export const adminFormSchema = z.object({
     today.setHours(0, 0, 0, 0);
     return selectedDate <= today;
   }, "Joining date cannot be in the future"),
-  remark: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
-  avatar_url: z.union([z.string(), z.null()]).optional().transform((val) => val ?? ""),
+  remark: z.union([z.string(), z.null()]).optional().transform((val) => val ? val.trim() : ""),
+  avatar_url: z.union([z.string(), z.null()]).optional().transform((val) => val ? val.trim() : ""),
 });
 
 const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
@@ -166,12 +173,17 @@ const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
               {errors.first_name && <p className="text-xs text-red-500 font-medium">{errors.first_name.message}</p>}
             </div>
             <div className="space-y-2">
+              <Label htmlFor="last_name" className="flex items-center gap-1 font-bold">Last Name <span className="text-red-500">*</span></Label>
+              <Input id="last_name" {...register("last_name")} className="bg-slate-50/50 focus:bg-white transition-all" />
+              {errors.last_name && <p className="text-xs text-red-500 font-medium">{errors.last_name.message}</p>}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-1 font-bold">Email <span className="text-red-500">*</span></Label>
               <Input id="email" type="email" {...register("email")} className="bg-slate-50/50 focus:bg-white transition-all" />
               {errors.email && <p className="text-xs text-red-500 font-medium">{errors.email.message}</p>}
             </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="role_type" className="flex items-center gap-1 font-bold">Role <span className="text-red-500">*</span></Label>
               <Select onValueChange={(val) => setValue("role_type", val)} value={watch("role_type")}>
@@ -182,21 +194,6 @@ const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
                   <SelectItem value="scrum">Scrum Master</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-        </div>
-
-        {/* Optional Information */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-2 border-b pb-2">
-            <div className="h-4 w-1 bg-slate-200 rounded-full" />
-            <h3 className="font-bold text-slate-500">Optional Details</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="last_name">Last Name</Label>
-              <Input id="last_name" {...register("last_name")} />
             </div>
           </div>
 
@@ -222,14 +219,14 @@ const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="experience_years">Experience (Years)</Label>
               <Input 
                 id="experience_years" 
                 {...register("experience_years")} 
                 type="number"
                 min="0"
-                max="50"
+                max="70"
                 step="0.1"
                 onChange={(e) => {
                   let val = e.target.value;
@@ -237,17 +234,28 @@ const AdminForm = ({ onSubmit, initialData, submitting, error }) => {
                     setValue("experience_years", 0);
                   } else {
                     const num = Number(val);
-                    if (!isNaN(num) && num >= 0 && num <= 50) {
+                    if (!isNaN(num) && num >= 0 && num <= 70) {
                       setValue("experience_years", num);
                     }
                   }
                 }}
               />
               {errors.experience_years && <p className="text-xs text-red-500 font-medium">{errors.experience_years.message}</p>}
+              <p className="text-xs text-slate-400">0 - 70 years</p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="working_hours">Working Hours</Label>
-              <Input id="working_hours" {...register("working_hours")} placeholder="e.g. 9:00 AM - 6:00 PM" />
+              <Input 
+                id="working_hours" 
+                {...register("working_hours", { valueAsNumber: true })} 
+                type="number"
+                min="0"
+                max="14"
+                step="1"
+                placeholder="e.g. 8"
+              />
+              {errors.working_hours && <p className="text-xs text-red-500 font-medium">{errors.working_hours.message}</p>}
+              <p className="text-xs text-slate-400">0 - 14 hours</p>
             </div>
           </div>
 

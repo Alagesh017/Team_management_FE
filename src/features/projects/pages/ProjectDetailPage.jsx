@@ -176,7 +176,17 @@ const ProjectDetailPage = () => {
       </div>
 
       {/* Project Details */}
-      <ProjectDetails project={project} />
+      <ProjectDetails project={project}  />
+
+
+
+
+
+
+
+
+
+
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-8 border-t">

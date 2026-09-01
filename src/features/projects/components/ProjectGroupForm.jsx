@@ -10,7 +10,7 @@ import { Loader2 } from "lucide-react";
 import { SheetFooter, SheetClose } from "../../../common/components/ui/sheet";
 
 const projectGroupSchema = z.object({
-  name: z.string().min(1, "Group name is required"),
+  name: z.string().trim().min(1, "Group name is required"),
   description: z.string().optional(),
 });
 

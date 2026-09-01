@@ -5,16 +5,19 @@ import {
   DialogContent,
 } from "../../../common/components/ui/dialog";
 import { Link as LinkIcon, Globe } from "lucide-react";
-import { getFullAvatarUrl } from "../../../core/utils/utils";
+import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
 
 const UserAvatar = ({ url, email, firstName, className = "h-10 w-10" }) => {
+  const [imgError, setImgError] = React.useState(false);
   const fullUrl = getFullAvatarUrl(url);
-  if (fullUrl) {
+  
+  if (fullUrl && !imgError) {
     return (
       <img 
         src={fullUrl}
         alt="Avatar" 
         className={`${className} rounded-full border-2 border-slate-100 shadow-sm object-cover`} 
+        onError={() => setImgError(true)}
       />
     );
   }
@@ -86,7 +89,7 @@ const WorkerDetails = ({ worker, open, onOpenChange }) => {
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Joining Date</p>
-                <p className="text-sm font-bold text-slate-900">{worker.joining_date || "Not set"}</p>
+                <p className="text-sm font-bold text-slate-900">{formatDate(worker.joining_date)}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Experience</p>
@@ -117,12 +120,10 @@ const WorkerDetails = ({ worker, open, onOpenChange }) => {
                   {[worker.address_line1, worker.address_line2, worker.city, worker.state, worker.country, worker.pincode].filter(Boolean).join(", ") || "Not provided"}
                 </p>
               </div>
-              {worker.remark && (
-                <div className="col-span-2 space-y-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Remarks</p>
-                  <p className="text-sm text-slate-600">{worker.remark}</p>
-                </div>
-              )}
+              <div className="col-span-2 space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Remarks</p>
+                <p className="text-sm text-slate-600">{worker.remark || "Not provided"}</p>
+              </div>
             </div>
             
             <div className="pt-4 flex justify-end">

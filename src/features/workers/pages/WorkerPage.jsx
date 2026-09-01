@@ -26,13 +26,16 @@ import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
 import { useToast } from "../../../common/hooks/use-toast";
 
 const UserAvatar = ({ url, email, firstName, className = "h-10 w-10" }) => {
+  const [imgError, setImgError] = React.useState(false);
   const fullUrl = getFullAvatarUrl(url);
-  if (fullUrl) {
+  
+  if (fullUrl && !imgError) {
     return (
       <img 
         src={fullUrl}
         alt="Avatar" 
         className={`${className} rounded-full border-2 border-slate-100 shadow-sm object-cover`} 
+        onError={() => setImgError(true)}
       />
     );
   }
@@ -141,8 +144,10 @@ const WorkerPage = () => {
 
   const columns = useMemo(() => [
     {
+      id: "profile",
       accessorKey: "avatar_url",
       header: "Profile",
+      meta: { displayName: "Profile" },
       cell: ({ row }) => (
         <UserAvatar 
           url={row.getValue("avatar_url")} 
@@ -158,6 +163,7 @@ const WorkerPage = () => {
           Name <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
+      meta: { displayName: "Name" },
       cell: ({ row }) => {
         const first = row.original.first_name || "";
         const last = row.original.last_name || "";
@@ -167,25 +173,29 @@ const WorkerPage = () => {
     {
       accessorKey: "email",
       header: "Email",
+      meta: { displayName: "Email" },
       cell: ({ row }) => row.getValue("email") || "-",
     },
     {
       accessorKey: "job_title",
       header: "Designation",
+      meta: { displayName: "Designation" },
       cell: ({ row }) => row.getValue("job_title") || "-",
     },
     {
       accessorKey: "role",
       header: "Role",
+      meta: { displayName: "Role" },
       cell: ({ row }) => {
         const worker = row.original;
         if (worker.is_tl) return <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Team Leader</span>;
-        return <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Worker</span>;
+        return <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Developer</span>;
       }
     },
     {
       accessorKey: "status",
       header: "Status",
+      meta: { displayName: "Status" },
       cell: ({ row }) => {
         const status = row.getValue("status");
         return (
@@ -197,12 +207,15 @@ const WorkerPage = () => {
       },
     },
     {
-      accessorKey: "created_at",
+      accessorKey: "joining_date",
       header: "Joined Date",
-      cell: ({ row }) => formatDate(row.getValue("created_at")),
+      meta: { displayName: "Joined Date" },
+      cell: ({ row }) => formatDate(row.getValue("joining_date")),
     },
     {
       id: "actions",
+      header: "Actions",
+      meta: { displayName: "Actions" },
       cell: ({ row }) => {
         const worker = row.original;
         return (
@@ -259,7 +272,11 @@ const WorkerPage = () => {
                 onSubmit={onSubmit} 
                 initialData={editingWorker ? {
                   ...editingWorker,
-                  role_type: editingWorker.is_tl ? "team_leader" : "worker"
+                  role_type: editingWorker.is_tl ? "team_leader" : "worker",
+                  joining_date: editingWorker.joining_date 
+                    ? new Date(editingWorker.joining_date).toISOString().split('T')[0] 
+                    : "",
+                  avatar_url: editingWorker.avatar_url || ""
                 } : null}
                 submitting={submitting}
                 error={error}

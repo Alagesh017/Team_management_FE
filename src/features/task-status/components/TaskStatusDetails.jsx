@@ -1,4 +1,5 @@
 import React from "react";
+import { Button } from "../../../common/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -130,6 +131,10 @@ const TaskStatusDetails = ({ status, open, onOpenChange }) => {
                   {status.created_at ? new Date(status.created_at).toLocaleString() : "Not available"}
                 </p>
               </div>
+            </div>
+            
+            <div className="pt-4 flex justify-end">
+              <Button variant="outline" onClick={() => onOpenChange(false)} className="font-bold">Close Details</Button>
             </div>
           </div>
         </div>
