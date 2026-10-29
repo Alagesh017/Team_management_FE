@@ -7,8 +7,13 @@ import { Input } from "../../../common/components/ui/input";
 import { Label } from "../../../common/components/ui/label";
 import { Checkbox } from "../../../common/components/ui/checkbox";
 import { Alert, AlertDescription } from "../../../common/components/ui/alert";
-import { Loader2 } from "lucide-react";
-import { SheetFooter, SheetClose } from "../../../common/components/ui/sheet";
+import { Shield, SlidersHorizontal } from "lucide-react";
+import {
+  FormSheetActions,
+  FormSheetBody,
+  FormSheetFooter,
+  FormSheetSection,
+} from "../../../common/components/FormSheet";
 import { taskStatusService } from "../services/taskStatusService";
 import { useToast } from "../../../common/hooks/use-toast";
 
@@ -44,7 +49,7 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
       is_completed: false,
     },
   });
-  
+
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -79,10 +84,8 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
   const watchInProgress = watch("is_in_progress");
   const watchCompleted = watch("is_completed");
 
-  // Handle only one flag being true at a time and check API
   const handleFlagChange = async (flagName, checked) => {
     if (checked) {
-      // Check if another status already has this flag marked
       try {
         await taskStatusService.checkTaskStatusFlag(flagName, initialData?.id);
       } catch (err) {
@@ -93,8 +96,7 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
         });
         return;
       }
-      
-      // If turning this flag on, turn others off
+
       if (flagName !== "is_backlog") setValue("is_backlog", false);
       if (flagName !== "is_todo") setValue("is_todo", false);
       if (flagName !== "is_in_progress") setValue("is_in_progress", false);
@@ -102,82 +104,66 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
     }
     setValue(flagName, checked);
   };
-  
-  console.log("Form errors:", errors);
-  console.log("Form values:", watch());
-  console.log("Submitting prop:", submitting);
 
   return (
-    <form onSubmit={(e) => {
-      console.log("Form submitted!");
-      e.preventDefault();
-      handleSubmit(onSubmit)(e);
-    }} className="space-y-8 py-8 flex flex-col h-full">
-      <div className="flex-1 space-y-8">
-        {error && (
+    <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+      <FormSheetBody className="space-y-5">
+        {error ? (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-        )}
+        ) : null}
 
-        <div className="space-y-6">
-          <div className="flex items-center gap-2 border-b pb-2">
-            <div className="h-4 w-1 bg-slate-900 rounded-full" />
-            <h3 className="font-bold text-slate-900">Mandatory Details</h3>
-          </div>
-
+        <FormSheetSection icon={Shield} title="Mandatory Details">
           <div className="space-y-2">
-            <Label htmlFor="name" className="flex items-center gap-1 font-bold">
+            <Label htmlFor="name" className="flex items-center gap-1 font-semibold text-[#0f2744]">
               Status Name <span className="text-red-500">*</span>
             </Label>
             <Input
               id="name"
               {...register("name")}
               placeholder="e.g. To Do, In Progress, Completed"
-              className="bg-slate-50/50 focus:bg-white transition-all"
+              className="border-slate-200 bg-slate-50/80 focus:bg-white"
             />
-            {errors.name && (
-              <p className="text-xs text-red-500 font-medium">{errors.name.message}</p>
-            )}
+            {errors.name ? (
+              <p className="text-xs font-medium text-red-500">{errors.name.message}</p>
+            ) : null}
           </div>
-        </div>
+        </FormSheetSection>
 
-        <div className="space-y-6">
-          <div className="flex items-center gap-2 border-b pb-2">
-            <div className="h-4 w-1 bg-slate-200 rounded-full" />
-            <h3 className="font-bold text-slate-500">Optional Details</h3>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="color" className="font-bold">Display Color</Label>
-              <div className="flex gap-3">
-                <Input
-                  id="color-picker"
-                  type="color"
-                  value={currentColor || "#000000"}
-                  onChange={(e) => setValue("color", e.target.value.toUpperCase())}
-                  className="w-12 h-10 p-1 cursor-pointer border-2"
-                />
-                <Input
-                  id="color"
-                  type="text"
-                  {...register("color")}
-                  onChange={(e) => setValue("color", e.target.value.toUpperCase())}
-                  placeholder="#000000"
-                  className="flex-1 uppercase bg-slate-50/50"
-                />
-              </div>
+        <FormSheetSection icon={SlidersHorizontal} title="Optional Details">
+          <div className="space-y-2">
+            <Label htmlFor="color" className="font-semibold text-[#0f2744]">
+              Display Color
+            </Label>
+            <div className="flex gap-3">
+              <Input
+                id="color-picker"
+                type="color"
+                value={currentColor || "#000000"}
+                onChange={(e) => setValue("color", e.target.value.toUpperCase())}
+                className="h-10 w-12 cursor-pointer border-2 p-1"
+              />
+              <Input
+                id="color"
+                type="text"
+                {...register("color")}
+                onChange={(e) => setValue("color", e.target.value.toUpperCase())}
+                placeholder="#000000"
+                className="flex-1 uppercase bg-slate-50/80"
+              />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="remark" className="font-bold">Remark / Description</Label>
+            <Label htmlFor="remark" className="font-semibold text-[#0f2744]">
+              Remark / Description
+            </Label>
             <Input
               id="remark"
               {...register("remark")}
               placeholder="Optional description for this workflow stage"
-              className="bg-slate-50/50 focus:bg-white transition-all"
+              className="border-slate-200 bg-slate-50/80 focus:bg-white"
             />
           </div>
 
@@ -188,69 +174,45 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
                 checked={watch("is_confidential")}
                 onCheckedChange={(checked) => setValue("is_confidential", checked)}
               />
-              <Label htmlFor="is_confidential" className="font-bold">Is Confidential</Label>
+              <Label htmlFor="is_confidential" className="font-semibold">
+                Is Confidential
+              </Label>
             </div>
             <p className="text-xs text-slate-500">Mark this status as confidential</p>
           </div>
 
           <div className="space-y-4">
-            <Label className="font-bold">Status Type (Select only one)</Label>
+            <Label className="font-semibold text-[#0f2744]">Status Type (Select only one)</Label>
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="is_backlog"
-                  checked={watchBacklog}
-                  onCheckedChange={(checked) => handleFlagChange("is_backlog", checked)}
-                />
-                <Label htmlFor="is_backlog">Is Backlog</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="is_todo"
-                  checked={watchTodo}
-                  onCheckedChange={(checked) => handleFlagChange("is_todo", checked)}
-                />
-                <Label htmlFor="is_todo">Is Todo</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="is_in_progress"
-                  checked={watchInProgress}
-                  onCheckedChange={(checked) => handleFlagChange("is_in_progress", checked)}
-                />
-                <Label htmlFor="is_in_progress">Is In Progress</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="is_completed"
-                  checked={watchCompleted}
-                  onCheckedChange={(checked) => handleFlagChange("is_completed", checked)}
-                />
-                <Label htmlFor="is_completed">Is Completed</Label>
-              </div>
+              {[
+                ["is_backlog", "Is Backlog", watchBacklog],
+                ["is_todo", "Is Todo", watchTodo],
+                ["is_in_progress", "Is In Progress", watchInProgress],
+                ["is_completed", "Is Completed", watchCompleted],
+              ].map(([flag, label, checked]) => (
+                <div key={flag} className="flex items-center gap-2">
+                  <Checkbox
+                    id={flag}
+                    checked={checked}
+                    onCheckedChange={(val) => handleFlagChange(flag, val)}
+                  />
+                  <Label htmlFor={flag}>{label}</Label>
+                </div>
+              ))}
             </div>
-            <p className="text-xs text-slate-500">
-              Only one of these can be selected at a time
-            </p>
+            <p className="text-xs text-slate-500">Only one of these can be selected at a time</p>
           </div>
-        </div>
-      </div>
+        </FormSheetSection>
+      </FormSheetBody>
 
-      <SheetFooter className="pt-6 sticky bottom-0 bg-white z-10 mt-4 border-t pt-4 -mx-6 px-6">
-        <SheetClose asChild>
-          <Button variant="outline" type="button" className="flex-1">Cancel</Button>
-        </SheetClose>
-        <Button type="submit" disabled={submitting} className="flex-1">
-          {submitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            "Save Status"
-          )}
-        </Button>
-      </SheetFooter>
+      <FormSheetFooter>
+        <FormSheetActions
+          submitting={submitting}
+          isEdit={Boolean(initialData)}
+          submitLabel="Save Status"
+          editSubmitLabel="Update Status"
+        />
+      </FormSheetFooter>
     </form>
   );
 };

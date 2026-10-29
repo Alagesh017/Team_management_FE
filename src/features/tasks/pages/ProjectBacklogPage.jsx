@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSidebar } from '../../../common/components/ui/sidebar';
 import { useProjectBacklog } from '../hooks/useProjectBacklog';
-import { Loader2, LayoutGrid, Flame, Calendar, Clock, ListTodo, Plus, Edit } from "lucide-react";
+import { Loader2, LayoutGrid, Flame, Calendar, Clock, ListTodo, Plus, Edit, Trash2 } from "lucide-react";
 import { Button } from '../../../common/components/ui/button';
 import AddTaskPanel from '../components/board/AddTaskPanel';
 import AssignMemberDialog from '../components/board/AssignMemberDialog';
 import AvatarStack from '../components/board/AvatarStack';
 import ContextMenu from '../components/board/ContextMenu';
 import InlineEditTaskPanel from '../components/board/InlineEditTaskPanel';
+import DeleteTaskDialog from '../components/board/DeleteTaskDialog';
 
 const PRIORITY = {
   high: { bg: "#fee2e2", text: "#dc2626", label: "High" },
@@ -47,7 +48,9 @@ const TaskItem = ({
   isSaving,
   onSave,
   onCancel,
-  onEditClick
+  onEditClick,
+  onDeleteClick,
+  canAddEditDelete,
 }) => {
   const p = PRIORITY[task.priority] || PRIORITY.medium;
   const displayColor = task.status_color || color || "#6366f1";
@@ -126,15 +129,30 @@ const TaskItem = ({
               {p.label}
             </span>
           )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEditClick(task);
-            }}
-            className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
-          >
-            <Edit className="h-3.5 w-3.5" />
-          </button>
+          {canAddEditDelete && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditClick(task);
+                }}
+                className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
+              >
+                <Edit className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteClick(task);
+                }}
+                className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -258,7 +276,13 @@ const ProjectBacklogPage = () => {
     setEditTaskActualHours,
     startInlineEdit,
     cancelInlineEdit,
-    saveInlineEdit
+    saveInlineEdit,
+    canAddEditDelete,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    taskToDelete,
+    setTaskToDelete,
+    handleDeleteTask,
   } = useProjectBacklog(projectId);
 
   const handleRightClick = (e, task) => {
@@ -435,6 +459,11 @@ const ProjectBacklogPage = () => {
                 onSave={saveInlineEdit}
                 onCancel={cancelInlineEdit}
                 onEditClick={startInlineEdit}
+                onDeleteClick={(task) => {
+                  setTaskToDelete(task);
+                  setIsDeleteDialogOpen(true);
+                }}
+                canAddEditDelete={canAddEditDelete}
               />
             );
           })}
@@ -560,6 +589,11 @@ const ProjectBacklogPage = () => {
                                   onSave={saveInlineEdit}
                                   onCancel={cancelInlineEdit}
                                   onEditClick={startInlineEdit}
+                                  onDeleteClick={(t) => {
+                                    setTaskToDelete(t);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                  canAddEditDelete={canAddEditDelete}
                                 />
                               </div>
                             );
@@ -604,6 +638,18 @@ const ProjectBacklogPage = () => {
         onMoveToSprint={handleMoveToSprint}
         onMoveToBacklog={handleMoveSelectedToBacklog}
         isMoveToBacklogDisabled={!areTasksEligibleForBacklog()}
+      />
+
+      <DeleteTaskDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        taskToDelete={taskToDelete}
+        isSaving={isSaving}
+        onConfirm={handleDeleteTask}
+        onCancel={() => {
+          setIsDeleteDialogOpen(false);
+          setTaskToDelete(null);
+        }}
       />
     </div>
   );

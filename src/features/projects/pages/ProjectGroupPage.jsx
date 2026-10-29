@@ -10,14 +10,8 @@ import {
 } from "lucide-react";
 import { Button } from "../../../common/components/ui/button";
 import { Input } from "../../../common/components/ui/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "../../../common/components/ui/sheet";
+import { FormSheet } from "../../../common/components/FormSheet";
+import { PageShell } from "../../../common/components/PageLayout";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import ProjectGroupForm from "../components/ProjectGroupForm";
 import { ContextMenu, ContextMenuItem } from "../../../common/components/ui/context-menu";
@@ -152,63 +146,55 @@ const ProjectGroupPage = () => {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-8 bg-slate-50/30 min-h-screen">
-      {/* Header Section */}
-      <div className="flex flex-row items-center justify-between gap-4 border-b border-slate-200 pb-6">
-        <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-black tracking-tight text-slate-900 flex items-center gap-3 truncate uppercase">
-            <LayoutGrid className="h-6 w-6 text-slate-900 shrink-0" />
-            Project Grouping
-          </h1>
-          <p className="text-xs text-slate-500 font-bold uppercase tracking-wider hidden md:block">Master classification for project directories.</p>
-        </div>
-        
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="relative w-48 lg:w-64 group hidden sm:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
-            <Input 
-              placeholder="Search groups..." 
+    <PageShell
+      title={
+        <h1 className="flex items-center gap-3 truncate text-lg font-black uppercase tracking-tight text-slate-900 md:text-xl">
+          <LayoutGrid className="h-6 w-6 shrink-0 text-slate-900" />
+          Project Grouping
+        </h1>
+      }
+      description="Master classification for project directories."
+      action={
+        <div className="flex shrink-0 items-center gap-3">
+          <div className="relative hidden w-48 group sm:block lg:w-64">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
+            <Input
+              placeholder="Search groups..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white border-slate-200 focus-visible:ring-1 focus-visible:ring-slate-300 transition-all rounded-xl"
+              className="rounded-xl border-slate-200 bg-white pl-10 transition-all focus-visible:ring-1 focus-visible:ring-slate-300"
             />
           </div>
-          <Sheet open={isSheetOpen} onOpenChange={(open) => {
-            setIsSheetOpen(open);
-            if (!open) {
-              setEditingGroup(null);
-            }
-          }}>
-            <SheetTrigger asChild>
-              <Button 
-                className="bg-slate-900 hover:bg-slate-800 text-white font-black gap-2 px-6 transition-all active:scale-95 rounded-xl uppercase text-xs"
+          <FormSheet
+            open={isSheetOpen}
+            onOpenChange={(open) => {
+              setIsSheetOpen(open);
+              if (!open) setEditingGroup(null);
+            }}
+            icon={LayoutGrid}
+            title={editingGroup ? "Edit Project Group" : "Create New Group"}
+            description="Groups help you categorize and manage multiple related projects together."
+            trigger={
+              <Button
+                className="gap-2 rounded-xl bg-slate-900 px-6 text-xs font-black uppercase text-white transition-all hover:bg-slate-800 active:scale-95"
                 onClick={() => setEditingGroup(null)}
               >
                 <Plus className="h-4 w-4" /> New Group
               </Button>
-            </SheetTrigger>
-            <SheetContent className="sm:max-w-[400px] md:max-w-[450px] lg:max-w-[500px] p-0 flex flex-col">
-              <SheetHeader className="border-b pb-4 px-6 pt-6">
-                <SheetTitle className="text-xl font-black uppercase tracking-tight">
-                  {editingGroup ? "Edit Project Group" : "Create New Group"}
-                </SheetTitle>
-                <SheetDescription className="font-medium">
-                  Groups help you categorize and manage multiple related projects together.
-                </SheetDescription>
-              </SheetHeader>
-              <div className="flex-1 overflow-y-auto px-6">
-                <ProjectGroupForm 
-                  onSubmit={onSubmit} 
-                  initialData={editingGroup} 
-                  submitting={submitting}
-                  error={error}
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
+            }
+          >
+            <ProjectGroupForm
+              key={editingGroup?.id ?? "new"}
+              onSubmit={onSubmit}
+              initialData={editingGroup}
+              submitting={submitting}
+              error={error}
+            />
+          </FormSheet>
         </div>
-      </div>
-
+      }
+      className="gap-4"
+    >
       {loading ? (
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
           <Loader2 className="h-10 w-10 animate-spin text-slate-400" />
@@ -260,7 +246,7 @@ const ProjectGroupPage = () => {
           return "This action cannot be undone.";
         })()}
       />
-    </div>
+    </PageShell>
   );
 };
 

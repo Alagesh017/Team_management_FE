@@ -13,7 +13,11 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { useAuth } from "../../features/auth/contexts/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, Outlet } from "react-router-dom";
+import { ProfileMenuContent } from "../../features/profile/components/ProfileMenuContent";
+import { UserAvatar } from "../components/UserAvatar";
+import { getFullAvatarUrl } from "../../core/utils/utils";
+import { useProfile } from "../../features/profile/contexts/ProfileContext";
 import { projectService } from "../../features/projects/services/projectService";
 import { projectGroupService } from "../../features/projects/services/projectGroupService";
 
@@ -37,7 +41,9 @@ const iconMap = {
 };
 
 export function MainLayout({ children }) {
+  const page = children ?? <Outlet />;
   const { logout, user } = useAuth();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -107,9 +113,9 @@ export function MainLayout({ children }) {
     return namePart.substring(0, 2).toUpperCase();
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
   };
 
   const handleItemClick = (item) => {
@@ -184,41 +190,20 @@ export function MainLayout({ children }) {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 overflow-hidden border-2 border-slate-100 hover:border-slate-200 transition-all">
-                  <div className="h-full w-full bg-slate-900 flex items-center justify-center text-white font-bold text-sm">
-                    {getInitials(user?.email)}
-                  </div>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 overflow-hidden border-2 border-violet-100 hover:border-violet-200 transition-all ring-offset-2 focus-visible:ring-violet-400">
+                  <UserAvatar
+                    url={profile?.avatar_url}
+                    email={user?.email}
+                    firstName={profile?.first_name}
+                    lastName={profile?.last_name}
+                    className="h-full w-full border-0 shadow-none"
+                  />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 p-2 shadow-2xl border-slate-100">
-                <DropdownMenuLabel className="font-normal p-3">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-bold leading-none text-slate-900">{user?.email?.split("@")[0] || "User"}</p>
-                    <p className="text-xs leading-none text-slate-500 font-medium">{user?.email || "user@example.com"}</p>
-                    <p className="text-xs leading-none text-blue-600 font-semibold mt-1">
-                      {user?.role || "worker"}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-slate-100" />
-                
-                <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-lg hover:bg-slate-50 transition-colors" onClick={() => navigate('/404')}>
-                  <User className="h-4 w-4 text-slate-500" />
-                  <span className="font-bold text-sm text-slate-700">My Profile</span>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-lg hover:bg-slate-50 transition-colors" onClick={() => navigate('/404')}>
-                  <Settings className="h-4 w-4 text-slate-500" />
-                  <span className="font-bold text-sm text-slate-700">Settings</span>
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator className="bg-slate-100" />
-                
-                {/* <DropdownMenuItem className="flex items-center gap-3 p-3 cursor-pointer rounded-lg hover:bg-red-50 text-red-600 transition-colors" onClick={() => navigate('/404')}>
-                  <Trash2 className="h-4 w-4" />
-                  <span className="font-bold text-sm">Delete Account</span>
-                </DropdownMenuItem> */}
-
+              <DropdownMenuContent align="end" className="p-0 shadow-2xl border-slate-100 overflow-hidden">
+                <ProfileMenuContent onNavigateAway={() => {}} />
+                <DropdownMenuSeparator className="bg-slate-100 m-0" />
+                <div className="p-2">
                 <DropdownMenuItem 
                   onClick={handleLogout}
                   className="flex items-center gap-3 p-3 cursor-pointer rounded-lg hover:bg-slate-50 text-slate-700 transition-colors"
@@ -226,12 +211,13 @@ export function MainLayout({ children }) {
                   <LogOut className="h-4 w-4 text-slate-500" />
                   <span className="font-bold text-sm">Log out</span>
                 </DropdownMenuItem>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-y-auto bg-slate-50/50">
-          {children}
+        <div className="flex flex-1 flex-col overflow-y-auto bg-[#f4f7fb] px-3 py-2 md:px-4 md:py-3">
+          {page}
         </div>
       </SidebarInset>
     </SidebarProvider>

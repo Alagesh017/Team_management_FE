@@ -3,14 +3,8 @@ import { DataTable } from "../../../common/components/DataTable";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import { workerService } from "../services/workerService";
 import { Button } from "../../../common/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "../../../common/components/ui/sheet";
+import { FormSheet } from "../../../common/components/FormSheet";
+import { ListPageShell, DataTableCard } from "../../../common/components/PageLayout";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,34 +13,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../../common/components/ui/dropdown-menu";
-import { MoreHorizontal, ArrowUpDown, Plus, Pencil, Trash2, Loader2, Eye } from "lucide-react";
+import { MoreHorizontal, ArrowUpDown, Plus, Pencil, Trash2, Loader2, Eye, HardHat } from "lucide-react";
 import WorkerForm from "../components/WorkerForm";
 import WorkerDetails from "../components/WorkerDetails";
-import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
+import { UserAvatar } from "../../../common/components/UserAvatar";
+import { formatDate } from "../../../core/utils/utils";
 import { useToast } from "../../../common/hooks/use-toast";
-
-const UserAvatar = ({ url, email, firstName, className = "h-10 w-10" }) => {
-  const [imgError, setImgError] = React.useState(false);
-  const fullUrl = getFullAvatarUrl(url);
-  
-  if (fullUrl && !imgError) {
-    return (
-      <img 
-        src={fullUrl}
-        alt="Avatar" 
-        className={`${className} rounded-full border-2 border-slate-100 shadow-sm object-cover`} 
-        onError={() => setImgError(true)}
-      />
-    );
-  }
-
-  const initial = (firstName?.[0] || email?.[0] || "?").toUpperCase();
-  return (
-    <div className={`${className} rounded-full bg-slate-900 flex items-center justify-center text-white font-bold text-sm border-2 border-slate-100 shadow-sm`}>
-      {initial}
-    </div>
-  );
-};
 
 const WorkerPage = () => {
   const [workers, setWorkers] = useState([]);
@@ -147,13 +119,20 @@ const WorkerPage = () => {
       id: "profile",
       accessorKey: "avatar_url",
       header: "Profile",
+      size: 72,
+      minSize: 72,
+      maxSize: 72,
+      enableSorting: false,
+      enableColumnFilter: false,
       meta: { displayName: "Profile" },
       cell: ({ row }) => (
-        <UserAvatar 
-          url={row.getValue("avatar_url")} 
-          email={row.original.email} 
-          firstName={row.original.first_name} 
-        />
+        <div className="flex items-center justify-center">
+          <UserAvatar 
+            url={row.original.avatar_url} 
+            email={row.original.email} 
+            firstName={row.original.first_name} 
+          />
+        </div>
       ),
     },
     {
@@ -245,54 +224,56 @@ const WorkerPage = () => {
   ], []);
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
-      <div className="flex flex-row items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-xl md:text-3xl font-bold tracking-tight text-slate-900 truncate">Worker Management</h1>
-          <p className="text-slate-500 hidden md:block">Manage your team members and leaders.</p>
-        </div>
-        <Sheet open={isSheetOpen} onOpenChange={(open) => {
-          setIsSheetOpen(open);
-          if (!open) {
-            setEditingWorker(null);
-          }
-        }}>
-          <SheetTrigger asChild>
+    <ListPageShell
+      title="Worker Management"
+      description="Manage your team members and leaders."
+      action={
+        <FormSheet
+          open={isSheetOpen}
+          onOpenChange={(open) => {
+            setIsSheetOpen(open);
+            if (!open) setEditingWorker(null);
+          }}
+          icon={HardHat}
+          title={editingWorker ? "Edit Worker" : "New Worker"}
+          description="Enter the worker details. Email, First Name, Last Name and Role are mandatory."
+          contentClassName="w-full sm:max-w-[680px]"
+          trigger={
             <Button className="bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all active:scale-95">
               <Plus className="mr-2 h-4 w-4" /> Add Worker
             </Button>
-          </SheetTrigger>
-          <SheetContent className="sm:max-w-[450px] md:max-w-[550px] lg:max-w-[650px] xl:max-w-[700px] border-l shadow-2xl p-0 flex flex-col">
-            <SheetHeader className="border-b pb-6 px-6 pt-6">
-              <SheetTitle className="text-2xl font-bold">{editingWorker ? "Edit Worker" : "New Worker"}</SheetTitle>
-              <SheetDescription>Enter the worker details. Email, First Name, Last Name and Role are mandatory.</SheetDescription>
-            </SheetHeader>
-            <div className="flex-1 overflow-y-auto px-6">
-              <WorkerForm 
-                onSubmit={onSubmit} 
-                initialData={editingWorker ? {
-                  ...editingWorker,
-                  role_type: editingWorker.is_tl ? "team_leader" : "worker",
-                  joining_date: editingWorker.joining_date 
-                    ? new Date(editingWorker.joining_date).toISOString().split('T')[0] 
-                    : "",
-                  avatar_url: editingWorker.avatar_url || ""
-                } : null}
-                submitting={submitting}
-                error={error}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        {loading ? (
-          <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>
-        ) : (
-          <DataTable columns={columns} data={workers} filterColumn="email" />
-        )}
-      </div>
+          }
+        >
+          <WorkerForm
+            key={editingWorker?.id ?? "new"}
+            onSubmit={onSubmit}
+            initialData={
+              editingWorker
+                ? {
+                    ...editingWorker,
+                    role_type: editingWorker.is_tl ? "team_leader" : "worker",
+                    joining_date: editingWorker.joining_date
+                      ? new Date(editingWorker.joining_date).toISOString().split("T")[0]
+                      : "",
+                    avatar_url: editingWorker.avatar_url || "",
+                  }
+                : null
+            }
+            submitting={submitting}
+            error={error}
+          />
+        </FormSheet>
+      }
+    >
+      <DataTableCard loading={loading}>
+        <DataTable
+          columns={columns}
+          data={workers}
+          filterColumn="email"
+          filterPlaceholder="Search by email…"
+          embedded
+        />
+      </DataTableCard>
 
       <WorkerDetails 
         worker={viewingWorker} 
@@ -309,7 +290,7 @@ const WorkerPage = () => {
         confirmText="Delete Account"
         variant="destructive"
       />
-    </div>
+    </ListPageShell>
   );
 };
 

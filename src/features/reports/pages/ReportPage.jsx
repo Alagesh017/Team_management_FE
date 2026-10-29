@@ -721,7 +721,7 @@ const ReportPage = () => {
   return (
     <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Reports</h1>
           <p className="text-slate-500">Generate detailed task reports and export to Excel</p>
@@ -736,7 +736,7 @@ const ReportPage = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-8">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-3 md:p-5">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           {/* Quick Date Filters */}
           <div className="lg:col-span-4">
@@ -876,7 +876,7 @@ const ReportPage = () => {
       </div>
 
       {/* Results Table */}
-      <div className="flex-1 overflow-auto bg-white rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex-1 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
         {activeFilter === 'overall' ? (
           <div className="p-6">
             {Object.entries(groupedData).map(([projName, usersData]) => (

@@ -3,14 +3,8 @@ import { DataTable } from "../../../common/components/DataTable";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import { adminService } from "../services/adminService";
 import { Button } from "../../../common/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "../../../common/components/ui/sheet";
+import { FormSheet } from "../../../common/components/FormSheet";
+import { ListPageShell, DataTableCard } from "../../../common/components/PageLayout";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,34 +13,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../../common/components/ui/dropdown-menu";
-import { MoreHorizontal, ArrowUpDown, Plus, Pencil, Trash2, Loader2, Eye } from "lucide-react";
+import { MoreHorizontal, ArrowUpDown, Plus, Pencil, Trash2, Loader2, Eye, UserCog } from "lucide-react";
 import AdminForm from "../components/AdminForm";
 import AdminDetails from "../components/AdminDetails";
-import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
+import { UserAvatar } from "../../../common/components/UserAvatar";
+import { formatDate } from "../../../core/utils/utils";
 import { useToast } from "../../../common/hooks/use-toast";
-
-const UserAvatar = ({ url, email, firstName, className = "h-10 w-10" }) => {
-  const [imgError, setImgError] = React.useState(false);
-  const fullUrl = getFullAvatarUrl(url);
-  
-  if (fullUrl && !imgError) {
-    return (
-      <img 
-        src={fullUrl}
-        alt="Avatar" 
-        className={`${className} rounded-full border-2 border-slate-100 shadow-sm object-cover`} 
-        onError={() => setImgError(true)}
-      />
-    );
-  }
-
-  const initial = (firstName?.[0] || email?.[0] || "?").toUpperCase();
-  return (
-    <div className={`${className} rounded-full bg-slate-900 flex items-center justify-center text-white font-bold text-sm border-2 border-slate-100 shadow-sm`}>
-      {initial}
-    </div>
-  );
-};
 
 const AdminPage = () => {
   const [admins, setAdmins] = useState([]);
@@ -148,27 +120,43 @@ const AdminPage = () => {
       id: "profile",
       accessorKey: "avatar_url",
       header: "Profile",
+      size: 72,
+      minSize: 72,
+      maxSize: 72,
+      enableSorting: false,
+      enableColumnFilter: false,
       meta: { displayName: "Profile" },
       cell: ({ row }) => (
-        <UserAvatar 
-          url={row.getValue("avatar_url")} 
-          email={row.original.email} 
-          firstName={row.original.first_name} 
-        />
+        <div className="flex items-center justify-center">
+          <UserAvatar 
+            url={row.original.avatar_url} 
+            email={row.original.email} 
+            firstName={row.original.first_name} 
+          />
+        </div>
       ),
     },
     {
       accessorKey: "first_name",
       header: ({ column }) => (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-          Name <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 transition-colors hover:text-slate-800"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Name
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-60" />
+        </button>
       ),
       meta: { displayName: "Name" },
       cell: ({ row }) => {
         const first = row.original.first_name || "";
         const last = row.original.last_name || "";
-        return (first || last) ? `${first} ${last}` : <span className="text-slate-400 italic">Not set</span>;
+        return (first || last) ? (
+          <span className="font-medium text-slate-900">{`${first} ${last}`.trim()}</span>
+        ) : (
+          <span className="text-slate-400 italic">Not set</span>
+        );
       },
     },
     {
@@ -182,9 +170,25 @@ const AdminPage = () => {
       meta: { displayName: "Role" },
       cell: ({ row }) => {
         const admin = row.original;
-        if (admin.is_superadmin) return <span className="bg-slate-900 text-white px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Super Admin</span>;
-        if (admin.is_scrum) return <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Scrum Master</span>;
-        return <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">Admin</span>;
+        if (admin.is_superadmin) {
+          return (
+            <span className="inline-flex rounded-md border border-slate-800 bg-slate-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+              Super Admin
+            </span>
+          );
+        }
+        if (admin.is_scrum) {
+          return (
+            <span className="inline-flex rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700">
+              Scrum Master
+            </span>
+          );
+        }
+        return (
+          <span className="inline-flex rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-700">
+            Admin
+          </span>
+        );
       }
     },
     {
@@ -246,54 +250,60 @@ const AdminPage = () => {
   ], []);
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
-      <div className="flex flex-row items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-xl md:text-3xl font-bold tracking-tight text-slate-900 truncate">Admin Management</h1>
-          <p className="text-slate-500 hidden md:block">Manage administrators for the Company.</p>
-        </div>
-        <Sheet open={isSheetOpen} onOpenChange={(open) => {
-          setIsSheetOpen(open);
-          if (!open) {
-            setEditingAdmin(null);
-          }
-        }}>
-          <SheetTrigger asChild>
+    <ListPageShell
+      title="Admin Management"
+      description="Manage administrators for the Company."
+      action={
+        <FormSheet
+          open={isSheetOpen}
+          onOpenChange={(open) => {
+            setIsSheetOpen(open);
+            if (!open) setEditingAdmin(null);
+          }}
+          icon={UserCog}
+          title={editingAdmin ? "Edit Administrator" : "New Administrator"}
+          description="Only Email and Role are mandatory. All other fields are optional."
+          contentClassName="w-full sm:max-w-[680px]"
+          trigger={
             <Button className="bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all active:scale-95">
               <Plus className="mr-2 h-4 w-4" /> Add Admin
             </Button>
-          </SheetTrigger>
-          <SheetContent className="sm:max-w-[450px] md:max-w-[550px] lg:max-w-[650px] xl:max-w-[700px] border-l shadow-2xl p-0 flex flex-col">
-            <SheetHeader className="border-b pb-6 px-6 pt-6">
-              <SheetTitle className="text-2xl font-bold">{editingAdmin ? "Edit Administrator" : "New Administrator"}</SheetTitle>
-              <SheetDescription>Only Email and Role are mandatory. All other fields are optional.</SheetDescription>
-            </SheetHeader>
-            <div className="flex-1 overflow-y-auto px-6">
-              <AdminForm 
-                onSubmit={onSubmit} 
-                initialData={editingAdmin ? {
-                  ...editingAdmin,
-                  role_type: editingAdmin.is_superadmin ? "superadmin" : editingAdmin.is_scrum ? "scrum" : "admin",
-                  joining_date: editingAdmin.joining_date 
-                    ? new Date(editingAdmin.joining_date).toISOString().split('T')[0] 
-                    : "",
-                  avatar_url: editingAdmin.avatar_url || ""
-                } : null}
-                submitting={submitting}
-                error={error}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        {loading ? (
-          <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>
-        ) : (
-          <DataTable columns={columns} data={admins} filterColumn="email" />
-        )}
-      </div>
+          }
+        >
+          <AdminForm
+            key={editingAdmin?.id ?? "new"}
+            onSubmit={onSubmit}
+            initialData={
+              editingAdmin
+                ? {
+                    ...editingAdmin,
+                    role_type: editingAdmin.is_superadmin
+                      ? "superadmin"
+                      : editingAdmin.is_scrum
+                        ? "scrum"
+                        : "admin",
+                    joining_date: editingAdmin.joining_date
+                      ? new Date(editingAdmin.joining_date).toISOString().split("T")[0]
+                      : "",
+                    avatar_url: editingAdmin.avatar_url || "",
+                  }
+                : null
+            }
+            submitting={submitting}
+            error={error}
+          />
+        </FormSheet>
+      }
+    >
+      <DataTableCard loading={loading}>
+        <DataTable
+          columns={columns}
+          data={admins}
+          filterColumn="email"
+          filterPlaceholder="Search by email…"
+          embedded
+        />
+      </DataTableCard>
 
       <AdminDetails 
         admin={viewingAdmin} 
@@ -310,7 +320,7 @@ const AdminPage = () => {
         confirmText="Delete Account"
         variant="destructive"
       />
-    </div>
+    </ListPageShell>
   );
 };
 

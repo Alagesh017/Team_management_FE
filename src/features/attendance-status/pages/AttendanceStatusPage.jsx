@@ -3,14 +3,8 @@ import { DataTable } from "../../../common/components/DataTable";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import { attendanceStatusService } from "../services/attendanceStatusService";
 import { Button } from "../../../common/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "../../../common/components/ui/sheet";
+import { FormSheet } from "../../../common/components/FormSheet";
+import { ListPageShell, DataTableCard } from "../../../common/components/PageLayout";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +20,7 @@ import {
   Trash2,
   Loader2,
   Eye,
+  CalendarDays,
 } from "lucide-react";
 import AttendanceStatusForm from "../components/AttendanceStatusForm";
 import AttendanceStatusDetails from "../components/AttendanceStatusDetails";
@@ -219,17 +214,11 @@ const AttendanceStatusPage = () => {
   );
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
-      <div className="flex flex-row items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-xl md:text-3xl font-bold tracking-tight text-slate-900 truncate">
-            Attendance Status Master
-          </h1>
-          <p className="text-slate-500 hidden md:block">
-            Manage attendance statuses for your organization
-          </p>
-        </div>
-        <Sheet
+    <ListPageShell
+      title="Attendance Status Master"
+      description="Manage attendance statuses for your organization"
+      action={
+        <FormSheet
           open={isSheetOpen}
           onOpenChange={(open) => {
             setIsSheetOpen(open);
@@ -238,42 +227,34 @@ const AttendanceStatusPage = () => {
               setError("");
             }
           }}
-        >
-          <SheetTrigger asChild>
+          icon={CalendarDays}
+          title={editingStatus ? "Edit Attendance Status" : "New Attendance Status"}
+          description="Only Status Name and Status Code are required"
+          trigger={
             <Button className="bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all active:scale-95">
               <Plus className="mr-2 h-4 w-4" /> New Status
             </Button>
-          </SheetTrigger>
-          <SheetContent className="sm:max-w-[450px] md:max-w-[550px] lg:max-w-[650px] border-l shadow-2xl p-0 flex flex-col">
-            <SheetHeader className="border-b pb-6 px-6 pt-6">
-              <SheetTitle className="text-2xl font-bold">
-                {editingStatus ? "Edit Attendance Status" : "New Attendance Status"}
-              </SheetTitle>
-              <SheetDescription>
-                Only Status Name and Status Code are required
-              </SheetDescription>
-            </SheetHeader>
-            <div className="flex-1 overflow-y-auto px-6">
-              <AttendanceStatusForm
-                onSubmit={onSubmit}
-                initialData={editingStatus}
-                submitting={submitting}
-                error={error}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        {loading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-          </div>
-        ) : (
-          <DataTable columns={columns} data={statuses} filterColumn="status_name" />
-        )}
-      </div>
+          }
+        >
+          <AttendanceStatusForm
+            key={editingStatus?.attendance_status_id ?? "new"}
+            onSubmit={onSubmit}
+            initialData={editingStatus}
+            submitting={submitting}
+            error={error}
+          />
+        </FormSheet>
+      }
+    >
+      <DataTableCard loading={loading}>
+        <DataTable
+          columns={columns}
+          data={statuses}
+          filterColumn="status_name"
+          filterPlaceholder="Search statuses…"
+          embedded
+        />
+      </DataTableCard>
 
       <AttendanceStatusDetails
         status={viewingStatus}
@@ -289,7 +270,7 @@ const AttendanceStatusPage = () => {
         description="This action cannot be undone. This might affect attendance records using this status."
         variant="destructive"
       />
-    </div>
+    </ListPageShell>
   );
 };
 

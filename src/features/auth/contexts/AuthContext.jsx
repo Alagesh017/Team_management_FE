@@ -1,5 +1,9 @@
 import { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { authService } from "../services/authService";
+import {
+  handleMonitorLogout,
+  handleMonitorSessionForUser,
+} from "../../monitor/monitorSessionSync";
 
 const AuthContext = createContext();
 
@@ -10,7 +14,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsed = JSON.parse(storedUser);
+      setUser(parsed);
     }
     setLoading(false);
   }, []);
@@ -26,9 +31,12 @@ export const AuthProvider = ({ children }) => {
           roleId: data.role_id,
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
+          profileOnboardingCompleted: Boolean(data.profile_onboarding_completed),
+          profileOnboardingSkipped: Boolean(data.profile_onboarding_skipped),
         };
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
+        await handleMonitorSessionForUser(userData.userId);
         return data;
       }
       throw new Error(data.message || "Login failed");
@@ -48,9 +56,12 @@ export const AuthProvider = ({ children }) => {
           roleId: data.role_id,
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
+          profileOnboardingCompleted: Boolean(data.profile_onboarding_completed),
+          profileOnboardingSkipped: Boolean(data.profile_onboarding_skipped),
         };
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
+        await handleMonitorSessionForUser(userData.userId);
         return data;
       }
       throw new Error(data.message || "Google Login failed");
@@ -70,9 +81,12 @@ export const AuthProvider = ({ children }) => {
           roleId: data.role_id,
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
+          profileOnboardingCompleted: Boolean(data.profile_onboarding_completed),
+          profileOnboardingSkipped: Boolean(data.profile_onboarding_skipped),
         };
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
+        await handleMonitorSessionForUser(userData.userId);
         return data;
       }
       throw new Error(data.message || "Microsoft Login failed");
@@ -81,13 +95,26 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem("user");
+  const patchUser = useCallback((partial) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...partial };
+      localStorage.setItem("user", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await handleMonitorLogout();
+    } finally {
+      setUser(null);
+      localStorage.removeItem("user");
+    }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, googleLogin, microsoftLogin, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, googleLogin, microsoftLogin, logout, loading, patchUser }}>
       {children}
     </AuthContext.Provider>
   );

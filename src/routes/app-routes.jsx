@@ -23,6 +23,11 @@ import SprintManagementPage from '../features/sprints/pages/SprintManagementPage
 import ReportPage from '../features/reports/pages/ReportPage'
 import LeavePage from '../features/leave/pages/LeavePage'
 import NotFoundPage from '../features/not-found/pages/NotFoundPage'
+import WorkTimeAnalyticsPage from '../features/monitor/pages/WorkTimeAnalyticsPage'
+import UserWorkTimeInsightPage from '../features/monitor/pages/UserWorkTimeInsightPage'
+import EmployeeMonitorPage from '../features/monitor/pages/EmployeeMonitorPage'
+import ManagerMonitorDashboard from '../features/monitor/pages/ManagerMonitorDashboard'
+import ProfileCompletePage from '../features/profile/pages/ProfileCompletePage'
 import { ProtectedRoute } from '../common/components/ProtectedRoute'
 
 // Dummy components for testing
@@ -33,36 +38,42 @@ export default function AppRoutes() {
 		<Routes>
 			<Route path="/" element={<Login />} />
 			<Route path="/register" element={<Register />} />
-			
-			{/* Protected Routes */}
-			<Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-			<Route path="/leave" element={<ProtectedRoute><LeavePage /></ProtectedRoute>} />
-			<Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-			<Route path="/workers" element={<ProtectedRoute><WorkerPage /></ProtectedRoute>} />
-			<Route path="/task-status" element={<ProtectedRoute><TaskStatusPage /></ProtectedRoute>} />
-			<Route path="/attendance-status" element={<ProtectedRoute><AttendanceStatusPage /></ProtectedRoute>} />
-			<Route path="/attendance" element={<ProtectedRoute><Navigate to="/404" replace /></ProtectedRoute>} />
-			<Route path="/clients" element={<ProtectedRoute><ClientPage /></ProtectedRoute>} />
-			<Route path="/projects" element={<ProtectedRoute><ProjectPage /></ProtectedRoute>} />
-			<Route path="/project-grouping" element={<ProtectedRoute><ProjectGroupPage /></ProtectedRoute>} />
-			<Route path="/projects/:id" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
-            <Route path="/projects/:projectId/sprints" element={<ProtectedRoute><SprintManagementPage /></ProtectedRoute>} />
-            <Route path="/project-allocation" element={<ProtectedRoute><ProjectAllocationPage /></ProtectedRoute>} />
-			<Route path="/project-allocation/:projectId" element={<ProtectedRoute><ProjectAllocationDetailPage /></ProtectedRoute>} />
-			<Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-			<Route path="/tasks/project/:projectId" element={<ProtectedRoute><ProjectBacklogPage /></ProtectedRoute>} />
-			<Route path="/tasks/project/:projectId/board" element={<ProtectedRoute><TaskBoardPage /></ProtectedRoute>} />
-			<Route path="/tasks/project/:projectId/sprint/:sprintId" element={<ProtectedRoute><TaskBoardPage /></ProtectedRoute>} />
-			<Route path="/tasks/project/:projectId/task/:taskId" element={<ProtectedRoute><TaskDetailPage /></ProtectedRoute>} />
-			<Route path="/tasks-dashboard" element={<ProtectedRoute><TaskDashboardPage /></ProtectedRoute>} />
-			<Route path="/tasks/export" element={<ProtectedRoute><TaskExportPage /></ProtectedRoute>} />
-			<Route path="/tasks/export/:projectId" element={<Navigate to="/tasks/export" replace />} />
-			<Route path="/tasks/editor/:excelId" element={<ProtectedRoute><TaskExcelEditorPage /></ProtectedRoute>} />
-			<Route path="/reports" element={<ProtectedRoute><ReportPage /></ProtectedRoute>} />
-			<Route path="/meetings" element={<ProtectedRoute><Navigate to="/404" replace /></ProtectedRoute>} />
-			<Route path="/permission-request" element={<ProtectedRoute><Navigate to="/404" replace /></ProtectedRoute>} />
-			<Route path="/404" element={<ProtectedRoute><NotFoundPage /></ProtectedRoute>} />
-			
+
+			<Route element={<ProtectedRoute />}>
+				<Route path="/dashboard" element={<Dashboard />} />
+				<Route path="/leave" element={<LeavePage />} />
+				<Route path="/admin" element={<AdminPage />} />
+				<Route path="/workers" element={<WorkerPage />} />
+				<Route path="/task-status" element={<TaskStatusPage />} />
+				<Route path="/attendance-status" element={<AttendanceStatusPage />} />
+				<Route path="/attendance" element={<Navigate to="/404" replace />} />
+				<Route path="/clients" element={<ClientPage />} />
+				<Route path="/projects" element={<ProjectPage />} />
+				<Route path="/project-grouping" element={<ProjectGroupPage />} />
+				<Route path="/projects/:id" element={<ProjectDetailPage />} />
+				<Route path="/projects/:projectId/sprints" element={<SprintManagementPage />} />
+				<Route path="/project-allocation" element={<ProjectAllocationPage />} />
+				<Route path="/project-allocation/:projectId" element={<ProjectAllocationDetailPage />} />
+				<Route path="/tasks" element={<Tasks />} />
+				<Route path="/tasks/project/:projectId" element={<ProjectBacklogPage />} />
+				<Route path="/tasks/project/:projectId/board" element={<TaskBoardPage />} />
+				<Route path="/tasks/project/:projectId/sprint/:sprintId" element={<TaskBoardPage />} />
+				<Route path="/tasks/project/:projectId/task/:taskId" element={<TaskDetailPage />} />
+				<Route path="/tasks-dashboard" element={<TaskDashboardPage />} />
+				<Route path="/tasks/export" element={<TaskExportPage />} />
+				<Route path="/tasks/export/:projectId" element={<Navigate to="/tasks/export" replace />} />
+				<Route path="/tasks/editor/:excelId" element={<TaskExcelEditorPage />} />
+				<Route path="/reports" element={<ReportPage />} />
+				<Route path="/meetings" element={<Navigate to="/404" replace />} />
+				<Route path="/permission-request" element={<Navigate to="/404" replace />} />
+				<Route path="/profile/complete" element={<ProfileCompletePage />} />
+				<Route path="/monitor" element={<EmployeeMonitorPage />} />
+				<Route path="/work-time" element={<WorkTimeAnalyticsPage />} />
+				<Route path="/work-time/users/:userId" element={<UserWorkTimeInsightPage />} />
+				<Route path="/monitor/live" element={<ManagerMonitorDashboard />} />
+				<Route path="/404" element={<NotFoundPage />} />
+			</Route>
+
 			{/* Catch-all 404 route - must be last */}
 			<Route path="*" element={<NotFoundPage />} />
 		</Routes>

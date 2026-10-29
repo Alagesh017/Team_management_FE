@@ -4,30 +4,8 @@ import {
   Dialog,
   DialogContent,
 } from "../../../common/components/ui/dialog";
-import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
-
-const UserAvatar = ({ url, email, firstName, className = "h-10 w-10" }) => {
-  const [imgError, setImgError] = React.useState(false);
-  const fullUrl = getFullAvatarUrl(url);
-  
-  if (fullUrl && !imgError) {
-    return (
-      <img 
-        src={fullUrl}
-        alt="Avatar" 
-        className={`${className} rounded-full border-2 border-slate-100 shadow-sm object-cover`} 
-        onError={() => setImgError(true)}
-      />
-    );
-  }
-
-  const initial = (firstName?.[0] || email?.[0] || "?").toUpperCase();
-  return (
-    <div className={`${className} rounded-full bg-slate-900 flex items-center justify-center text-white font-bold text-sm border-2 border-slate-100 shadow-sm`}>
-      {initial}
-    </div>
-  );
-};
+import { formatDate } from "../../../core/utils/utils";
+import { UserAvatar } from "../../../common/components/UserAvatar";
 
 const AdminDetails = ({ admin, open, onOpenChange }) => {
   if (!admin) return null;

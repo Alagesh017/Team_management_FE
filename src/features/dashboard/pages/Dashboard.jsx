@@ -185,8 +185,8 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className={`${NEU_INSET} p-3 sm:p-4`}>
-              <div className="h-[220px] sm:h-[280px] lg:h-[300px] w-full">
+            <div className={`${NEU_INSET} p-3 sm:p-4 min-w-0`}>
+              <div className="h-[220px] sm:h-[280px] lg:h-[300px] w-full min-h-[220px] min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={workloadData}>
                     <CartesianGrid
@@ -331,7 +331,7 @@ const Dashboard = () => {
               <div
                 className={`h-[170px] w-[170px] sm:h-[210px] sm:w-[210px] relative shrink-0 rounded-full shadow-[inset_6px_6px_12px_#d9dbe3,inset_-6px_-6px_12px_#ffffff] flex items-center justify-center`}
               >
-                <div className="h-[150px] w-[150px] sm:h-[185px] sm:w-[185px]">
+                <div className="h-[150px] w-[150px] sm:h-[185px] sm:w-[185px] min-h-[150px] min-w-[150px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie

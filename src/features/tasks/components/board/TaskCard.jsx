@@ -17,6 +17,8 @@ const TaskCard = ({
   onDeleteClick,
   onEditClick,
   isEditing,
+  editTaskTitle,
+  setEditTaskTitle,
   editTaskPriority,
   setEditTaskPriority,
   editTaskStartDate,
@@ -37,6 +39,8 @@ const TaskCard = ({
     return (
       <InlineEditTaskPanel
         task={task}
+        editTaskTitle={editTaskTitle}
+        setEditTaskTitle={setEditTaskTitle}
         editTaskPriority={editTaskPriority}
         setEditTaskPriority={setEditTaskPriority}
         editTaskStartDate={editTaskStartDate}

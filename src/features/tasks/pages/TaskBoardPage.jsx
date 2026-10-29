@@ -80,6 +80,8 @@ const TaskBoardPage = () => {
   user,
   // Inline edit
   editingTaskId,
+  editTaskTitle,
+  setEditTaskTitle,
   editTaskPriority,
   setEditTaskPriority,
   editTaskStartDate,
@@ -175,6 +177,7 @@ const TaskBoardPage = () => {
         meMode={meMode}
         setMeMode={setMeMode}
         availableMembers={availableMembers}
+        userRole={user?.role}
       />
 
       {/* Columns */}
@@ -244,6 +247,8 @@ const TaskBoardPage = () => {
               onEditClick={openEditTask}
               // inline edit props
               editingTaskId={editingTaskId}
+              editTaskTitle={editTaskTitle}
+              setEditTaskTitle={setEditTaskTitle}
               editTaskPriority={editTaskPriority}
               setEditTaskPriority={setEditTaskPriority}
               editTaskStartDate={editTaskStartDate}

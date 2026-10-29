@@ -2,13 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useAllocations } from "../hooks/useAllocations";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import { Button } from "../../../common/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "../../../common/components/ui/sheet";
+import { FormSheet } from "../../../common/components/FormSheet";
+import { PageShell } from "../../../common/components/PageLayout";
 import { 
   Plus, 
   Pencil, 
@@ -174,32 +169,32 @@ const ProjectAllocationPage = () => {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-8 bg-white min-h-screen">
-      <div className="flex flex-row items-center justify-between gap-4 border-b pb-6">
+    <PageShell className="gap-4">
+      <div className="flex flex-row items-start justify-between gap-3 border-b border-slate-200 pb-4">
         <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2 truncate">
-            <Briefcase className="h-5 w-5 md:h-6 md:w-6 text-slate-900 shrink-0" />
+          <h1 className="flex items-center gap-2 truncate text-lg font-bold tracking-tight text-slate-900 md:text-xl">
+            <Briefcase className="h-5 w-5 shrink-0 text-slate-900 md:h-6 md:w-6" />
             Project Allocations
           </h1>
-          <p className="text-sm text-slate-500 font-medium hidden md:block">Create and manage project team assignments.</p>
+          <p className="mt-0.5 text-sm text-slate-500">Create and manage project team assignments.</p>
         </div>
-        
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="relative w-48 lg:w-64 group hidden sm:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
-            <Input 
-              placeholder="Search project..." 
+
+        <div className="flex shrink-0 items-center gap-3">
+          <div className="relative hidden w-48 group sm:block lg:w-64">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
+            <Input
+              placeholder="Search project..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-slate-50 border-slate-200 focus-visible:ring-1 focus-visible:ring-slate-300 transition-all"
+              className="border-slate-200 bg-slate-50 pl-10 transition-all focus-visible:ring-1 focus-visible:ring-slate-300"
             />
           </div>
-          <Button 
+          <Button
             onClick={() => {
               setEditingAllocation(null);
               setIsSheetOpen(true);
             }}
-            className="bg-slate-900 hover:bg-slate-800 text-white font-bold gap-2 px-6 transition-all active:scale-95"
+            className="gap-2 bg-slate-900 px-6 font-bold text-white transition-all hover:bg-slate-800 active:scale-95"
           >
             <Plus className="h-4 w-4" /> New Allocation
           </Button>
@@ -245,36 +240,31 @@ const ProjectAllocationPage = () => {
         </div>
       )}
 
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="sm:max-w-[540px] overflow-y-auto">
-          <SheetHeader className="border-b pb-6">
-            <SheetTitle className="text-2xl font-bold flex items-center gap-2">
-              {editingAllocation ? (
-                <><Pencil className="h-5 w-5" /> Edit Allocation</>
-              ) : (
-                <><Plus className="h-5 w-5" /> New Allocation</>
-              )}
-            </SheetTitle>
-            <SheetDescription className="font-medium">
-              {editingAllocation 
-                ? `Update basic details for "${editingAllocation.project_name}"` 
-                : "Select a project and set the basic timeline details."}
-            </SheetDescription>
-          </SheetHeader>
-          
-          <AllocationForm 
-            mode="shell"
-            onSubmit={onSubmit} 
-            initialData={editingAllocation} 
-            submitting={submitting}
-            error={error}
-            onCancel={() => {
-              setIsSheetOpen(false);
-              setEditingAllocation(null);
-            }}
-          />
-        </SheetContent>
-      </Sheet>
+      <FormSheet
+        open={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        icon={Users}
+        title={editingAllocation ? "Edit Allocation" : "New Allocation"}
+        description={
+          editingAllocation
+            ? `Update basic details for "${editingAllocation.project_name}"`
+            : "Select a project and set the basic timeline details."
+        }
+        contentClassName="w-full sm:max-w-[580px]"
+      >
+        <AllocationForm
+          key={editingAllocation?.id ?? "new"}
+          mode="shell"
+          onSubmit={onSubmit}
+          initialData={editingAllocation}
+          submitting={submitting}
+          error={error}
+          onCancel={() => {
+            setIsSheetOpen(false);
+            setEditingAllocation(null);
+          }}
+        />
+      </FormSheet>
 
       <ConfirmDialog
         open={isDeleteDialogOpen}
@@ -285,7 +275,7 @@ const ProjectAllocationPage = () => {
         confirmText="Delete Allocation"
         variant="destructive"
       />
-    </div>
+    </PageShell>
   );
 };
 

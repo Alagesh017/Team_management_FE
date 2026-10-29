@@ -7,17 +7,13 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ChevronDown, MoreHorizontal, ArrowUpDown } from "lucide-react"
+import { ChevronDown, Search, SlidersHorizontal } from "lucide-react"
 
 import { Button } from "./ui/button"
-import { Checkbox } from "./ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
 import { Input } from "./ui/input"
@@ -29,16 +25,22 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table"
+import { cn } from "../../core/utils/utils"
 
 export function DataTable({
   data,
   columns,
   filterColumn,
+  filterPlaceholder,
   onEdit,
   onDelete,
   rowComponent,
   tbodyRef,
   tbodyProps,
+  embedded = false,
+  pageSize = 10,
+  /** false = grow with rows and let the page scroll; string = custom max-height */
+  maxBodyHeight = "calc(100vh - 17rem)",
 }) {
   const [sorting, setSorting] = React.useState([])
   const [columnFilters, setColumnFilters] = React.useState([])
@@ -56,6 +58,9 @@ export function DataTable({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    initialState: {
+      pagination: { pageSize },
+    },
     state: {
       sorting,
       columnFilters,
@@ -64,160 +69,195 @@ export function DataTable({
     },
   })
 
+  const hasSelectionColumn = table
+    .getAllColumns()
+    .some((column) => column.id === "select" && column.getIsVisible())
+
+  const filteredCount = table.getFilteredRowModel().rows.length
+  const { pageIndex, pageSize: currentPageSize } = table.getState().pagination
+  const pageCount = table.getPageCount()
+  const pageRows = table.getRowModel().rows.length
+  const from = filteredCount === 0 ? 0 : pageIndex * currentPageSize + 1
+  const to = filteredCount === 0 ? 0 : pageIndex * currentPageSize + pageRows
+
+  const filterLabel = filterPlaceholder
+    ?? (filterColumn ? `Search by ${filterColumn.replace(/_/g, " ")}…` : "Search…")
+
   return (
-    <div className="w-full space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <Input
-          placeholder={`Filter ${filterColumn}...`}
-          value={(table.getColumn(filterColumn)?.getFilterValue()) ?? ""}
-          onChange={(event) =>
-            table.getColumn(filterColumn)?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+    <div className={cn("w-full", embedded ? "space-y-0" : "space-y-3")}>
+      <div
+        className={cn(
+          "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+          embedded && "border-b border-slate-100 px-4 py-3 md:px-5"
+        )}
+      >
+        {filterColumn ? (
+          <div className="relative w-full max-w-sm">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              placeholder={filterLabel}
+              value={(table.getColumn(filterColumn)?.getFilterValue()) ?? ""}
+              onChange={(event) =>
+                table.getColumn(filterColumn)?.setFilterValue(event.target.value)
+              }
+              className="h-9 border-slate-200 bg-slate-50/80 pl-9 text-sm shadow-none focus-visible:bg-white"
+            />
+          </div>
+        ) : (
+          <div />
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 border-slate-200 bg-white text-slate-700 shadow-sm"
+            >
+              <SlidersHorizontal className="mr-2 h-3.5 w-3.5" />
+              Columns
+              <ChevronDown className="ml-2 h-3.5 w-3.5 opacity-60" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-48">
             {table
               .getAllColumns()
               .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.columnDef.meta?.displayName || column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
+              .map((column) => (
+                <DropdownMenuCheckboxItem
+                  key={column.id}
+                  className="capitalize"
+                  checked={column.getIsVisible()}
+                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                >
+                  {column.columnDef.meta?.displayName || column.id}
+                </DropdownMenuCheckboxItem>
+              ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="rounded-md border bg-white">
-        <Table>
-          <TableHeader>
+
+      <div
+        className={cn(
+          "flex min-h-0 flex-col bg-white",
+          embedded ? "border-0 shadow-none" : "rounded-xl border border-slate-200 shadow-sm"
+        )}
+      >
+        <div
+          className={cn(
+            "min-h-0 overflow-x-auto",
+            maxBodyHeight === false
+              ? "overflow-y-visible"
+              : "overflow-y-auto overscroll-contain"
+          )}
+          style={
+            maxBodyHeight !== false && maxBodyHeight
+              ? { maxHeight: maxBodyHeight }
+              : undefined
+          }
+        >
+        <Table className="min-w-max">
+          <TableHeader className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-sm">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {/*
-                  ADDITIVE CHANGE (gated behind rowComponent, so every
-                  other DataTable usage in the app is unaffected):
-                  when a custom rowComponent is supplied, it may render
-                  one extra leading <td> per body row (e.g. a
-                  drag-and-drop grip handle that can't be expressed as
-                  a normal column because it needs direct access to
-                  dnd-kit's sortable attributes/listeners). This empty
-                  header cell keeps the header and body column counts
-                  in sync in that case. With no rowComponent, nothing
-                  changes.
-                */}
-                {rowComponent ? <TableHead className="w-10" /> : null}
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  )
-                })}
+              <TableRow
+                key={headerGroup.id}
+                className="border-slate-200 bg-slate-50/90 hover:bg-slate-50/90"
+              >
+                {rowComponent ? (
+                  <TableHead className="h-10 w-10 bg-slate-50/90 px-2" />
+                ) : null}
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className="h-10 whitespace-nowrap px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
-          {/*
-            tbodyRef/tbodyProps are forwarded straight to TableBody, which
-            (assuming the standard shadcn ui/table.jsx pattern) forwards
-            refs and props to the underlying <tbody>. This is needed so an
-            external Droppable (e.g. from @hello-pangea/dnd) can attach
-            its ref and droppableProps directly to the real DOM <tbody> —
-            something that wasn't otherwise reachable from outside
-            DataTable. Both props are undefined/no-op unless explicitly
-            passed, so this doesn't change any other usage of DataTable.
-          */}
           <TableBody ref={tbodyRef} {...tbodyProps}>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row, index) => {
-                const RowComponent = rowComponent || TableRow;
-                
-                // Prepare cell elements
+                const RowComponent = rowComponent || TableRow
+
                 const cellElements = row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(
-                      cell.column.columnDef.cell,
-                      cell.getContext()
-                    )}
+                  <TableCell
+                    key={cell.id}
+                    className="px-3 py-2.5 text-sm text-slate-700"
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
-                ));
-                
-                // If custom row component is provided, pass props
+                ))
+
                 if (rowComponent) {
                   return (
-                    <RowComponent
-                      key={row.id}
-                      row={row}
-                      index={index}
-                    >
+                    <RowComponent key={row.id} row={row} index={index}>
                       {cellElements}
                     </RowComponent>
-                  );
+                  )
                 }
-                
-                // Default behavior
+
                 return (
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
+                    className="border-slate-100 transition-colors hover:bg-slate-50/70"
                   >
                     {cellElements}
                   </TableRow>
-                );
+                )
               })
             ) : (
-              <TableRow>
+              <TableRow className="hover:bg-transparent">
                 <TableCell
                   colSpan={rowComponent ? columns.length + 1 : columns.length}
-                  className="h-24 text-center"
+                  className="h-28 px-3 text-center text-sm text-slate-500"
                 >
-                  No results.
+                  No results found.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+
+        <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between md:px-5 shrink-0">
+          <p className="text-xs font-medium text-slate-500">
+            {hasSelectionColumn ? (
+              <>
+                {table.getFilteredSelectedRowModel().rows.length} of {filteredCount} row(s)
+                selected · Showing {from}–{to} of {filteredCount}
+              </>
+            ) : (
+              <>Showing {from}–{to} of {filteredCount} entries</>
+            )}
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs text-slate-500 sm:inline">
+              Page {pageCount === 0 ? 0 : pageIndex + 1} of {pageCount || 1}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 border-slate-200 bg-white px-3 text-xs"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 border-slate-200 bg-white px-3 text-xs"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,9 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { projectService } from "../../projects/services/projectService";
 import { taskService } from "../services/taskService";
 import { useAuth } from "../../auth/contexts/AuthContext";
 import { useToast } from "../../../common/hooks/use-toast";
 import { getMemberKey } from "../components/board/constants";
+import {
+  canAddEditDeleteProject,
+  restrictionToastMessage,
+} from "../utils/projectPermissions";
 
 export const useProjectBacklog = (projectId) => {
   const [loading, setLoading] = useState(true);
@@ -39,6 +43,14 @@ export const useProjectBacklog = (projectId) => {
   const [editTaskDueDate, setEditTaskDueDate] = useState("");
   const [editTaskEstimatedHours, setEditTaskEstimatedHours] = useState("");
   const [editTaskActualHours, setEditTaskActualHours] = useState("");
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
+
+  const canAddEditDelete = useMemo(
+    () => canAddEditDeleteProject(project, user?.role),
+    [project, user?.role]
+  );
 
   const availableMembers = [];
   const seen = new Set();
@@ -432,6 +444,41 @@ export const useProjectBacklog = (projectId) => {
     }
   };
 
+  const handleDeleteTask = async () => {
+    if (!taskToDelete) return;
+    try {
+      setIsSaving(true);
+      await taskService.deleteTask(taskToDelete.task_id);
+      if (editingTaskId === taskToDelete.task_id) {
+        cancelInlineEdit();
+      }
+      setSelectedTasks((prev) => {
+        const next = new Set(prev);
+        next.delete(taskToDelete.task_id);
+        return next;
+      });
+      setIsDeleteDialogOpen(false);
+      setTaskToDelete(null);
+      await fetchData();
+      toast({ title: "Task deleted", variant: "success" });
+    } catch (err) {
+      console.error("Failed to delete task:", err);
+      toast({
+        title: err?.restricted ? "Restricted" : "Error",
+        description:
+          err?.msg ||
+          err?.message ||
+          err?.error ||
+          (err?.restricted
+            ? restrictionToastMessage(project, "Deleting tasks")
+            : "Failed to delete task"),
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return {
     loading,
     project,
@@ -493,6 +540,12 @@ export const useProjectBacklog = (projectId) => {
     setEditTaskActualHours,
     startInlineEdit,
     cancelInlineEdit,
-    saveInlineEdit
+    saveInlineEdit,
+    canAddEditDelete,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    taskToDelete,
+    setTaskToDelete,
+    handleDeleteTask,
   };
 };

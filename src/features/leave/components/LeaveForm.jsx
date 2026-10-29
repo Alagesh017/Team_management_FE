@@ -10,7 +10,13 @@ import {
   SelectValue,
 } from "../../../common/components/ui/select";
 import { leaveService } from "../services/leaveService";
-import { Loader2, UploadCloud, X, Clock } from "lucide-react";
+import { Loader2, UploadCloud, X, Clock, Shield } from "lucide-react";
+import {
+  FormSheetActions,
+  FormSheetBody,
+  FormSheetFooter,
+  FormSheetSection,
+} from "../../../common/components/FormSheet";
 import { useToast } from "../../../common/hooks/use-toast";
 
 // Helper to convert 24h to 12h format
@@ -175,14 +181,16 @@ const LeaveForm = ({ onSubmit, submitting, error }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {error}
-        </div>
-      )}
+    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+      <FormSheetBody className="space-y-5">
+        {error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
 
-      <div className="space-y-2">
+        <FormSheetSection icon={Shield} title="Request Details">
+        <div className="space-y-2">
         <Label htmlFor="type">Request Type</Label>
         <Select
           value={formData.type}
@@ -196,7 +204,7 @@ const LeaveForm = ({ onSubmit, submitting, error }) => {
             <SelectItem value="permission">Permission</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+        </div>
 
       {formData.type === "leave" && (
         <div className="space-y-2">
@@ -287,8 +295,6 @@ const LeaveForm = ({ onSubmit, submitting, error }) => {
         </div>
       )}
 
-
-
       <div className="space-y-2">
         <Label htmlFor="remark">Remark (Optional)</Label>
         <textarea
@@ -301,11 +307,17 @@ const LeaveForm = ({ onSubmit, submitting, error }) => {
           placeholder="Add any additional remarks"
         />
       </div>
+        </FormSheetSection>
+      </FormSheetBody>
 
-      <Button type="submit" disabled={submitting} className="w-full bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all active:scale-95">
-        {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-        Submit Request
-      </Button>
+      <FormSheetFooter>
+        <FormSheetActions
+          submitting={submitting}
+          isEdit={false}
+          submitLabel="Submit Request"
+          editSubmitLabel="Submit Request"
+        />
+      </FormSheetFooter>
     </form>
   );
 };

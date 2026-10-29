@@ -1,10 +1,12 @@
-import React from "react";
-import { ChevronRight, Search } from "lucide-react";
+import React, { useState } from "react";
+import { ChevronRight, History, Search } from "lucide-react";
 import { Input } from "../../../../common/components/ui/input";
 import { Button } from "../../../../common/components/ui/button";
 import { avatarColor, getMemberInitials } from "./constants";
 import { Checkbox } from "../../../../common/components/ui/checkbox";
 import { getFullAvatarUrl } from "../../../../core/utils/utils";
+import SprintStatusHistoryDialog from "./SprintStatusHistoryDialog";
+import { isAdminRole } from "../../utils/projectPermissions";
 
 const BoardHeader = ({
   project,
@@ -15,7 +17,11 @@ const BoardHeader = ({
   meMode,
   setMeMode,
   availableMembers,
+  userRole,
 }) => {
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const showHistory = Boolean(sprint?.id) && isAdminRole(userRole);
+
   return (
     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white/70 backdrop-blur shrink-0 lg:px-5">
       <div className="flex items-center gap-3 min-w-0">
@@ -43,6 +49,26 @@ const BoardHeader = ({
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
+        {showHistory && (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 border-slate-200 bg-white text-slate-700 shadow-sm"
+              title="Status change history (admins)"
+              onClick={() => setHistoryOpen(true)}
+            >
+              <History className="h-4 w-4" />
+            </Button>
+            <SprintStatusHistoryDialog
+              open={historyOpen}
+              onOpenChange={setHistoryOpen}
+              sprintId={sprint.id}
+              sprintName={sprint.sprint_name}
+            />
+          </>
+        )}
         {/* search input - hidden until lg */}
         <div className="relative hidden lg:block">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />

@@ -24,7 +24,7 @@ const TaskExportPage = () => {
 
   return (
     <div 
-      className="p-4 md:p-6 space-y-8 bg-white min-h-screen"
+      className="space-y-4"
       style={{ width: `calc(100vw - ${sidebarWidth}px)` }}
     >
       {/* Header Section */}

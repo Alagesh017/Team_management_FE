@@ -7,6 +7,10 @@ import { sprintService } from "../../sprints/services/sprintService";
 import { useAuth } from "../../auth/contexts/AuthContext";
 import { useToast } from "../../../common/hooks/use-toast";
 import { getMemberKey } from "../components/board/constants";
+import {
+  canAddEditDeleteProject,
+  restrictionToastMessage,
+} from "../utils/projectPermissions";
 
 export const useTaskBoard = () => {
   const { projectId, sprintId, id } = useParams();
@@ -40,6 +44,7 @@ export const useTaskBoard = () => {
 
   /* ── inline edit task state ── */
   const [editingTaskId, setEditingTaskId]   = useState(null);
+  const [editTaskTitle, setEditTaskTitle]     = useState("");
   const [editTaskPriority, setEditTaskPriority] = useState("medium");
   const [editTaskStartDate, setEditTaskStartDate] = useState("");
   const [editTaskDueDate, setEditTaskDueDate] = useState("");
@@ -62,15 +67,10 @@ export const useTaskBoard = () => {
   const [taskToDelete, setTaskToDelete]     = useState(null);
 
   /* ── permissions ── */
-  const canAddEditDelete = useMemo(() => {
-    if (!project) return false;
-    const userRole = user?.role?.toLowerCase() || "";
-    if (userRole !== "team_leader" && userRole !== "worker") return true;
-    if (project.company_managed === true) return false;
-    if (project.by_tl_managed === true) return userRole === "team_leader";
-    if (project.team_managed === true) return true;
-    return false;
-  }, [project, user?.role]);
+  const canAddEditDelete = useMemo(
+    () => canAddEditDeleteProject(project, user?.role),
+    [project, user?.role]
+  );
 
   const canMoveCards = useMemo(() => {
     if (!project) return false;
@@ -204,8 +204,14 @@ export const useTaskBoard = () => {
     } catch (err) {
       console.error("Failed to create task:", err);
       toast({
-        title: "Error",
-        description: err.message || err.msg || err.error || "Failed to create task",
+        title: err?.restricted ? "Restricted" : "Error",
+        description:
+          err?.msg ||
+          err?.message ||
+          err?.error ||
+          (err?.restricted
+            ? restrictionToastMessage(project, "Creating tasks")
+            : "Failed to create task"),
         variant: "destructive"
       });
     } finally {
@@ -296,6 +302,11 @@ export const useTaskBoard = () => {
     const userRole = user?.role?.toLowerCase() || "";
     if (userRole === "worker" && targetStatus?.is_confidential) {
       setDraggedTask(null);
+      toast({
+        title: "Restricted",
+        description: "This status is confidential. Moving tasks here is restricted for workers.",
+        variant: "destructive",
+      });
       return;
     }
     setStatuses((prev) => {
@@ -313,9 +324,15 @@ export const useTaskBoard = () => {
     } catch (err) {
       console.error("Failed to update task status:", err);
       toast({
-        title: "Error",
-        description: err.message || err.msg || err.error || "Failed to update task status",
-        variant: "destructive"
+        title: err?.restricted ? "Restricted" : "Error",
+        description:
+          err?.msg ||
+          err?.message ||
+          err?.error ||
+          (err?.restricted
+            ? restrictionToastMessage(project, "Moving tasks")
+            : "Failed to update task status"),
+        variant: "destructive",
       });
       await fetchData();
     }
@@ -324,6 +341,7 @@ export const useTaskBoard = () => {
   /* ── inline edit functions ── */
   const startInlineEdit = (task) => {
     setEditingTaskId(task.task_id);
+    setEditTaskTitle(task.title || "");
     setEditTaskPriority(task.priority || "medium");
     setEditTaskStartDate(task.start_date ? task.start_date.split("T")[0] : "");
     setEditTaskDueDate(task.due_date ? task.due_date.split("T")[0] : "");
@@ -333,6 +351,7 @@ export const useTaskBoard = () => {
 
   const cancelInlineEdit = () => {
     setEditingTaskId(null);
+    setEditTaskTitle("");
     setEditTaskPriority("medium");
     setEditTaskStartDate("");
     setEditTaskDueDate("");
@@ -341,9 +360,18 @@ export const useTaskBoard = () => {
   };
 
   const saveInlineEdit = async (task) => {
+    if (!editTaskTitle.trim()) {
+      toast({
+        title: "Task name required",
+        description: "Enter a task name before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       setIsSaving(true);
       await taskService.updateTask(task.task_id, {
+        title: editTaskTitle.trim(),
         priority: editTaskPriority,
         start_date: editTaskStartDate || null,
         due_date: editTaskDueDate || null,
@@ -431,6 +459,8 @@ export const useTaskBoard = () => {
     openEditTask,
     // Inline edit
     editingTaskId,
+    editTaskTitle,
+    setEditTaskTitle,
     editTaskPriority,
     setEditTaskPriority,
     editTaskStartDate,

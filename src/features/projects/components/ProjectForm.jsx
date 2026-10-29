@@ -9,7 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Alert, AlertDescription } from "../../../common/components/ui/alert";
 import { Checkbox } from "../../../common/components/ui/checkbox";
 import { Loader2, Upload, X } from "lucide-react";
-import { SheetFooter, SheetClose } from "../../../common/components/ui/sheet";
+import {
+  FormSheetActions,
+  FormSheetBody,
+  FormSheetFooter,
+} from "../../../common/components/FormSheet";
+import { SheetClose } from "../../../common/components/ui/sheet";
 import { clientService } from "../../clients/services/clientService";
 import { projectGroupService } from "../services/projectGroupService";
 import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
@@ -98,8 +103,9 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
   }, []);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 py-8 flex flex-col h-full">
-      <div className="flex-1 space-y-8">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+      <FormSheetBody className="space-y-5">
+      <div className="flex-1 space-y-5">
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -319,22 +325,16 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
           </div>
         </div>
       </div>
+      </FormSheetBody>
 
-      <SheetFooter className="pt-4 border-t gap-3 sticky bottom-0 bg-white z-10 mt-4 -mx-6 px-6 pb-6">
-        <SheetClose asChild>
-          <Button type="button" variant="outline" className="font-bold flex-1">Cancel</Button>
-        </SheetClose>
-        <Button type="submit" disabled={submitting} className="bg-slate-900 font-bold flex-1">
-          {submitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            initialData ? "Update Project" : "Create Project"
-          )}
-        </Button>
-      </SheetFooter>
+      <FormSheetFooter>
+        <FormSheetActions
+          submitting={submitting}
+          isEdit={Boolean(initialData)}
+          submitLabel="Create Project"
+          editSubmitLabel="Update Project"
+        />
+      </FormSheetFooter>
     </form>
   );
 };

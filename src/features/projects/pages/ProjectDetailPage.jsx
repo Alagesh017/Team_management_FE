@@ -90,7 +90,7 @@ const ProjectDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white p-8 space-y-8 max-w-6xl mx-auto">
+    <div className="min-h-0 bg-white py-2 max-w-6xl mx-auto space-y-4">
       {/* Navigation Header */}
       <div className="flex items-center justify-between border-b pb-6">
         <Button 

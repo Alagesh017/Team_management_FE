@@ -4,14 +4,8 @@ import { DataTable } from "../../../common/components/DataTable";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import { taskStatusService } from "../services/taskStatusService";
 import { Button } from "../../../common/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "../../../common/components/ui/sheet";
+import { FormSheet } from "../../../common/components/FormSheet";
+import { ListPageShell, DataTableCard } from "../../../common/components/PageLayout";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +22,7 @@ import {
   Loader2,
   Eye,
   GripVertical,
+  ClipboardList,
 } from "lucide-react";
 import TaskStatusForm from "../components/TaskStatusForm";
 import TaskStatusDetails from "../components/TaskStatusDetails";
@@ -349,6 +344,8 @@ const TaskStatusPage = () => {
               columns={columns}
               data={statuses}
               filterColumn="name"
+              filterPlaceholder="Search statuses…"
+              embedded
               // tbodyRef/tbodyProps (added to DataTable.jsx) let us attach
               // the Droppable's ref and droppableProps directly to the
               // real <tbody> DOM node, which @hello-pangea/dnd requires
@@ -371,17 +368,11 @@ const TaskStatusPage = () => {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
-      <div className="flex flex-row items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-xl md:text-3xl font-bold tracking-tight text-slate-900 truncate">
-            Task Status Master
-          </h1>
-          <p className="text-slate-500 hidden md:block">
-            Manage task statuses and drag to reorder
-          </p>
-        </div>
-        <Sheet
+    <ListPageShell
+      title="Task Status Master"
+      description="Manage task statuses and drag to reorder"
+      action={
+        <FormSheet
           open={isSheetOpen}
           onOpenChange={(open) => {
             setIsSheetOpen(open);
@@ -390,42 +381,28 @@ const TaskStatusPage = () => {
               setError("");
             }
           }}
-        >
-          <SheetTrigger asChild>
+          icon={ClipboardList}
+          title={editingStatus ? "Edit Task Status" : "New Task Status"}
+          description="Only Status Name is required. All other fields are optional."
+          trigger={
             <Button className="bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all active:scale-95">
               <Plus className="mr-2 h-4 w-4" /> New Status
             </Button>
-          </SheetTrigger>
-          <SheetContent className="sm:max-w-[450px] md:max-w-[550px] lg:max-w-[650px] border-l shadow-2xl p-0 flex flex-col">
-            <SheetHeader className="border-b pb-6 px-6 pt-6">
-              <SheetTitle className="text-2xl font-bold">
-                {editingStatus ? "Edit Task Status" : "New Task Status"}
-              </SheetTitle>
-              <SheetDescription>
-                Only Status Name is required. All other fields are optional.
-              </SheetDescription>
-            </SheetHeader>
-            <div className="flex-1 overflow-y-auto px-6">
-              <TaskStatusForm
-                onSubmit={onSubmit}
-                initialData={editingStatus}
-                submitting={submitting}
-                error={error}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        {loading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-          </div>
-        ) : (
-          <CustomDataTable />
-        )}
-      </div>
+          }
+        >
+          <TaskStatusForm
+            key={editingStatus?.id ?? "new"}
+            onSubmit={onSubmit}
+            initialData={editingStatus}
+            submitting={submitting}
+            error={error}
+          />
+        </FormSheet>
+      }
+    >
+      <DataTableCard loading={loading}>
+        <CustomDataTable />
+      </DataTableCard>
 
       <TaskStatusDetails
         status={viewingStatus}
@@ -441,7 +418,7 @@ const TaskStatusPage = () => {
         description="This action cannot be undone. This might affect tasks currently using this status."
         variant="destructive"
       />
-    </div>
+    </ListPageShell>
   );
 };
 

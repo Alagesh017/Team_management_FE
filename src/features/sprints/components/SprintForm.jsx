@@ -8,7 +8,11 @@ import { Label } from "../../../common/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../common/components/ui/select";
 import { Alert, AlertDescription } from "../../../common/components/ui/alert";
 import { Loader2 } from "lucide-react";
-import { SheetFooter, SheetClose } from "../../../common/components/ui/sheet";
+import {
+  FormSheetActions,
+  FormSheetBody,
+  FormSheetFooter,
+} from "../../../common/components/FormSheet";
 
 export const sprintFormSchema = z.object({
   sprint_name: z.string().min(1, "Sprint name is required"),
@@ -138,9 +142,8 @@ const SprintForm = ({ onSubmit, initialData, submitting, error, projectId }) => 
   }, [selectedFrame, startDate, setValue]);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col max-h-[85vh]">
-      {/* Scrollable content area only - capped height so footer always stays visible */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-8 py-8 px-1 -mx-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-400">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+      <FormSheetBody className="space-y-5 max-h-[min(70vh,640px)]">
         {error && (
           <Alert variant="destructive" className="border-red-200 bg-red-50">
             <AlertDescription className="text-red-800 font-medium">{error}</AlertDescription>
@@ -252,24 +255,16 @@ const SprintForm = ({ onSubmit, initialData, submitting, error, projectId }) => 
             </Select>
           </div>
         </div>
-      </div>
+      </FormSheetBody>
 
-      {/* Fixed footer, always visible since content area above is height-capped and scrolls independently */}
-      <SheetFooter className="border-t pt-6 flex gap-3 mt-0 px-0 pb-2 shrink-0">
-        <SheetClose asChild>
-          <Button variant="ghost" className="text-slate-500 font-bold flex-1">Cancel</Button>
-        </SheetClose>
-        <Button type="submit" disabled={submitting} className="bg-slate-900 text-white font-bold flex-1 shadow-lg hover:shadow-xl transition-all">
-          {submitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            initialData ? "Update Sprint" : "Create Sprint"
-          )}
-        </Button>
-      </SheetFooter>
+      <FormSheetFooter>
+        <FormSheetActions
+          submitting={submitting}
+          isEdit={Boolean(initialData)}
+          submitLabel="Create Sprint"
+          editSubmitLabel="Update Sprint"
+        />
+      </FormSheetFooter>
     </form>
   );
 };

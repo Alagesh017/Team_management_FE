@@ -19,7 +19,7 @@ import {
   FileText,
   Briefcase
 } from "lucide-react";
-import { SheetClose } from "../../../common/components/ui/sheet";
+import { FormSheetFooter } from "../../../common/components/FormSheet";
 import { useProjects } from "../../projects/hooks/useProjects";
 import { workerService } from "../../workers/services/workerService";
 import { getFullAvatarUrl } from "../../../core/utils/utils";
@@ -447,35 +447,35 @@ const AllocationForm = ({ onSubmit, initialData, submitting, error, onCancel, mo
       {mode !== "shell" && selectedProjectId && renderHierarchyFields()}
       
       {mode !== "members" && (
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-          {onCancel && (
+        <FormSheetFooter className="mt-auto">
+          {onCancel ? (
             <Button
               type="button"
               variant="ghost"
               onClick={onCancel}
               disabled={submitting}
-              className="text-slate-600"
+              className="font-semibold text-[#5b7c99] hover:bg-slate-100 hover:text-[#0f2744]"
             >
               Cancel
             </Button>
-          )}
+          ) : null}
           <Button
             type="submit"
             disabled={submitting || !watch("project_id") || !watch("start_date")}
-            className="bg-slate-900 hover:bg-slate-800 text-white font-bold gap-2"
+            className="rounded-lg bg-[#3b82f6] px-5 font-semibold text-white shadow-md hover:bg-[#2563eb]"
           >
             {submitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 Saving...
               </>
+            ) : initialData ? (
+              "Update Allocation"
             ) : (
-              <>
-                {initialData ? "Update Allocation" : "Create Allocation"}
-              </>
+              "Create Allocation"
             )}
           </Button>
-        </div>
+        </FormSheetFooter>
       )}
     </form>
   );

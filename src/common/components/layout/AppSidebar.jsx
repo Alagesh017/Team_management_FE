@@ -32,6 +32,8 @@ import {
   PlayCircle,
   Calendar as CalendarIcon,
   FileText,
+  Activity,
+  Radio,
 } from "lucide-react";
 import SprintForm from "../../../features/sprints/components/SprintForm";
 import { sprintService } from "../../../features/sprints/services/sprintService";
@@ -73,13 +75,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "../ui/sheet";
+import { FormSheet } from "../FormSheet";
 import { Input } from "../ui/input";
 import {
   DndContext,
@@ -97,9 +93,60 @@ import { useAuth } from "../../../features/auth/contexts/AuthContext";
 import ProjectGroupForm from "../../../features/projects/components/ProjectGroupForm";
 import { useProjects } from "../../../features/projects/contexts/ProjectContext";
 import { useToast } from "../../hooks/use-toast";
+import { canShowSprintActionsInSidebar } from "../../../features/tasks/utils/projectPermissions";
+import { cn } from "../../../core/utils/utils";
+import { SidebarAmbientDecor } from "./SidebarAmbientDecor";
+
+const NAV_ACCENTS = {
+  Dashboard: "blue",
+  Reports: "violet",
+  "Work time": "cyan",
+  "Activity Monitor": "emerald",
+  "Live monitoring": "rose",
+  "Leave & Permissions": "amber",
+  "Activity tracker": "emerald",
+  Master: "slate",
+  Groups: "indigo",
+  Clients: "sky",
+  Projects: "teal",
+  "Project Allocation": "orange",
+  Admin: "indigo",
+  Workers: "amber",
+  "Task Status": "fuchsia",
+  "Project Grouping": "teal",
+};
+
+const sidebarMenuAccent = (title) =>
+  cn("sidebar-nav-item", `sidebar-nav-item--${NAV_ACCENTS[title] || "slate"}`);
+
+const sidebarSubAccent = (title) =>
+  cn("sidebar-nav-item sidebar-nav-item--sub", `sidebar-nav-item--${NAV_ACCENTS[title] || "slate"}`);
+
+function isSidebarSubItemActive(pathname, url) {
+  if (url === "/monitor/live") {
+    return pathname === "/monitor/live" || pathname.startsWith("/monitor/live/");
+  }
+  if (url === "/monitor") {
+    return (
+      pathname === "/monitor" ||
+      (pathname.startsWith("/monitor/") && !pathname.startsWith("/monitor/live"))
+    );
+  }
+  return pathname === url;
+}
+
+function isActivityTrackerPath(pathname) {
+  return (
+    pathname === "/work-time" ||
+    pathname === "/monitor" ||
+    pathname.startsWith("/monitor/") ||
+    pathname.startsWith("/work-time/")
+  );
+}
 
 // Draggable Project Component
-const DraggableProject = ({ project, isActive, isRestricted, onToggleExpand, isExpanded, onOpenCreateSprint, onOpenEditSprint, closeSidebarOnMobile, sidebarState }) => {
+const DraggableProject = ({ project, isActive, isRestricted, userRole, onToggleExpand, isExpanded, onOpenCreateSprint, onOpenEditSprint, closeSidebarOnMobile, sidebarState }) => {
+  const canSprintActions = canShowSprintActionsInSidebar(project, userRole);
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `project-${project.id}`,
     data: { project },
@@ -109,17 +156,17 @@ const DraggableProject = ({ project, isActive, isRestricted, onToggleExpand, isE
   const { state } = useSidebar();
   const effectiveSidebarState = sidebarState || state;
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined;
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined;
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...(isRestricted ? {} : listeners)}
-      {...(isRestricted ? {} : attributes)}
-      className={`group/project-item ${isDragging ? 'opacity-40 grayscale-[0.5]' : 'opacity-100'}`}
+      className={`group/project-item ${isDragging ? "opacity-40 grayscale-[0.5]" : "opacity-100"}`}
     >
       <div className="list-none">
         {effectiveSidebarState === 'icon' ? (
@@ -187,7 +234,7 @@ const DraggableProject = ({ project, isActive, isRestricted, onToggleExpand, isE
                     ))}
                   </>
                 )}
-                {!isRestricted && (
+                {canSprintActions && (
                   <>
                     <div className="my-2 border-t border-slate-200" />
                     <DropdownMenuItem
@@ -212,11 +259,10 @@ const DraggableProject = ({ project, isActive, isRestricted, onToggleExpand, isE
         ) : (
           <>
             <div
-              className={`flex items-center gap-2 py-[5px] px-2 rounded-md hover:bg-slate-100 transition-colors cursor-pointer ${
-                isActive ? 'bg-slate-100' : ''
+              className={`relative flex items-center gap-1 py-1 pl-1 pr-0.5 rounded-md hover:bg-slate-50/90 transition-colors ${
+                isActive ? 'bg-slate-50' : ''
               }`}
             >
-              {/* Expand/Collapse button */}
               <button
                 type="button"
                 onClick={(e) => {
@@ -224,40 +270,42 @@ const DraggableProject = ({ project, isActive, isRestricted, onToggleExpand, isE
                   e.stopPropagation();
                   onToggleExpand(project.id);
                 }}
-                className="p-0.5 rounded hover:bg-slate-200 shrink-0"
+                className="p-0.5 rounded hover:bg-slate-200/80 shrink-0"
+                aria-label={isExpanded ? "Collapse sprints" : "Expand sprints"}
               >
-                {isExpanded ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
+                {isExpanded ? (
+                  <ChevronDown className="h-3 w-3 text-slate-400" />
+                ) : (
+                  <ChevronRight className="h-3 w-3 text-slate-400" />
+                )}
               </button>
 
-              {/* Project icon */}
-              <div className={`h-4.5 w-4.5 rounded flex items-center justify-center shrink-0 ${
-                isActive ? 'bg-slate-900' : ''
-              }`}>
-                <Folder className={`h-3.5 w-3.5 ${isActive ? 'text-white' : 'text-yellow-500'}`} />
-              </div>
-
-              {/* Project Link */}
               <Link
                 to={`/tasks/project/${project.id}`}
-                className="flex-1 min-w-0"
+                className="flex flex-1 min-w-0 items-center gap-1.5 py-0.5 group-hover/project-item:pr-[4.25rem] transition-[padding] duration-150"
                 onClick={closeSidebarOnMobile}
+                title={project.name}
               >
-                <span className="text-[13px] font-medium text-slate-600 group-hover/project-item:text-slate-900 truncate block">
+                <Folder
+                  className={`h-3.5 w-3.5 shrink-0 ${
+                    isActive ? 'text-slate-800' : 'text-amber-500'
+                  }`}
+                />
+                <span className="min-w-0 flex-1 truncate text-[12px] font-medium leading-snug text-slate-600 group-hover/project-item:text-slate-900">
                   {project.name}
                 </span>
               </Link>
 
-              {/* Actions: "..." and "+" appear on hover */}
-              <div className="flex items-center gap-0.5 opacity-0 group-hover/project-item:opacity-100 transition-opacity shrink-0">
+              <div className="absolute right-0 top-1/2 z-[2] flex -translate-y-1/2 items-center gap-0 rounded-md bg-gradient-to-l from-slate-50 from-55% via-slate-50/95 to-transparent pl-3 pr-0.5 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/project-item:opacity-100 group-hover/project-item:pointer-events-auto">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
                       onClick={(e) => e.stopPropagation()}
-                      className="p-1 rounded hover:bg-slate-200"
+                      className="rounded p-1 hover:bg-slate-200/80"
                       title="More"
                     >
-                      <MoreHorizontal className="h-3.5 w-3.5 text-slate-400" />
+                      <MoreHorizontal className="h-3.5 w-3.5 text-slate-500" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-[180px]">
@@ -268,25 +316,36 @@ const DraggableProject = ({ project, isActive, isRestricted, onToggleExpand, isE
                       }}
                       className="cursor-pointer"
                     >
-                      <CalendarIcon className="h-3.5 w-3.5 mr-2" />
+                      <CalendarIcon className="mr-2 h-3.5 w-3.5" />
                       Sprint Management
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onOpenCreateSprint(project.id);
-                  }}
-                  className="p-1 rounded hover:bg-slate-200"
-                  title="Create Sprint"
-                >
-                  <Plus className="h-3.5 w-3.5 text-slate-400" />
-                </button>
+                {canSprintActions && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onOpenCreateSprint(project.id);
+                    }}
+                    className="rounded p-1 hover:bg-slate-200/80"
+                    title="Create Sprint"
+                  >
+                    <Plus className="h-3.5 w-3.5 text-slate-500" />
+                  </button>
+                )}
                 {!isRestricted && (
-                  <GripVertical className="h-3.5 w-3.5 text-slate-300 cursor-grab" />
+                  <button
+                    type="button"
+                    className="cursor-grab rounded p-1 hover:bg-slate-200/80 active:cursor-grabbing"
+                    title="Drag to move group"
+                    {...listeners}
+                    {...attributes}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <GripVertical className="h-3.5 w-3.5 text-slate-400" />
+                  </button>
                 )}
               </div>
             </div>
@@ -297,49 +356,59 @@ const DraggableProject = ({ project, isActive, isRestricted, onToggleExpand, isE
                 {(project.sprints || []).map((sprint) => (
                   <div
                     key={sprint.id}
-                    className="flex items-center gap-2 py-[5px] px-2 rounded-md hover:bg-slate-100 cursor-pointer text-[13px] group/sprint"
+                    className="group/sprint relative flex items-center py-1 pl-1 pr-0.5 rounded-md hover:bg-slate-50/90 cursor-pointer text-[12px]"
                   >
                     <div
                       onClick={() => {
                         navigate(`/tasks/project/${project.id}/sprint/${sprint.id}`);
                         closeSidebarOnMobile();
                       }}
-                      className="flex items-center gap-2 flex-1"
+                      className="flex min-w-0 flex-1 items-center gap-1.5 py-0.5 group-hover/sprint:pr-[3.5rem] transition-[padding] duration-150"
+                      title={sprint.sprint_name}
                     >
-                      <PlayCircle className={`h-3.5 w-3.5 shrink-0 ${
-                        sprint.sprint_status === 1 ? 'text-emerald-500' :
-                        sprint.sprint_status === 2 ? 'text-blue-500' :
-                        'text-slate-400'
-                      }`} />
-                      <span className="text-slate-500 group-hover/sprint:text-slate-900 truncate flex-1">
+                      <PlayCircle
+                        className={`h-3 w-3 shrink-0 ${
+                          sprint.sprint_status === 1
+                            ? "text-emerald-500"
+                            : sprint.sprint_status === 2
+                              ? "text-blue-500"
+                              : "text-slate-400"
+                        }`}
+                      />
+                      <span className="min-w-0 flex-1 truncate text-slate-500 group-hover/sprint:text-slate-800">
                         {sprint.sprint_name}
                       </span>
+                    </div>
+                    <div className="absolute right-0 top-1/2 z-[1] flex -translate-y-1/2 items-center gap-0.5 rounded-md bg-gradient-to-l from-slate-50 from-50% to-transparent pl-2 pr-0.5 opacity-0 pointer-events-none transition-opacity group-hover/sprint:opacity-100 group-hover/sprint:pointer-events-auto">
                       {sprint.sprint_status === 1 && (
-                        <span className="text-[10px] font-bold text-white bg-emerald-500 rounded-full h-4 min-w-[32px] px-1 flex items-center justify-center">
+                        <span className="text-[9px] font-bold text-white bg-emerald-500 rounded-full h-3.5 min-w-[28px] px-1 flex items-center justify-center">
                           LIVE
                         </span>
                       )}
-                      {typeof sprint.task_count === 'number' && sprint.task_count > 0 && (
-                        <span className="text-[10px] font-bold text-white bg-pink-500 rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center">
-                          {sprint.task_count > 99 ? '99+' : sprint.task_count}
+                      {typeof sprint.task_count === "number" && sprint.task_count > 0 && (
+                        <span className="text-[9px] font-bold text-white bg-pink-500 rounded-full h-3.5 min-w-[14px] px-1 flex items-center justify-center">
+                          {sprint.task_count > 99 ? "99+" : sprint.task_count}
                         </span>
                       )}
+                      {canSprintActions && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenEditSprint(sprint);
+                          }}
+                          className="rounded p-0.5 hover:bg-slate-200/80"
+                          title="Sprint options"
+                        >
+                          <MoreHorizontal className="h-3 w-3 text-slate-500" />
+                        </button>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenEditSprint(sprint);
-                      }}
-                      className="p-0.5 rounded hover:bg-slate-200 shrink-0 opacity-0 group-hover/sprint:opacity-100 transition-opacity"
-                    >
-                      <MoreHorizontal className="h-3.5 w-3.5 text-slate-400" />
-                    </button>
                   </div>
                 ))}
 
                 {/* Create Sprint inline action */}
-                {!isRestricted && (
+                {canSprintActions && (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -363,7 +432,7 @@ const DraggableProject = ({ project, isActive, isRestricted, onToggleExpand, isE
 };
 
 // Droppable Group Component
-const DroppableGroup = ({ group, projects, currentPath, searchQuery, isRestricted, expandedProjects, onToggleExpand, onOpenCreateSprint, onOpenEditSprint, closeSidebarOnMobile, sidebarState }) => {
+const DroppableGroup = ({ group, projects, currentPath, searchQuery, isRestricted, userRole, expandedProjects, onToggleExpand, onOpenCreateSprint, onOpenEditSprint, closeSidebarOnMobile, sidebarState }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: group ? group.id.toString() : "uncategorized",
     disabled: isRestricted,
@@ -430,7 +499,9 @@ const DroppableGroup = ({ group, projects, currentPath, searchQuery, isRestricte
                           currentPath === `/tasks/project/${project.id}` ? 'text-white' : 'text-yellow-500'
                         }`} />
                       </div>
-                      <span className="text-sm truncate flex-1">{project.name}</span>
+                      <span className="text-sm font-medium break-words line-clamp-2 leading-snug flex-1 min-w-0">
+                        {project.name}
+                      </span>
                     </DropdownMenuItem>
                   ))
               ) : (
@@ -458,23 +529,37 @@ const DroppableGroup = ({ group, projects, currentPath, searchQuery, isRestricte
               </span>
 
               <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/group-trigger:opacity-100 transition-opacity group-data-[collapsible=icon]:hidden">
-                <button
-                  type="button"
+                <span
+                  role="button"
+                  tabIndex={0}
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                  className="p-1 rounded hover:bg-slate-200"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }
+                  }}
+                  className="p-1 rounded hover:bg-slate-200 cursor-pointer"
                   title="More"
                 >
                   <MoreHorizontal className="h-3.5 w-3.5 text-slate-400" />
-                </button>
+                </span>
                 {!isRestricted && (
-                  <button
-                    type="button"
+                  <span
+                    role="button"
+                    tabIndex={0}
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    className="p-1 rounded hover:bg-slate-200"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }
+                    }}
+                    className="p-1 rounded hover:bg-slate-200 cursor-pointer"
                     title="Add"
                   >
                     <Plus className="h-3.5 w-3.5 text-slate-400" />
-                  </button>
+                  </span>
                 )}
               </div>
             </SidebarMenuButton>
@@ -492,6 +577,7 @@ const DroppableGroup = ({ group, projects, currentPath, searchQuery, isRestricte
                       project={project}
                       isActive={currentPath === `/tasks/project/${project.id}`}
                       isRestricted={isRestricted}
+                      userRole={userRole}
                       onToggleExpand={onToggleExpand}
                       isExpanded={expandedProjects[project.id]}
                       onOpenCreateSprint={onOpenCreateSprint}
@@ -691,17 +777,29 @@ export function AppSidebar() {
     }));
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
   };
 
   const isRestrictedRole = user?.role === "team_leader" || user?.role === "worker";
 
+  const activityTrackerSubItems = [
+    { title: "Work time", url: "/work-time", icon: BarChart3 },
+    { title: "Activity Monitor", url: "/monitor", icon: Activity },
+    ...(!isRestrictedRole
+      ? [{ title: "Live monitoring", url: "/monitor/live", icon: Radio }]
+      : []),
+  ];
+
   const menuItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    // { title: "Task Dashboard", url: "/tasks-dashboard", icon: BarChart3 },
     { title: "Reports", url: "/reports", icon: FileText },
+    {
+      title: "Activity tracker",
+      icon: Activity,
+      subItems: activityTrackerSubItems,
+    },
     { title: "Leave & Permissions", url: "/leave", icon: Calendar },
     ...(isRestrictedRole ? [] : [
       {
@@ -723,18 +821,30 @@ export function AppSidebar() {
 
   return (
     <>
-      <Sidebar collapsible="icon">
-        <SidebarHeader className="border-b px-2 py-4 flex items-center justify-center group-data-[collapsible=icon]:px-0">
-          <div className="flex items-center gap-3 font-bold text-xl px-4 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center w-full">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white shadow-lg transition-all duration-300 overflow-hidden">
-              <img src={iconTop} alt="Logo" className="h-full w-full object-cover" />
+      <Sidebar
+        collapsible="icon"
+        className="team-manager-sidebar"
+      >
+        {sidebarState !== "icon" && <SidebarAmbientDecor />}
+        <SidebarHeader className="sidebar-premium-header relative z-[1] px-2 py-3 flex items-center justify-center group-data-[collapsible=icon]:px-0">
+          <div className="flex items-center gap-2.5 px-1 w-full group-data-[collapsible=icon]:justify-center">
+            <div className="sidebar-logo-orbit relative flex h-10 w-10 shrink-0 items-center justify-center">
+              <div className="sidebar-logo-glow" aria-hidden />
+              <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-white ring-1 ring-white/80 overflow-hidden shadow-md shadow-blue-500/15">
+                <img src={iconTop} alt="Logo" className="h-full w-full object-cover" />
+              </div>
             </div>
-            <span className="group-data-[collapsible=icon]:hidden whitespace-nowrap overflow-hidden">
-              Team Manager
-            </span>
+            <div className="group-data-[collapsible=icon]:hidden min-w-0">
+              <span className="block text-[15px] font-semibold tracking-tight text-slate-800">
+                Team Manager
+              </span>
+              <span className="block text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">
+                Workspace
+              </span>
+            </div>
           </div>
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className="relative z-[1] pb-28">
           <DndContext
             sensors={sensors}
             onDragStart={handleDragStart}
@@ -742,13 +852,17 @@ export function AppSidebar() {
             modifiers={[restrictToWindowEdges]}
           >
             <SidebarGroup>
-              <SidebarGroupLabel>Menu</SidebarGroupLabel>
+              <SidebarGroupLabel className="sidebar-section-label flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                <span className="h-px flex-1 bg-gradient-to-r from-blue-500/40 to-transparent" />
+                Menu
+                <span className="h-px w-6 bg-gradient-to-l from-violet-500/30 to-transparent" />
+              </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu className="gap-2">
                   {/* Render Dashboard first */}
                   {menuItems.find(item => item.title === "Dashboard") && (
                     <SidebarMenuItem key="dashboard">
-                      <SidebarMenuButton asChild tooltip="Dashboard" isActive={location.pathname === "/dashboard"} className="relative pr-6">
+                      <SidebarMenuButton asChild tooltip="Dashboard" isActive={location.pathname === "/dashboard"} className={cn(sidebarMenuAccent("Dashboard"), "relative pr-6")}>
                         <Link to="/dashboard" onClick={closeSidebarOnMobile}>
                           <LayoutDashboard />
                           <span>Dashboard</span>
@@ -777,7 +891,7 @@ export function AppSidebar() {
                           return (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <SidebarMenuButton tooltip="Master">
+                                <SidebarMenuButton tooltip="Master" className={sidebarMenuAccent("Master")}>
                                   <Settings />
                                   <span>Master</span>
                                 </SidebarMenuButton>
@@ -807,7 +921,7 @@ export function AppSidebar() {
                         return (
                           <Collapsible defaultOpen className="group/collapsible">
                             <CollapsibleTrigger asChild>
-                              <SidebarMenuButton tooltip="Master">
+                              <SidebarMenuButton tooltip="Master" className={sidebarMenuAccent("Master")}>
                                 <Settings />
                                 <span>Master</span>
                                 <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -819,7 +933,7 @@ export function AppSidebar() {
                                   const isActive = location.pathname === subItem.url;
                                   return (
                                     <SidebarMenuSubItem key={subItem.title}>
-                                      <SidebarMenuSubButton asChild isActive={isActive} className="relative pr-6">
+                                      <SidebarMenuSubButton asChild isActive={isActive} className={cn(sidebarSubAccent(subItem.title), "relative pr-6")}>
                                         <Link to={subItem.url} onClick={closeSidebarOnMobile} className="w-full flex items-center">
                                           {subItem.icon && <subItem.icon className="h-4 w-4" />}
                                           <span>{subItem.title}</span>
@@ -846,7 +960,7 @@ export function AppSidebar() {
                     <div className="px-2 py-1 mb-2 group-data-[collapsible=icon]:hidden">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Groups</span>
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#7c93ad]">Groups</span>
                         </div>
                         {!isRestrictedRole && (
                           <button
@@ -863,7 +977,7 @@ export function AppSidebar() {
                           placeholder="Search projects..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-8 bg-slate-50/50 focus:bg-white transition-all"
+                          className="h-8 rounded-xl border border-slate-200/60 bg-white/70 pl-8 text-sm shadow-sm backdrop-blur-sm transition-all focus:border-blue-300/80 focus:bg-white focus:ring-2 focus:ring-blue-500/15"
                         />
                       </div>
                     </div>
@@ -886,6 +1000,7 @@ export function AppSidebar() {
                             currentPath={location.pathname}
                             searchQuery={searchQuery}
                             isRestricted={isRestrictedRole}
+                            userRole={user?.role}
                             expandedProjects={expandedProjects}
                             onToggleExpand={toggleProjectExpand}
                             onOpenCreateSprint={openCreateSprint}
@@ -911,6 +1026,7 @@ export function AppSidebar() {
                             currentPath={location.pathname}
                             searchQuery={searchQuery}
                             isRestricted={isRestrictedRole}
+                            userRole={user?.role}
                             expandedProjects={expandedProjects}
                             onToggleExpand={toggleProjectExpand}
                             onOpenCreateSprint={openCreateSprint}
@@ -933,14 +1049,14 @@ export function AppSidebar() {
                               return (
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <SidebarMenuButton tooltip={item.title}>
+                                    <SidebarMenuButton tooltip={item.title} className={sidebarMenuAccent(item.title)}>
                                       <item.icon />
                                       <span>{item.title}</span>
                                     </SidebarMenuButton>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent side="right" align="start" className="w-[180px]">
                                     {item.subItems.map((subItem) => {
-                                      const isActive = location.pathname === subItem.url;
+                                      const isActive = isSidebarSubItemActive(location.pathname, subItem.url);
                                       return (
                                         <DropdownMenuItem
                                           key={subItem.title}
@@ -948,7 +1064,7 @@ export function AppSidebar() {
                                             navigate(subItem.url);
                                             closeSidebarOnMobile();
                                           }}
-                                          className={`cursor-pointer ${isActive ? 'bg-blue-50 text-blue-600' : ''}`}
+                                          className={`cursor-pointer ${isActive ? "bg-blue-50 text-blue-600" : ""}`}
                                         >
                                           {subItem.icon && <subItem.icon className="h-4 w-4 mr-2" />}
                                           {subItem.title}
@@ -961,9 +1077,19 @@ export function AppSidebar() {
                             }
                             
                             return (
-                              <Collapsible defaultOpen className="group/collapsible">
+                              <Collapsible
+                                defaultOpen={
+                                  item.title === "Activity tracker"
+                                    ? isActivityTrackerPath(location.pathname)
+                                    : true
+                                }
+                                className="group/collapsible"
+                              >
                                 <CollapsibleTrigger asChild>
-                                  <SidebarMenuButton tooltip={item.title}>
+                                  <SidebarMenuButton
+                                    tooltip={item.title}
+                                    className={sidebarMenuAccent(item.title)}
+                                  >
                                     <item.icon />
                                     <span>{item.title}</span>
                                     <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -972,10 +1098,13 @@ export function AppSidebar() {
                                 <CollapsibleContent>
                                   <SidebarMenuSub>
                                     {item.subItems.map((subItem) => {
-                                      const isActive = location.pathname === subItem.url;
+                                      const isActive = isSidebarSubItemActive(
+                                        location.pathname,
+                                        subItem.url
+                                      );
                                       return (
                                         <SidebarMenuSubItem key={subItem.title}>
-                                          <SidebarMenuSubButton asChild isActive={isActive} className="relative pr-6">
+                                          <SidebarMenuSubButton asChild isActive={isActive} className={cn(sidebarSubAccent(subItem.title), "relative pr-6")}>
                                             <Link to={subItem.url} onClick={closeSidebarOnMobile} className="w-full flex items-center">
                                               {subItem.icon && <subItem.icon className="h-4 w-4" />}
                                               <span>{subItem.title}</span>
@@ -996,7 +1125,7 @@ export function AppSidebar() {
                           }
                           
                           return (
-                            <SidebarMenuButton asChild tooltip={item.title} isActive={location.pathname === item.url} className="relative pr-6">
+                            <SidebarMenuButton asChild tooltip={item.title} isActive={location.pathname === item.url} className={cn(sidebarMenuAccent(item.title), "relative pr-6")}>
                               <Link to={item.url} onClick={closeSidebarOnMobile}>
                                 <item.icon />
                                 <span>{item.title}</span>
@@ -1041,7 +1170,7 @@ export function AppSidebar() {
             )}
           </DndContext>
         </SidebarContent>
-        <SidebarFooter className="border-t p-4">
+        <SidebarFooter className="sidebar-premium-footer relative z-[1] p-2.5">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -1049,7 +1178,7 @@ export function AppSidebar() {
                   setIsLogoutDialogOpen(true);
                   closeSidebarOnMobile();
                 }}
-                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                className="sidebar-logout-btn rounded-xl text-red-600 hover:text-red-700"
                 tooltip="Logout"
               >
                 <LogOut />
@@ -1077,53 +1206,47 @@ export function AppSidebar() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* New Group Sheet */}
-      <Sheet open={isNewGroupSheetOpen} onOpenChange={setIsNewGroupSheetOpen}>
-        <SheetContent className="sm:max-w-[500px]">
-          <SheetHeader className="border-b pb-4">
-            <SheetTitle className="text-xl font-black uppercase tracking-tight">
-              Create New Group
-            </SheetTitle>
-            <SheetDescription className="font-medium">
-              Groups help you categorize and manage multiple related projects together.
-            </SheetDescription>
-          </SheetHeader>
-          <ProjectGroupForm
-            onSubmit={handleCreateGroup}
-            submitting={isSubmittingGroup}
-            error={groupError}
-          />
-        </SheetContent>
-      </Sheet>
+      <FormSheet
+        open={isNewGroupSheetOpen}
+        onOpenChange={setIsNewGroupSheetOpen}
+        icon={LayoutGrid}
+        title="Create New Group"
+        description="Groups help you categorize and manage multiple related projects together."
+      >
+        <ProjectGroupForm
+          onSubmit={handleCreateGroup}
+          submitting={isSubmittingGroup}
+          error={groupError}
+        />
+      </FormSheet>
 
-      {/* Sprint Sheet */}
-      <Sheet open={isSprintSheetOpen} onOpenChange={(open) => {
-        if (!open) {
-          setIsSprintSheetOpen(false);
-          setCurrentSprintForEdit(null);
-          setCurrentProjectForSprint(null);
-        } else {
-          setIsSprintSheetOpen(true);
+      <FormSheet
+        open={isSprintSheetOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsSprintSheetOpen(false);
+            setCurrentSprintForEdit(null);
+            setCurrentProjectForSprint(null);
+          } else {
+            setIsSprintSheetOpen(true);
+          }
+        }}
+        icon={Calendar}
+        title={currentSprintForEdit ? "Edit Sprint" : "Create New Sprint"}
+        description={
+          currentSprintForEdit
+            ? "Update the sprint details."
+            : "Add a new sprint to this project."
         }
-      }}>
-        <SheetContent className="sm:max-w-[500px]">
-          <SheetHeader className="border-b pb-4">
-            <SheetTitle className="text-xl font-black uppercase tracking-tight">
-              {currentSprintForEdit ? 'Edit Sprint' : 'Create New Sprint'}
-            </SheetTitle>
-            <SheetDescription className="font-medium">
-              {currentSprintForEdit ? 'Update the sprint details.' : 'Add a new sprint to this project.'}
-            </SheetDescription>
-          </SheetHeader>
-          <SprintForm
-            onSubmit={handleCreateSprint}
-            initialData={currentSprintForEdit}
-            submitting={isSubmittingSprint}
-            error={sprintError}
-            projectId={currentProjectForSprint}
-          />
-        </SheetContent>
-      </Sheet>
+      >
+        <SprintForm
+          onSubmit={handleCreateSprint}
+          initialData={currentSprintForEdit}
+          submitting={isSubmittingSprint}
+          error={sprintError}
+          projectId={currentProjectForSprint}
+        />
+      </FormSheet>
     </>
   );
 }

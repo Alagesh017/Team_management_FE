@@ -42,6 +42,8 @@ const BoardColumn = ({
   onEditClick,
   // inline edit props
   editingTaskId,
+  editTaskTitle,
+  setEditTaskTitle,
   editTaskPriority,
   setEditTaskPriority,
   editTaskStartDate,
@@ -146,6 +148,8 @@ const BoardColumn = ({
             onDeleteClick={onDeleteClick}
             onEditClick={onEditClick}
             isEditing={editingTaskId === task.task_id}
+            editTaskTitle={editTaskTitle}
+            setEditTaskTitle={setEditTaskTitle}
             editTaskPriority={editTaskPriority}
             setEditTaskPriority={setEditTaskPriority}
             editTaskStartDate={editTaskStartDate}

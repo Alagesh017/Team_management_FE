@@ -2,13 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Loader2, Plus, Pencil, Trash2, ArrowLeft, Calendar, MoreHorizontal, Play, CheckCircle } from "lucide-react";
 import { Button } from "../../../common/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "../../../common/components/ui/sheet";
+import { FormSheet } from "../../../common/components/FormSheet";
+import { PageShell } from "../../../common/components/PageLayout";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -296,8 +291,7 @@ const SprintManagementPage = () => {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-8 bg-white min-h-screen">
-      {/* Header Section */}
+    <PageShell className="gap-4">
       <div className="flex flex-row items-center justify-between gap-4 border-b pb-6">
         <div className="min-w-0 flex items-center gap-3">
           <Button
@@ -438,34 +432,27 @@ const SprintManagementPage = () => {
         </div>
       )}
 
-      {/* Sheet for Add/Edit */}
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="sm:max-w-[450px] md:max-w-[500px] lg:max-w-[540px] border-l shadow-2xl p-0 flex flex-col">
-          <SheetHeader className="border-b pb-6 px-6 pt-6">
-            <SheetTitle className="text-2xl font-bold flex items-center gap-2">
-              {editingSprint ? (
-                <><Pencil className="h-5 w-5" /> Edit Sprint</>
-              ) : (
-                <><Plus className="h-5 w-5" /> Create New Sprint</>
-              )}
-            </SheetTitle>
-            <SheetDescription className="font-medium">
-              {editingSprint
-                ? `Update details for sprint "${editingSprint.sprint_name}"`
-                : "Fill in the details below to create a new sprint for your project."}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="flex-1 overflow-y-auto px-6">
-            <SprintForm
-              onSubmit={onSubmit}
-              initialData={editingSprint}
-              submitting={submitting}
-              error={error}
-              projectId={projectId}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <FormSheet
+        open={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        icon={Calendar}
+        title={editingSprint ? "Edit Sprint" : "Create New Sprint"}
+        description={
+          editingSprint
+            ? `Update details for sprint "${editingSprint.sprint_name}"`
+            : "Fill in the details below to create a new sprint for your project."
+        }
+        contentClassName="w-full sm:max-w-[560px]"
+      >
+        <SprintForm
+          key={editingSprint?.id ?? "new"}
+          onSubmit={onSubmit}
+          initialData={editingSprint}
+          submitting={submitting}
+          error={error}
+          projectId={projectId}
+        />
+      </FormSheet>
 
       <ConfirmDialog
         open={isDeleteDialogOpen}
@@ -486,7 +473,7 @@ const SprintManagementPage = () => {
         onConfirm={handleConfirmStartSprint}
         isLoading={isSubmittingMove}
       />
-    </div>
+    </PageShell>
   );
 };
 

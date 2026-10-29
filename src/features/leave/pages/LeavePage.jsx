@@ -3,14 +3,8 @@ import { DataTable } from "../../../common/components/DataTable";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import { leaveService } from "../services/leaveService";
 import { Button } from "../../../common/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "../../../common/components/ui/sheet";
+import { FormSheet } from "../../../common/components/FormSheet";
+import { ListPageShell, DataTableCard } from "../../../common/components/PageLayout";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -364,40 +358,30 @@ const LeavePage = () => {
   ], [user]);
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-xl md:text-3xl font-bold tracking-tight text-slate-900">Leave &amp; Permission Management</h1>
-          <p className="text-slate-500 hidden md:block">Manage leave and permission requests for the Company.</p>
-        </div>
-        <Sheet open={isSheetOpen} onOpenChange={(open) => {
-          setIsSheetOpen(open);
-          if (!open) {
-            setError("");
-          }
-        }}>
-          <SheetTrigger asChild>
+    <ListPageShell
+      title="Leave & Permission Management"
+      description="Manage leave and permission requests for the Company."
+      action={
+        <FormSheet
+          open={isSheetOpen}
+          onOpenChange={(open) => {
+            setIsSheetOpen(open);
+            if (!open) setError("");
+          }}
+          icon={Calendar}
+          title="New Request"
+          description="Create a new leave or permission request."
+          trigger={
             <Button className="bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all active:scale-95">
               <Plus className="mr-2 h-4 w-4" /> New Request
             </Button>
-          </SheetTrigger>
-          <SheetContent className="sm:max-w-[450px] md:max-w-[500px] border-l shadow-2xl p-0 flex flex-col">
-            <SheetHeader className="border-b pb-6 px-6 pt-6">
-              <SheetTitle className="text-2xl font-bold">New Request</SheetTitle>
-              <SheetDescription>Create a new leave or permission request.</SheetDescription>
-            </SheetHeader>
-            <div className="flex-1 overflow-y-auto px-6 py-6">
-              <LeaveForm 
-                onSubmit={onSubmit} 
-                submitting={submitting}
-                error={error}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          }
+        >
+          <LeaveForm onSubmit={onSubmit} submitting={submitting} error={error} />
+        </FormSheet>
+      }
+    >
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <Card className="p-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 pb-1">
             <CardTitle className="text-xs font-medium text-slate-500">Total</CardTitle>
@@ -463,13 +447,15 @@ const LeavePage = () => {
         </Tabs>
       )}
 
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        {loading ? (
-          <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>
-        ) : (
-          <DataTable columns={columns} data={leaves} filterColumn="reason" />
-        )}
-      </div>
+      <DataTableCard loading={loading}>
+        <DataTable
+          columns={columns}
+          data={leaves}
+          filterColumn="reason"
+          filterPlaceholder="Search by reason…"
+          embedded
+        />
+      </DataTableCard>
 
       <LeaveDetails 
         leave={viewingLeave} 
@@ -497,7 +483,7 @@ const LeavePage = () => {
         confirmText="Delete Request"
         variant="destructive"
       />
-    </div>
+    </ListPageShell>
   );
 };
 

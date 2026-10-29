@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Loader2, Save } from "lucide-react";
 import { Input } from "../../../../common/components/ui/input";
 import { PRIORITY } from "./constants";
 
 const InlineEditTaskPanel = ({
   task,
+  editTaskTitle,
+  setEditTaskTitle,
   editTaskPriority,
   setEditTaskPriority,
   editTaskStartDate,
@@ -19,14 +21,38 @@ const InlineEditTaskPanel = ({
   onSave,
   onCancel,
 }) => {
-  const today = new Date().toISOString().split('T')[0];
-  
+  const titleRef = useRef(null);
+  const today = new Date().toISOString().split("T")[0];
+
+  useEffect(() => {
+    titleRef.current?.focus();
+    titleRef.current?.select();
+  }, [task.task_id]);
+
   return (
     <div
       className="rounded-xl border border-indigo-200 bg-white p-3 space-y-3"
       style={{ boxShadow: "0 0 0 3px rgba(99,102,241,0.08)" }}
+      onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
     >
-      <h4 className="font-medium text-slate-800 text-sm">{task.title}</h4>
+      <div>
+        <label className="text-[10px] font-medium text-slate-500 mb-1 block">Task name</label>
+        <Input
+          ref={titleRef}
+          value={editTaskTitle}
+          onChange={(e) => setEditTaskTitle(e.target.value)}
+          className="h-9 text-sm font-medium"
+          placeholder="Task name…"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              if (editTaskTitle.trim() && !isSaving) onSave(task);
+            }
+            if (e.key === "Escape") onCancel();
+          }}
+        />
+      </div>
 
       {/* Priority selector */}
       <div className="flex items-center gap-2">
@@ -37,6 +63,7 @@ const InlineEditTaskPanel = ({
             return (
               <button
                 key={p}
+                type="button"
                 onClick={() => setEditTaskPriority(p)}
                 className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-all ${
                   editTaskPriority === p
@@ -105,13 +132,15 @@ const InlineEditTaskPanel = ({
       {/* actions */}
       <div className="flex items-center justify-between pt-1">
         <button
+          type="button"
           onClick={onCancel}
           className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
         >
           Cancel
         </button>
         <button
-          disabled={isSaving}
+          type="button"
+          disabled={isSaving || !editTaskTitle.trim()}
           onClick={() => onSave(task)}
           className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >

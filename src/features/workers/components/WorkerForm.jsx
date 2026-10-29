@@ -7,8 +7,13 @@ import { Input } from "../../../common/components/ui/input";
 import { Label } from "../../../common/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../common/components/ui/select";
 import { Alert, AlertDescription } from "../../../common/components/ui/alert";
-import { Upload, X, Loader2 } from "lucide-react";
-import { SheetFooter, SheetClose } from "../../../common/components/ui/sheet";
+import { Upload, X, Loader2, Shield, User, Briefcase } from "lucide-react";
+import {
+  FormSheetActions,
+  FormSheetBody,
+  FormSheetFooter,
+  FormSheetSection,
+} from "../../../common/components/FormSheet";
 import { getFullAvatarUrl } from "../../../core/utils/utils";
 
 const phoneRegex = /^[0-9]{10}$/;
@@ -126,9 +131,9 @@ const WorkerForm = ({ onSubmit, initialData, submitting, error }) => {
   const fullAvatarUrl = getFullAvatarUrl(previewImage);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 py-8 flex flex-col h-full">
-      <div className="flex-1 space-y-8">
-        {/* Profile Image Section */}
+    <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+      <FormSheetBody className="space-y-5">
+        <FormSheetSection icon={User} title="Profile">
         <div className="space-y-4">
           <Label className="text-base font-bold text-slate-900">Profile Image</Label>
           <div className="flex flex-col md:flex-row gap-8 items-start">
@@ -171,13 +176,10 @@ const WorkerForm = ({ onSubmit, initialData, submitting, error }) => {
             </div>
           </div>
         </div>
+        </FormSheetSection>
 
-        {/* Core Information */}
+        <FormSheetSection icon={Shield} title="Mandatory Details">
         <div className="space-y-6">
-          <div className="flex items-center gap-2 border-b pb-2">
-            <div className="h-4 w-1 bg-slate-900 rounded-full" />
-            <h3 className="font-bold text-slate-900">Mandatory Details</h3>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="first_name">First Name <span className="text-red-500">*</span></Label>
@@ -208,14 +210,10 @@ const WorkerForm = ({ onSubmit, initialData, submitting, error }) => {
             </div>
           </div>
         </div>
+        </FormSheetSection>
 
-        {/* Optional Information */}
+        <FormSheetSection icon={Briefcase} title="Professional Details">
         <div className="space-y-6">
-          <div className="flex items-center gap-2 border-b pb-2">
-            <div className="h-4 w-1 bg-slate-200 rounded-full" />
-            <h3 className="font-bold text-slate-500">Professional Details</h3>
-          </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="job_title">Job Title</Label>
@@ -347,9 +345,8 @@ const WorkerForm = ({ onSubmit, initialData, submitting, error }) => {
           </div>
 
           <div className="space-y-6">
-            <div className="flex items-center gap-2 border-b pb-2">
-              <div className="h-4 w-1 bg-slate-200 rounded-full" />
-              <h3 className="font-bold text-slate-500">Address Details</h3>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-[#0f2744]">Address Details</Label>
             </div>
             
             <div className="space-y-2">
@@ -404,16 +401,19 @@ const WorkerForm = ({ onSubmit, initialData, submitting, error }) => {
             </div>
           </div>
         </div>
+        </FormSheetSection>
 
         {error && <Alert variant="destructive" className="border-red-200 bg-red-50"><AlertDescription className="text-red-800 font-medium">{error}</AlertDescription></Alert>}
-      </div>
-      
-      <SheetFooter className="border-t pt-6 flex gap-3 sticky bottom-0 bg-white z-10 mt-4 -mx-6 px-6 pb-6">
-        <SheetClose asChild><Button variant="ghost" className="text-slate-500 font-bold flex-1">Cancel</Button></SheetClose>
-        <Button type="submit" disabled={submitting} className="bg-slate-900 text-white font-bold flex-1 shadow-lg hover:shadow-xl transition-all">
-          {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : initialData ? "Update Account" : "Create Account"}
-        </Button>
-      </SheetFooter>
+      </FormSheetBody>
+
+      <FormSheetFooter>
+        <FormSheetActions
+          submitting={submitting}
+          isEdit={Boolean(initialData)}
+          submitLabel="Create Account"
+          editSubmitLabel="Update Account"
+        />
+      </FormSheetFooter>
     </form>
   );
 };

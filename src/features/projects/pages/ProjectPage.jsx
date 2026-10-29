@@ -3,13 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useProjects } from "../hooks/useProjects";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import { Button } from "../../../common/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "../../../common/components/ui/sheet";
+import { FormSheet } from "../../../common/components/FormSheet";
+import { PageShell } from "../../../common/components/PageLayout";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +21,8 @@ import {
   Eye, 
   Search,
   LayoutDashboard,
-  Calendar
+  Calendar,
+  FolderKanban,
 } from "lucide-react";
 import { Input } from "../../../common/components/ui/input";
 import ProjectForm from "../components/ProjectForm";
@@ -188,40 +184,38 @@ const ProjectPage = () => {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-8 bg-white min-h-screen">
-      {/* Header Section */}
-      <div className="flex flex-row items-center justify-between gap-4 border-b pb-6">
-        <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2 truncate">
-            <LayoutDashboard className="h-5 w-5 md:h-6 md:w-6 text-slate-900 shrink-0" />
-            Projects
-          </h1>
-          <p className="text-sm text-slate-500 font-medium hidden md:block">Browse and manage your project directories.</p>
-        </div>
-        
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="relative w-48 lg:w-64 group hidden sm:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
-            <Input 
-              placeholder="Search folders..." 
+    <PageShell
+      title={
+        <span className="flex items-center gap-2 truncate">
+          <LayoutDashboard className="h-5 w-5 shrink-0 text-slate-900 md:h-6 md:w-6" />
+          Projects
+        </span>
+      }
+      description="Browse and manage your project directories."
+      action={
+        <div className="flex shrink-0 items-center gap-3">
+          <div className="relative hidden w-48 group sm:block lg:w-64">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
+            <Input
+              placeholder="Search folders..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-slate-50 border-slate-200 focus-visible:ring-1 focus-visible:ring-slate-300 transition-all"
+              className="border-slate-200 bg-slate-50 pl-10 transition-all focus-visible:ring-1 focus-visible:ring-slate-300"
             />
           </div>
-          <Button 
+          <Button
             onClick={() => {
               setEditingProject(null);
               setIsSheetOpen(true);
             }}
-            className="bg-slate-900 hover:bg-slate-800 text-white font-bold gap-2 px-6 transition-all active:scale-95"
+            className="gap-2 bg-slate-900 px-6 font-bold text-white transition-all hover:bg-slate-800 active:scale-95"
           >
             <Plus className="h-4 w-4" /> New Folder
           </Button>
         </div>
-      </div>
-
-      {/* Grid View (File Management Style) */}
+      }
+      className="gap-4"
+    >
       {loading ? (
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
           <Loader2 className="h-10 w-10 animate-spin text-slate-400" />
@@ -261,33 +255,26 @@ const ProjectPage = () => {
         </div>
       )}
 
-      {/* Sheet for Add/Edit */}
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="sm:max-w-[450px] md:max-w-[500px] lg:max-w-[540px] border-l shadow-2xl p-0 flex flex-col">
-          <SheetHeader className="border-b pb-6 px-6 pt-6">
-            <SheetTitle className="text-2xl font-bold flex items-center gap-2">
-              {editingProject ? (
-                <><Pencil className="h-5 w-5" /> Edit Project</>
-              ) : (
-                <><Plus className="h-5 w-5" /> Create New Project</>
-              )}
-            </SheetTitle>
-            <SheetDescription className="font-medium">
-              {editingProject 
-                ? `Update details for project "${editingProject.name}"` 
-                : "Fill in the details below to create a new project for your team."}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="flex-1 overflow-y-auto px-6">
-            <ProjectForm 
-              onSubmit={onSubmit} 
-              initialData={editingProject} 
-              submitting={submitting}
-              error={error}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <FormSheet
+        open={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        icon={FolderKanban}
+        title={editingProject ? "Edit Project" : "Create New Project"}
+        description={
+          editingProject
+            ? `Update details for project "${editingProject.name}"`
+            : "Fill in the details below to create a new project for your team."
+        }
+        contentClassName="w-full sm:max-w-[560px]"
+      >
+        <ProjectForm
+          key={editingProject?.id ?? "new"}
+          onSubmit={onSubmit}
+          initialData={editingProject}
+          submitting={submitting}
+          error={error}
+        />
+      </FormSheet>
 
       <ConfirmDialog
         open={isDeleteDialogOpen}
@@ -298,7 +285,7 @@ const ProjectPage = () => {
         confirmText="Delete Project"
         variant="destructive"
       />
-    </div>
+    </PageShell>
   );
 };
 

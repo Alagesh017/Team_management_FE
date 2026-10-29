@@ -3,14 +3,8 @@ import { DataTable } from "../../../common/components/DataTable";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import { clientService } from "../services/clientService";
 import { Button } from "../../../common/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "../../../common/components/ui/sheet";
+import { FormSheet } from "../../../common/components/FormSheet";
+import { ListPageShell, DataTableCard } from "../../../common/components/PageLayout";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../../common/components/ui/dropdown-menu";
-import { MoreHorizontal, ArrowUpDown, Plus, Pencil, Trash2, Loader2, Eye } from "lucide-react";
+import { MoreHorizontal, ArrowUpDown, Plus, Pencil, Trash2, Loader2, Eye, UserPlus } from "lucide-react";
 import ClientForm from "../components/ClientForm";
 import ClientDetails from "../components/ClientDetails";
 
@@ -180,56 +174,47 @@ const ClientPage = () => {
   ], []);
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
-      <div className="flex flex-row items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-xl md:text-3xl font-bold tracking-tight text-slate-900 truncate">Client Management</h1>
-          <p className="text-slate-500 hidden md:block">Manage your project clients and their contact information.</p>
-        </div>
-        <Sheet open={isSheetOpen} onOpenChange={(open) => {
-          setIsSheetOpen(open);
-          if (!open) {
-            setEditingClient(null);
-            setError("");
-          }
-        }}>
-          <SheetTrigger asChild>
+    <ListPageShell
+      title="Client Management"
+      description="Manage your project clients and their contact information."
+      action={
+        <FormSheet
+          open={isSheetOpen}
+          onOpenChange={(open) => {
+            setIsSheetOpen(open);
+            if (!open) {
+              setEditingClient(null);
+              setError("");
+            }
+          }}
+          icon={UserPlus}
+          title={editingClient ? "Edit Client" : "New Client"}
+          description="Only Client Name is mandatory. All other contact fields are optional."
+          trigger={
             <Button className="bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all active:scale-95">
               <Plus className="mr-2 h-4 w-4" /> Add Client
             </Button>
-          </SheetTrigger>
-          <SheetContent className="sm:max-w-[600px] overflow-y-auto border-l shadow-2xl">
-            <SheetHeader className="border-b pb-6">
-              <SheetTitle className="text-2xl font-bold">
-                {editingClient ? "Edit Client" : "New Client"}
-              </SheetTitle>
-              <SheetDescription>
-                Only Client Name is mandatory. All other contact fields are optional.
-              </SheetDescription>
-            </SheetHeader>
-            
-            <ClientForm 
-              onSubmit={onSubmit} 
-              initialData={editingClient}
-              submitting={submitting}
-              error={error}
-            />
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        {loading ? (
-          <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>
-        ) : (
-          <DataTable 
-            columns={columns} 
-            data={clients} 
-            searchPlaceholder="Search clients or companies..."
-            searchColumn="name"
+          }
+        >
+          <ClientForm
+            key={editingClient?.id ?? "new"}
+            onSubmit={onSubmit}
+            initialData={editingClient}
+            submitting={submitting}
+            error={error}
           />
-        )}
-      </div>
+        </FormSheet>
+      }
+    >
+      <DataTableCard loading={loading}>
+        <DataTable
+          columns={columns}
+          data={clients}
+          filterColumn="name"
+          filterPlaceholder="Search clients or companies…"
+          embedded
+        />
+      </DataTableCard>
 
       <ClientDetails 
         client={viewingClient} 
@@ -246,7 +231,7 @@ const ClientPage = () => {
         confirmText="Delete Client"
         variant="destructive"
       />
-    </div>
+    </ListPageShell>
   );
 };
 
