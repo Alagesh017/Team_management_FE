@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import iconTop from "../../../assets/icon_top.png";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -121,6 +121,10 @@ const sidebarMenuAccent = (title) =>
 
 const sidebarSubAccent = (title) =>
   cn("sidebar-nav-item sidebar-nav-item--sub", `sidebar-nav-item--${NAV_ACCENTS[title] || "slate"}`);
+
+function projectHasLiveSprint(project) {
+  return (project?.sprints || []).some((s) => Number(s.sprint_status) === 1);
+}
 
 function isSidebarSubItemActive(pathname, url) {
   if (url === "/monitor/live") {
@@ -635,6 +639,8 @@ export function AppSidebar() {
   const [expandedProjects, setExpandedProjects] = useState({});
   const { toast } = useToast();
   const { state: sidebarState } = useSidebar();
+  const prevProjectsRef = useRef(null);
+  const skipExpandSyncRef = useRef(true);
 
   const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -660,16 +666,51 @@ export function AppSidebar() {
     }
   }, [user, fetchProjects]);
 
-  // Auto-expand projects that have active sprints (sprint_status === 1)
+  // Expand only the project you're viewing (board / sprint), not every project with a live sprint
   useEffect(() => {
-    const newExpanded = {};
-    projects.forEach(project => {
-      const hasActiveSprint = (project.sprints || []).some(sprint => sprint.sprint_status === 1);
-      if (hasActiveSprint) {
-        newExpanded[project.id] = true;
-      }
+    const taskMatch = location.pathname.match(/\/tasks\/project\/(\d+)/);
+    const sprintMgmtMatch = location.pathname.match(/\/projects\/(\d+)\/sprints/);
+    const projectId = taskMatch
+      ? parseInt(taskMatch[1], 10)
+      : sprintMgmtMatch
+        ? parseInt(sprintMgmtMatch[1], 10)
+        : null;
+    if (!projectId || Number.isNaN(projectId)) return;
+    setExpandedProjects((prev) =>
+      prev[projectId] ? prev : { ...prev, [projectId]: true }
+    );
+  }, [location.pathname]);
+
+  // When a sprint becomes live, expand that project only (not all projects on every refresh)
+  useEffect(() => {
+    if (!projects?.length) {
+      prevProjectsRef.current = projects;
+      return;
+    }
+
+    if (skipExpandSyncRef.current) {
+      skipExpandSyncRef.current = false;
+      prevProjectsRef.current = projects;
+      return;
+    }
+
+    const previous = prevProjectsRef.current || [];
+    setExpandedProjects((prev) => {
+      let next = prev;
+      projects.forEach((project) => {
+        const wasLive = previous.some(
+          (p) => p.id === project.id && projectHasLiveSprint(p)
+        );
+        const isLive = projectHasLiveSprint(project);
+        if (isLive && !wasLive) {
+          if (next === prev) next = { ...prev };
+          next[project.id] = true;
+        }
+      });
+      return next;
     });
-    setExpandedProjects(prev => ({ ...prev, ...newExpanded }));
+
+    prevProjectsRef.current = projects;
   }, [projects]);
 
   const handleCreateGroup = async (data) => {
