@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSidebar } from '../../../common/components/ui/sidebar';
 import { useProjectBacklog } from '../hooks/useProjectBacklog';
+import { useAuth } from '../../auth/contexts/AuthContext';
+import { canAccessProjectBacklog, getPreferredSprintBoardPath } from '../utils/projectPermissions';
+import { useToast } from '../../../common/hooks/use-toast';
 import { Loader2, LayoutGrid, Flame, Calendar, Clock, ListTodo, Plus, Edit, Trash2 } from "lucide-react";
 import { Button } from '../../../common/components/ui/button';
 import AddTaskPanel from '../components/board/AddTaskPanel';
@@ -217,6 +220,8 @@ const ProjectBacklogPage = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { sidebarWidth } = useSidebar();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [contextMenu, setContextMenu] = useState(null);
 
   const {
@@ -284,6 +289,25 @@ const ProjectBacklogPage = () => {
     setTaskToDelete,
     handleDeleteTask,
   } = useProjectBacklog(projectId);
+
+  useEffect(() => {
+    if (canAccessProjectBacklog(user?.role)) return;
+    if (loading) return;
+    const path = getPreferredSprintBoardPath({
+      id: Number(projectId),
+      sprints: sprints || [],
+    });
+    if (path) {
+      navigate(path, { replace: true });
+      return;
+    }
+    toast({
+      title: "Backlog not available",
+      description: "Use the sidebar to open a sprint board.",
+      variant: "destructive",
+    });
+    navigate("/dashboard", { replace: true });
+  }, [user?.role, loading, projectId, sprints, navigate, toast]);
 
   const handleRightClick = (e, task) => {
     e.preventDefault();

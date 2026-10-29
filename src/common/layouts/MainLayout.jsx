@@ -19,7 +19,7 @@ import { UserAvatar } from "../components/UserAvatar";
 import { getFullAvatarUrl } from "../../core/utils/utils";
 import { useProfile } from "../../features/profile/contexts/ProfileContext";
 import { projectService } from "../../features/projects/services/projectService";
-import { projectGroupService } from "../../features/projects/services/projectGroupService";
+import { getPreferredSprintBoardPath } from "../../features/tasks/utils/projectPermissions";
 
 // Icon mapper for menu items
 const iconMap = {
@@ -93,10 +93,20 @@ export function MainLayout({ children }) {
       items.push({ id: `group-${group.id}`, title: group.name, type: "group", groupId: group.id });
     });
     projects.forEach(project => {
-      items.push({ id: `project-${project.id}`, title: project.name, type: "project", url: `/tasks/project/${project.id}`, groupId: project.group_id });
+      const url = isRestrictedRole
+        ? getPreferredSprintBoardPath(project)
+        : `/tasks/project/${project.id}`;
+      if (!url) return;
+      items.push({
+        id: `project-${project.id}`,
+        title: project.name,
+        type: "project",
+        url,
+        groupId: project.group_id,
+      });
     });
     return items;
-  }, [menuItems, groups, projects]);
+  }, [menuItems, groups, projects, isRestrictedRole]);
 
   // Filter search results
   const filteredResults = useMemo(() => {

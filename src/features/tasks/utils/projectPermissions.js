@@ -25,6 +25,34 @@ export function isAdminRole(userRole) {
   return role === "superadmin" || role === "admin" || role === "scrum";
 }
 
+/** Workers / team leaders use sprint boards only — not the project backlog page. */
+export function canAccessProjectBacklog(userRole) {
+  const role = (userRole || "").toLowerCase();
+  return role !== "team_leader" && role !== "worker";
+}
+
+/** First live sprint, else first sprint; null if none. */
+export function getPreferredSprintBoardPath(project) {
+  if (!project?.id) return null;
+  const sprints = project.sprints || [];
+  if (!sprints.length) return null;
+  const live = sprints.find((s) => Number(s.sprint_status) === 1);
+  const pick = live || sprints[0];
+  return `/tasks/project/${project.id}/sprint/${pick.id}`;
+}
+
+export function isProjectSidebarActive(currentPath, projectId, userRole) {
+  const base = `/tasks/project/${projectId}`;
+  if (!canAccessProjectBacklog(userRole)) {
+    return (
+      currentPath.startsWith(`${base}/sprint/`) ||
+      currentPath === `${base}/board` ||
+      currentPath.startsWith(`${base}/task/`)
+    );
+  }
+  return currentPath === base || currentPath.startsWith(`${base}/`);
+}
+
 /** Sidebar sprint create/edit — workers never; TL blocked on company-managed. */
 export function canShowSprintActionsInSidebar(project, userRole) {
   const role = (userRole || "").toLowerCase();
