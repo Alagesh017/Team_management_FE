@@ -77,7 +77,7 @@ const Dashboard = () => {
         <div className="flex flex-col space-y-4">
           <div className="flex flex-wrap items-baseline gap-2 sm:gap-4">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-800">
-              Workload
+              WorkloadAAAAA
             </h1>
             <span className="text-xs sm:text-sm text-slate-500">
               Data from up to 1 hour ago
