@@ -6,6 +6,7 @@ import {
 	clearStoredUser,
 	notifySessionExpired,
 	notifyTokensRefreshed,
+	isDefinitiveAuthFailure,
 } from '../../features/auth/authStorage'
 
 const API_URL = import.meta.env.VITE_API_URL
@@ -84,8 +85,10 @@ api.interceptors.response.use(
 			return Promise.reject(error)
 		}
 		if (original.url?.includes('/auth/refresh') || original._authRetried) {
-			clearStoredUser()
-			notifySessionExpired()
+			if (isDefinitiveAuthFailure(error)) {
+				clearStoredUser()
+				notifySessionExpired()
+			}
 			return Promise.reject(error)
 		}
 
@@ -100,8 +103,10 @@ api.interceptors.response.use(
 			original.headers.Authorization = `Bearer ${newAccess}`
 			return api(original)
 		} catch (refreshError) {
-			clearStoredUser()
-			notifySessionExpired()
+			if (isDefinitiveAuthFailure(refreshError)) {
+				clearStoredUser()
+				notifySessionExpired()
+			}
 			return Promise.reject(refreshError)
 		}
 	}

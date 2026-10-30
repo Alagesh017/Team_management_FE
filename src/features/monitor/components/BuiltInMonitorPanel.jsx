@@ -160,7 +160,7 @@ export default function BuiltInMonitorPanel({
         </div>
 
         <p className="text-[10px] text-slate-500 leading-relaxed">
-          Built into Team Manager — no external agent. Session timers update every second; the server syncs on a
+          Built into Dce task manager — no external agent. Session timers update every second; the server syncs on a
           heartbeat.
         </p>
       </div>

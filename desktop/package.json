@@ -1,11 +1,15 @@
 {
-  "name": "team-manager-desktop",
-  "version": "1.0.0",
-  "description": "Team Manager desktop app with built-in activity monitoring",
+  "name": "dce-task-manager-desktop",
+  "version": "1.0.1",
+  "description": "Dce task manager — desktop app with built-in activity monitoring",
   "main": "main.js",
-  "author": "Task Management",
+  "author": "DCE",
   "license": "UNLICENSED",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Alagesh017/Team_management_FE.git"
+  },
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
@@ -13,27 +17,36 @@
     "predist": "node scripts/prebuild-clean.js",
     "prepack": "node scripts/prebuild-clean.js",
     "pack": "node scripts/run-dist.js --dir",
-    "dist": "node scripts/run-dist.js"
+    "dist": "node scripts/run-dist.js",
+    "dist:publish": "node scripts/run-dist.js --publish"
   },
   "dependencies": {
+    "electron-updater": "^6.6.2",
     "serve-handler": "^6.1.6"
   },
   "build": {
-    "appId": "com.taskmanagement.teamanager",
-    "productName": "Team Manager",
+    "appId": "com.dce.taskmanager",
+    "productName": "Dce task manager",
+    "icon": "image.png",
     "directories": {
       "output": "installer-output"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Alagesh017",
+        "repo": "Team_management_FE"
+      }
+    ],
     "files": [
-      "main.js",
-      "preload.js",
-      "loadEnv.js",
-      "paths.js",
-      "webAppUrl.js",
-      "webAppTarget.js",
-      "bundledWebServer.js",
-      "authSessionFile.js",
-      "node_modules/serve-handler/**/*"
+      "**/*",
+      "!scripts/**",
+      "!installer-output/**",
+      "!README.md",
+      "!.env",
+      "!.env.example",
+      "!.env.production",
+      "!.builder-output-dir"
     ],
     "extraResources": [
       {
@@ -47,12 +60,16 @@
       {
         "from": "../dist-desktop",
         "to": "web-app",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "../../employee-monitor-agent/src",
         "to": "monitor-agent/src",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "../../employee-monitor-agent/config.default.js",
@@ -60,17 +77,22 @@
       }
     ],
     "win": {
-      "target": ["nsis"],
-      "artifactName": "TeamManager-Setup-${version}.exe"
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "DceTaskManager-Setup-${version}.exe"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Dce task manager"
     },
     "protocols": [
       {
         "name": "EduCER Monitor",
-        "schemes": ["educermonitor"]
+        "schemes": [
+          "educermonitor"
+        ]
       }
     ]
   },

@@ -9,7 +9,7 @@ const legacyReleaseDir = path.join(__dirname, "..", "release");
 
 function killWindowsLockingProcesses() {
   if (process.platform !== "win32") return;
-  const images = ["Team Manager.exe", "electron.exe"];
+  const images = ["Dce task manager.exe", "Team Manager.exe", "electron.exe"];
   for (const img of images) {
     try {
       execSync(`taskkill /F /IM "${img}" /T`, { stdio: "ignore", windowsHide: true });

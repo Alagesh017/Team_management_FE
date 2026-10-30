@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import iconTop from "../../../assets/icon_top.png";
+import dceAppLogo from "../../../../desktop/image.png";
+import { isTeamManagerDesktop } from "../../../features/monitor/desktopBridge";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -906,12 +908,16 @@ export function AppSidebar() {
             <div className="sidebar-logo-orbit relative flex h-10 w-10 shrink-0 items-center justify-center">
               <div className="sidebar-logo-glow" aria-hidden />
               <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-white ring-1 ring-white/80 overflow-hidden shadow-md shadow-blue-500/15">
-                <img src={iconTop} alt="Logo" className="h-full w-full object-cover" />
+                <img
+                  src={isTeamManagerDesktop() ? dceAppLogo : iconTop}
+                  alt="Dce task manager"
+                  className="h-full w-full object-cover"
+                />
               </div>
             </div>
             <div className="group-data-[collapsible=icon]:hidden min-w-0">
               <span className="block text-[15px] font-semibold tracking-tight text-slate-800">
-                Team Manager
+                {isTeamManagerDesktop() ? "Dce task manager" : "Team Manager"}
               </span>
               <span className="block text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">
                 Workspace

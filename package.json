@@ -17,6 +17,7 @@
 		"desktop:dev": "concurrently -k -n vite,electron -c blue,green \"cross-env WEB_APP_URL=http://127.0.0.1:5173/taskmanagement/ npm run dev\" \"wait-on -t 120000 http-get://127.0.0.1:5173/taskmanagement/ && cross-env WEB_APP_URL=http://127.0.0.1:5173/taskmanagement/ npm run start --prefix desktop\"",
 		"desktop:pack": "npm run build:desktop && npm run pack --prefix desktop",
 		"desktop:dist": "npm run build:desktop && npm run dist --prefix desktop",
+		"desktop:publish": "npm run build:desktop && npm run dist:publish --prefix desktop",
 		"lint": "eslint .",
 		"format": "prettier --write .",
 		"save:zip": "node -e \"const fs=require('fs'),{execSync}=require('child_process'),name=require('./package.json').name,now=new Date(),date=now.toISOString().slice(0,10),time=`${now.getHours().toString().padStart(2,'0')}-${now.getMinutes().toString().padStart(2,'0')}-${now.getSeconds().toString().padStart(2,'0')}`,filename=`${name}-${date}-${time}.zip`,outputDir='build_zips';fs.existsSync(outputDir)||fs.mkdirSync(outputDir,{recursive:true});execSync(`tar -a -cf ${outputDir}/${filename} dist`);console.log(`Created: ${outputDir}/${filename}`);\""

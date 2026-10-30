@@ -13,7 +13,8 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { useAuth } from "../../features/auth/contexts/AuthContext";
-import { useNavigate, Link, Outlet } from "react-router-dom";
+import { useNavigate, Link, Outlet, useLocation } from "react-router-dom";
+import { saveAuthLastPath } from "../../features/auth/authStorage";
 import { ProfileMenuContent } from "../../features/profile/components/ProfileMenuContent";
 import { UserAvatar } from "../components/UserAvatar";
 import { getFullAvatarUrl } from "../../core/utils/utils";
@@ -45,6 +46,7 @@ export function MainLayout({ children }) {
   const { logout, user } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [groups, setGroups] = useState([]);
@@ -66,6 +68,12 @@ export function MainLayout({ children }) {
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const path = `${location.pathname}${location.search || ""}`;
+    saveAuthLastPath(path);
+  }, [location.pathname, location.search, user]);
 
   const isRestrictedRole = user?.role === "team_leader" || user?.role === "worker";
 

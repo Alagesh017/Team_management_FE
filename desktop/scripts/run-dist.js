@@ -11,9 +11,11 @@ if (fs.existsSync(overrideFile)) {
 }
 
 const dirOnly = process.argv.includes("--dir");
+const doPublish = process.argv.includes("--publish");
 const builderArgs = [
   "electron-builder",
   ...(dirOnly ? ["--dir"] : ["--win"]),
+  ...(doPublish ? ["--publish", "always"] : []),
   `--config.directories.output=${output}`,
 ];
 

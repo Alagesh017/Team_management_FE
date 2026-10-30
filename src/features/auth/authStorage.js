@@ -1,4 +1,5 @@
 const USER_STORAGE_KEY = "user";
+const LAST_PATH_KEY = "auth_last_path";
 
 function desktopAuthApi() {
   if (typeof window === "undefined") return null;
@@ -11,11 +12,15 @@ export async function hydrateAuthFromDesktopDisk() {
   try {
     const fromDisk = await api.loadSession();
     if (!fromDisk || typeof fromDisk !== "object") return null;
-    const existing = localStorage.getItem(USER_STORAGE_KEY);
-    if (!existing) {
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(fromDisk));
+    const { lastPath, ...user } = fromDisk;
+    if (lastPath) {
+      localStorage.setItem(LAST_PATH_KEY, lastPath);
     }
-    return fromDisk;
+    if (user.userId || user.accessToken) {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+      return user;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -24,13 +29,27 @@ export async function hydrateAuthFromDesktopDisk() {
 function mirrorToDesktopDisk(user) {
   const api = desktopAuthApi();
   if (!api?.saveSession) return;
-  api.saveSession(user).catch(() => {});
+  const lastPath = localStorage.getItem(LAST_PATH_KEY) || "";
+  api.saveSession({ ...user, lastPath }).catch(() => {});
 }
 
 function clearDesktopDisk() {
   const api = desktopAuthApi();
   if (!api?.clearSession) return;
   api.clearSession().catch(() => {});
+}
+
+export function saveAuthLastPath(path) {
+  if (!path || path === "/" || path.startsWith("/register")) return;
+  localStorage.setItem(LAST_PATH_KEY, path);
+  const user = loadStoredUser();
+  if (user) mirrorToDesktopDisk(user);
+}
+
+export function getAuthLastPath() {
+  const path = localStorage.getItem(LAST_PATH_KEY);
+  if (path && path !== "/") return path;
+  return "/dashboard";
 }
 
 export function loadStoredUser() {
@@ -50,6 +69,7 @@ export function saveStoredUser(user) {
 
 export function clearStoredUser() {
   localStorage.removeItem(USER_STORAGE_KEY);
+  localStorage.removeItem(LAST_PATH_KEY);
   clearDesktopDisk();
 }
 
@@ -77,3 +97,20 @@ export function notifyTokensRefreshed(user) {
 export function notifySessionExpired() {
   window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
 }
+
+function isDefinitiveAuthFailure(error) {
+  const status = error?.response?.status;
+  const msg = String(error?.response?.data?.message || error?.message || "").toLowerCase();
+  if (status === 401 || status === 403) {
+    return (
+      msg.includes("invalid refresh") ||
+      msg.includes("refresh token") ||
+      msg.includes("not found") ||
+      msg.includes("expired") ||
+      msg.includes("unauthorized")
+    );
+  }
+  return false;
+}
+
+export { isDefinitiveAuthFailure };

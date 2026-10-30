@@ -144,7 +144,7 @@ export default function EmployeeMonitorPage() {
       description={
         isDesktopApp
           ? "Built-in tracking — live timers and session controls in this app"
-          : "Open Team Manager desktop app for built-in activity tracking"
+          : "Open Dce task manager desktop app for built-in activity tracking"
       }
     >
       <div className="grid gap-6 lg:grid-cols-3">
@@ -169,14 +169,14 @@ export default function EmployeeMonitorPage() {
                   <div>
                     <CardTitle>Desktop app required</CardTitle>
                     <CardDescription className="mt-1">
-                      Activity tracking runs inside the Team Manager desktop application — not in the browser and not
+                      Activity tracking runs inside the Dce task manager desktop application — not in the browser and not
                       via a separate agent.
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="text-sm text-slate-600">
-                Install or run <strong>Team Manager</strong> from your desktop build, then open Activity Monitor here
+                Install or run <strong>Dce task manager</strong> from your desktop build, then open Activity Monitor here
                 for live timers, break controls, and automatic tracking.
               </CardContent>
             </Card>
