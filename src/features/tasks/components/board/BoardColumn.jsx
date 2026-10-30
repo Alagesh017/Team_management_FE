@@ -38,6 +38,7 @@ const BoardColumn = ({
   onDrop,
   onTaskClick,
   onTaskDoubleClick,
+  onTaskContextMenu,
   onDeleteClick,
   onEditClick,
   // inline edit props
@@ -122,7 +123,7 @@ const BoardColumn = ({
       {/* Tasks scrollable area */}
       <div
         ref={columnRef}
-        className="flex-1 overflow-y-auto px-3 pb-3 space-y-2"
+        className="flex-1 overflow-y-auto px-3 pb-3 space-y-1.5"
         style={{ scrollbarWidth: "thin", scrollbarColor: "#e2e8f0 transparent" }}
         onDragOver={(e) => {
           if (cantDropHere) {
@@ -145,6 +146,7 @@ const BoardColumn = ({
             onDragEnd={onDragEnd}
             onClick={onTaskClick}
             onDoubleClick={onTaskDoubleClick}
+            onContextMenu={onTaskContextMenu}
             onDeleteClick={onDeleteClick}
             onEditClick={onEditClick}
             isEditing={editingTaskId === task.task_id}

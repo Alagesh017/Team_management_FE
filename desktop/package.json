@@ -1,0 +1,81 @@
+{
+  "name": "team-manager-desktop",
+  "version": "1.0.0",
+  "description": "Team Manager desktop app with built-in activity monitoring",
+  "main": "main.js",
+  "author": "Task Management",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "clean": "node scripts/prebuild-clean.js",
+    "predist": "node scripts/prebuild-clean.js",
+    "prepack": "node scripts/prebuild-clean.js",
+    "pack": "node scripts/run-dist.js --dir",
+    "dist": "node scripts/run-dist.js"
+  },
+  "dependencies": {
+    "serve-handler": "^6.1.6"
+  },
+  "build": {
+    "appId": "com.taskmanagement.teamanager",
+    "productName": "Team Manager",
+    "directories": {
+      "output": "installer-output"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "loadEnv.js",
+      "paths.js",
+      "webAppUrl.js",
+      "webAppTarget.js",
+      "bundledWebServer.js",
+      "authSessionFile.js",
+      "node_modules/serve-handler/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": ".env.production",
+        "to": "app-config.env"
+      },
+      {
+        "from": ".env.production",
+        "to": "monitor-agent/.env"
+      },
+      {
+        "from": "../dist-desktop",
+        "to": "web-app",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../../employee-monitor-agent/src",
+        "to": "monitor-agent/src",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../../employee-monitor-agent/config.default.js",
+        "to": "monitor-agent/config.default.js"
+      }
+    ],
+    "win": {
+      "target": ["nsis"],
+      "artifactName": "TeamManager-Setup-${version}.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "protocols": [
+      {
+        "name": "EduCER Monitor",
+        "schemes": ["educermonitor"]
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}

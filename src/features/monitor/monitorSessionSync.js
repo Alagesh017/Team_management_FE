@@ -1,4 +1,5 @@
 import api from "../../core/interceptors/axiosInterceptor";
+import { getMonitorAgentBridge, isTeamManagerDesktop } from "./desktopBridge";
 
 const WEB_USER_KEY = "monitor_web_user_id";
 const PAIR_CODE_KEY = "monitor_pairing_code";
@@ -41,6 +42,13 @@ function protocolUnpair() {
 
 /** Tell desktop agent to clear pairing immediately (local HTTP + custom URL). */
 export function signalMonitorAgentUnpair() {
+  const bridge = getMonitorAgentBridge();
+  if (bridge?.unpairDevice) {
+    bridge.unpairDevice().catch(() => {
+      /* ignore */
+    });
+    return;
+  }
   const port =
     import.meta.env.VITE_MONITOR_UNPAIR_PORT || String(DEFAULT_UNPAIR_PORT);
   fetch(`http://127.0.0.1:${port}/unpair`, { method: "POST" }).catch(() => {
@@ -64,8 +72,12 @@ async function forceFreshMonitorPairing() {
   signalMonitorAgentUnpair();
 }
 
-/** After every successful login — user must pair the agent again. */
+/** After successful login — pair monitor on new user; desktop keeps pairing on app restart. */
 export async function handleMonitorSessionForUser(userId) {
+  const prev = localStorage.getItem(WEB_USER_KEY);
+  if (isTeamManagerDesktop() && prev === String(userId)) {
+    return;
+  }
   await forceFreshMonitorPairing();
   localStorage.setItem(WEB_USER_KEY, String(userId));
 }

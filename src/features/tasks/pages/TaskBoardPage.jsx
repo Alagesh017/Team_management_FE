@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTaskBoard } from "../hooks/useTaskBoard";
@@ -8,6 +8,7 @@ import BoardColumn from "../components/board/BoardColumn";
 import AssignMemberDialog from "../components/board/AssignMemberDialog";
 import TaskDetailsDialog from "../components/board/TaskDetailsDialog";
 import DeleteTaskDialog from "../components/board/DeleteTaskDialog";
+import TaskCardActionsMenu from "../components/board/TaskCardActionsMenu";
 
 const TaskBoardPage = () => {
   const navigate = useNavigate();
@@ -95,6 +96,16 @@ const TaskBoardPage = () => {
   cancelInlineEdit,
   saveInlineEdit
 } = useTaskBoard();
+
+  const [cardMenu, setCardMenu] = useState(null);
+
+  const handleTaskContextMenu = useCallback(
+    (e, task) => {
+      if (!canAddEditDelete) return;
+      setCardMenu({ x: e.clientX, y: e.clientY, task });
+    },
+    [canAddEditDelete]
+  );
 
   /* ── Auto-scroll during drag ── */
   const handleDragOver = (e) => {
@@ -240,6 +251,7 @@ const TaskBoardPage = () => {
               onDrop={handleDrop}
               onTaskClick={openTaskDetails}
               onTaskDoubleClick={openEditTask}
+              onTaskContextMenu={handleTaskContextMenu}
               onDeleteClick={(task) => {
                 setTaskToDeleteFn(task);
                 setIsDeleteDialogOpen(true);
@@ -317,6 +329,18 @@ const TaskBoardPage = () => {
         isSaving={isSaving}
         onConfirm={handleDeleteTask}
         onCancel={() => { setIsDeleteDialogOpen(false); setTaskToDeleteFn(null); }}
+      />
+
+      <TaskCardActionsMenu
+        position={cardMenu ? { x: cardMenu.x, y: cardMenu.y } : null}
+        onClose={() => setCardMenu(null)}
+        onEdit={() => cardMenu?.task && openEditTask(cardMenu.task)}
+        onDelete={() => {
+          if (cardMenu?.task) {
+            setTaskToDeleteFn(cardMenu.task);
+            setIsDeleteDialogOpen(true);
+          }
+        }}
       />
     </div>
   );

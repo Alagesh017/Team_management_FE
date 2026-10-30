@@ -22,7 +22,6 @@ const InlineEditTaskPanel = ({
   onCancel,
 }) => {
   const titleRef = useRef(null);
-  const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     titleRef.current?.focus();
@@ -86,9 +85,14 @@ const InlineEditTaskPanel = ({
           <Input
             type="date"
             value={editTaskStartDate}
-            onChange={(e) => setEditTaskStartDate(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setEditTaskStartDate(v);
+              if (editTaskDueDate && v && editTaskDueDate < v) {
+                setEditTaskDueDate(v);
+              }
+            }}
             className="h-8 text-xs px-2 pr-12"
-            min={today}
           />
         </div>
         <div>
@@ -98,7 +102,7 @@ const InlineEditTaskPanel = ({
             value={editTaskDueDate}
             onChange={(e) => setEditTaskDueDate(e.target.value)}
             className="h-8 text-xs px-2 pr-8"
-            min={editTaskStartDate || today}
+            min={editTaskStartDate || undefined}
           />
         </div>
       </div>

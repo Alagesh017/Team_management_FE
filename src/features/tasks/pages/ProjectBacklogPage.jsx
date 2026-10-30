@@ -5,7 +5,7 @@ import { useProjectBacklog } from '../hooks/useProjectBacklog';
 import { useAuth } from '../../auth/contexts/AuthContext';
 import { canAccessProjectBacklog, getPreferredSprintBoardPath } from '../utils/projectPermissions';
 import { useToast } from '../../../common/hooks/use-toast';
-import { Loader2, LayoutGrid, Flame, Calendar, Clock, ListTodo, Plus, Edit, Trash2 } from "lucide-react";
+import { Loader2, LayoutGrid, Flame, Calendar, Clock, ListTodo, Plus } from "lucide-react";
 import { Button } from '../../../common/components/ui/button';
 import AddTaskPanel from '../components/board/AddTaskPanel';
 import AssignMemberDialog from '../components/board/AssignMemberDialog';
@@ -90,7 +90,7 @@ const TaskItem = ({
       onDragStart={(e) => isDraggable && onDragStart && onDragStart(e, task)}
       onDragEnd={onDragEnd}
       onContextMenu={(e) => onContextMenu && onContextMenu(e, task)}
-      className={`group relative rounded-xl p-3 transition-all duration-200 ${
+      className={`group relative rounded-lg px-2 py-1.5 transition-all duration-200 ${
         isDragging ? "opacity-50 scale-95" : ""
       } ${isSelected ? "ring-2 ring-blue-500 bg-blue-50 border-blue-200" : ""} ${
         isDraggable ? "cursor-pointer" : "cursor-default"
@@ -116,45 +116,21 @@ const TaskItem = ({
         }
       }}
     >
-      <div className="flex items-start justify-between gap-2 mb-2.5">
+      <div className="flex items-start justify-between gap-1.5 mb-1">
         <div className="flex items-start gap-2 flex-1">
-          <h4 className="font-medium text-slate-800 text-sm leading-snug flex-1">
+          <h4 className="font-medium text-slate-800 text-xs leading-snug flex-1 line-clamp-2">
             {task.title}
           </h4>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {task.priority && (
             <span
-              className="flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+              className="flex items-center gap-0.5 text-[9px] font-semibold px-1 py-0.5 rounded-md"
               style={{ background: p.bg, color: p.text }}
             >
-              {task.priority === "high" && <Flame className="h-2.5 w-2.5" />}
+              {task.priority === "high" && <Flame className="h-2 w-2" />}
               {p.label}
             </span>
-          )}
-          {canAddEditDelete && (
-            <>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditClick(task);
-                }}
-                className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
-              >
-                <Edit className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteClick(task);
-                }}
-                className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </>
           )}
         </div>
       </div>
@@ -187,24 +163,24 @@ const TaskItem = ({
         </div>
       )}
 
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap text-[10px] font-medium text-slate-400">
         {task.start_date && (
-          <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400">
-            <Calendar className="h-3 w-3" />
-            <span>{formatDate(task.start_date)}</span>
-          </div>
+          <span className="inline-flex items-center gap-0.5">
+            <Calendar className="h-2.5 w-2.5" />
+            {formatDate(task.start_date)}
+          </span>
         )}
         {task.due_date && (
-          <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400">
-            <Calendar className="h-3 w-3" />
-            <span>{formatDate(task.due_date)}</span>
-          </div>
+          <span className="inline-flex items-center gap-0.5">
+            <Calendar className="h-2.5 w-2.5" />
+            {formatDate(task.due_date)}
+          </span>
         )}
         {task.estimated_hours && (
-          <div className="flex items-center gap-1 text-[11px] font-medium text-slate-400">
-            <Clock className="h-3 w-3" />
-            <span>{task.estimated_hours}h</span>
-          </div>
+          <span className="inline-flex items-center gap-0.5">
+            <Clock className="h-2.5 w-2.5" />
+            {task.estimated_hours}h
+          </span>
         )}
       </div>
 
@@ -223,6 +199,7 @@ const ProjectBacklogPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [contextMenu, setContextMenu] = useState(null);
+  const [contextTask, setContextTask] = useState(null);
 
   const {
     loading,
@@ -311,21 +288,18 @@ const ProjectBacklogPage = () => {
 
   const handleRightClick = (e, task) => {
     e.preventDefault();
-    
-    // If task isn't already selected, select it first
+    setContextTask(task);
+
     if (!selectedTasks.has(task.task_id)) {
       setSelectedTasks(new Set([task.task_id]));
     }
-    
-    // Check if selected tasks are eligible for moving
-    const areEligible = areTasksEligibleForMoving();
-    if (areEligible) {
-      setContextMenu({ x: e.clientX, y: e.clientY });
-    }
+
+    setContextMenu({ x: e.clientX, y: e.clientY });
   };
 
   const handleCloseContextMenu = () => {
     setContextMenu(null);
+    setContextTask(null);
   };
 
   const handleMoveToSprint = async (sprintId) => {
@@ -662,6 +636,15 @@ const ProjectBacklogPage = () => {
         onMoveToSprint={handleMoveToSprint}
         onMoveToBacklog={handleMoveSelectedToBacklog}
         isMoveToBacklogDisabled={!areTasksEligibleForBacklog()}
+        showTaskActions={canAddEditDelete && Boolean(contextTask)}
+        showMoveOptions={areTasksEligibleForMoving()}
+        onEditTask={() => contextTask && startInlineEdit(contextTask)}
+        onDeleteTask={() => {
+          if (contextTask) {
+            setTaskToDelete(contextTask);
+            setIsDeleteDialogOpen(true);
+          }
+        }}
       />
 
       <DeleteTaskDialog

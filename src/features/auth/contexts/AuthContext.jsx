@@ -4,6 +4,15 @@ import {
   handleMonitorLogout,
   handleMonitorSessionForUser,
 } from "../../monitor/monitorSessionSync";
+import {
+  loadStoredUser,
+  saveStoredUser,
+  clearStoredUser,
+  hydrateAuthFromDesktopDisk,
+  AUTH_SESSION_EXPIRED_EVENT,
+  AUTH_TOKENS_REFRESHED_EVENT,
+} from "../authStorage";
+import { refreshAccessToken } from "../../../core/interceptors/axiosInterceptor";
 
 const AuthContext = createContext();
 
@@ -12,12 +21,45 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      const parsed = JSON.parse(storedUser);
-      setUser(parsed);
+    let cancelled = false;
+
+    async function restoreSession() {
+      await hydrateAuthFromDesktopDisk();
+      const stored = loadStoredUser();
+      if (!stored) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+      setUser(stored);
+      if (stored.refreshToken) {
+        try {
+          await refreshAccessToken();
+          const updated = loadStoredUser();
+          if (updated && !cancelled) setUser(updated);
+        } catch {
+          /* keep stored user; refresh may fail offline — do not log out */
+        }
+      }
+      if (!cancelled) setLoading(false);
     }
-    setLoading(false);
+
+    restoreSession();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const onRefreshed = (e) => {
+      if (e.detail) setUser(e.detail);
+    };
+    const onExpired = () => setUser(null);
+    window.addEventListener(AUTH_TOKENS_REFRESHED_EVENT, onRefreshed);
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, onExpired);
+    return () => {
+      window.removeEventListener(AUTH_TOKENS_REFRESHED_EVENT, onRefreshed);
+      window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, onExpired);
+    };
   }, []);
 
   const login = useCallback(async (email, password) => {
@@ -35,7 +77,7 @@ export const AuthProvider = ({ children }) => {
           profileOnboardingSkipped: Boolean(data.profile_onboarding_skipped),
         };
         setUser(userData);
-        localStorage.setItem("user", JSON.stringify(userData));
+        saveStoredUser(userData);
         await handleMonitorSessionForUser(userData.userId);
         return data;
       }
@@ -60,7 +102,7 @@ export const AuthProvider = ({ children }) => {
           profileOnboardingSkipped: Boolean(data.profile_onboarding_skipped),
         };
         setUser(userData);
-        localStorage.setItem("user", JSON.stringify(userData));
+        saveStoredUser(userData);
         await handleMonitorSessionForUser(userData.userId);
         return data;
       }
@@ -85,7 +127,7 @@ export const AuthProvider = ({ children }) => {
           profileOnboardingSkipped: Boolean(data.profile_onboarding_skipped),
         };
         setUser(userData);
-        localStorage.setItem("user", JSON.stringify(userData));
+        saveStoredUser(userData);
         await handleMonitorSessionForUser(userData.userId);
         return data;
       }
@@ -99,7 +141,7 @@ export const AuthProvider = ({ children }) => {
     setUser((prev) => {
       if (!prev) return prev;
       const next = { ...prev, ...partial };
-      localStorage.setItem("user", JSON.stringify(next));
+      saveStoredUser(next);
       return next;
     });
   }, []);
@@ -109,7 +151,7 @@ export const AuthProvider = ({ children }) => {
       await handleMonitorLogout();
     } finally {
       setUser(null);
-      localStorage.removeItem("user");
+      clearStoredUser();
     }
   }, []);
 

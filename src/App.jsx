@@ -1,5 +1,5 @@
 import AppRoutes from './routes/app-routes'
-import { BrowserRouter as Router } from 'react-router-dom'
+import { BrowserRouter, HashRouter } from 'react-router-dom'
 import { ProjectProvider } from './features/projects/contexts/ProjectContext'
 import { ProjectAllocationProvider } from './features/project-allocation/contexts/ProjectAllocationContext'
 import MicrosoftRedirectHandler from './features/auth/components/MicrosoftRedirectHandler'
@@ -7,7 +7,9 @@ import { Toaster } from './common/components/Toaster'
 import { useAuth } from './features/auth/contexts/AuthContext'
 import { ProfileProvider } from './features/profile/contexts/ProfileContext'
 import ProfileOnboardingWizard from './features/profile/components/ProfileOnboardingWizard'
- 
+
+const isDesktopShell = import.meta.env.VITE_APP_SHELL === 'desktop'
+
 function AppRoutesWithProfile() {
 	const { user, loading } = useAuth()
 
@@ -32,9 +34,13 @@ function AppRoutesWithProfile() {
 }
 
 function App() {
-	const basePath = import.meta.env.VITE_BASE_PATH || '/taskmanagement'
+	const WebRouter = isDesktopShell ? HashRouter : BrowserRouter
+	const routerProps = isDesktopShell
+		? {}
+		: { basename: import.meta.env.VITE_BASE_PATH || '/taskmanagement' }
+
 	return (
-		<Router basename={basePath}>
+		<WebRouter {...routerProps}>
 			<MicrosoftRedirectHandler />
 			<ProjectProvider>
 				<ProjectAllocationProvider>
@@ -42,7 +48,7 @@ function App() {
 					<AppRoutesWithProfile />
 				</ProjectAllocationProvider>
 			</ProjectProvider>
-		</Router>
+		</WebRouter>
 	)
 }
 

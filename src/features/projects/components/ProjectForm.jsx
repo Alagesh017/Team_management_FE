@@ -32,7 +32,10 @@ export const projectFormSchema = z.object({
   by_tl_managed: z.boolean().default(false),
   team_managed: z.boolean().default(false),
   company_managed: z.boolean().default(false),
-});
+}).refine(
+  (data) => !data.end_date || !data.start_date || data.end_date >= data.start_date,
+  { message: "End date cannot be before start date", path: ["end_date"] }
+);
 
 const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
   const [clients, setClients] = useState([]);
@@ -48,6 +51,8 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(projectFormSchema),
+    mode: "onSubmit",
+    reValidateMode: "onChange",
     defaultValues: initialData || {
       name: "",
       description: "",
@@ -65,6 +70,7 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
   });
 
   const previewLogo = watch("project_logo");
+  const startDate = watch("start_date");
 
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
@@ -207,8 +213,10 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
                 id="end_date" 
                 type="date" 
                 {...register("end_date")} 
+                min={startDate || undefined}
                 className="bg-slate-50/50 focus:bg-white transition-all" 
               />
+              {errors.end_date && <p className="text-xs text-red-500 font-medium">{errors.end_date.message}</p>}
             </div>
           </div>
 
@@ -228,13 +236,19 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="client_id" className="font-bold">Client</Label>
-              <Select 
-                onValueChange={(val) => setValue("client_id", val)} 
-                value={watch("client_id")?.toString()}
+              <Label htmlFor="client_id" className="flex items-center gap-1 font-bold">
+                Client <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                onValueChange={(val) => setValue("client_id", val, { shouldValidate: true })}
+                value={watch("client_id")?.toString() || ""}
                 disabled={loadingClients}
               >
-                <SelectTrigger className="bg-slate-50/50 focus:bg-white transition-all">
+                <SelectTrigger
+                  className={`bg-slate-50/50 focus:bg-white transition-all ${
+                    errors.client_id ? "border-red-500 focus:ring-red-200" : ""
+                  }`}
+                >
                   <SelectValue placeholder={loadingClients ? "Loading clients..." : "Select client"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -245,18 +259,27 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.client_id && (
+                <p className="text-xs text-red-500 font-medium">{errors.client_id.message}</p>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="group_id" className="font-bold">Project Group</Label>
-              <Select 
-                onValueChange={(val) => setValue("group_id", val)} 
-                value={watch("group_id")?.toString()}
+              <Label htmlFor="group_id" className="flex items-center gap-1 font-bold">
+                Project Group <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                onValueChange={(val) => setValue("group_id", val, { shouldValidate: true })}
+                value={watch("group_id")?.toString() || ""}
                 disabled={loadingGroups}
               >
-                <SelectTrigger className="bg-slate-50/50 focus:bg-white transition-all">
+                <SelectTrigger
+                  className={`bg-slate-50/50 focus:bg-white transition-all ${
+                    errors.group_id ? "border-red-500 focus:ring-red-200" : ""
+                  }`}
+                >
                   <SelectValue placeholder={loadingGroups ? "Loading groups..." : "Select group"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -267,6 +290,9 @@ const ProjectForm = ({ onSubmit, initialData, submitting, error }) => {
                   ))}
                 </SelectContent>
               </Select>
+              {errors.group_id && (
+                <p className="text-xs text-red-500 font-medium">{errors.group_id.message}</p>
+              )}
             </div>
           </div>
 

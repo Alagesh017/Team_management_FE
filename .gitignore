@@ -9,7 +9,12 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-desktop
 release
+installer-output
+desktop/installer-output
+desktop/installer-output-*
+desktop/.builder-output-dir
 out
 dist-ssr
 *.local

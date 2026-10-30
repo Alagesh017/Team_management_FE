@@ -1,43 +1,27 @@
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { PageShell } from "../../../common/components/PageLayout";
-import { Button } from "../../../common/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../../common/components/ui/card";
-import {
-  clearMonitorPairingSession,
-  loadMonitorPairingSession,
-  saveMonitorPairingSession,
-  signalMonitorAgentUnpair,
-} from "../monitorSessionSync";
+import { signalMonitorAgentUnpair } from "../monitorSessionSync";
 import { useToast } from "../../../common/hooks/use-toast";
 import { useAuth } from "../../auth/contexts/AuthContext";
-import { formatDateTime } from "../../../core/utils/utils";
-import {
-  BarChart3,
-  Copy,
-  ExternalLink,
-  Laptop,
-  Shield,
-  Timer,
-  Zap,
-  Coffee,
-  Moon,
-} from "lucide-react";
+import { BarChart3, ExternalLink, Shield, Timer, Zap, Coffee, Moon, Monitor } from "lucide-react";
 import monitorService, { formatDuration } from "../services/monitorService";
-
-const PROTOCOL = "educermonitor://start";
+import { getMonitorAgentBridge, isTeamManagerDesktop } from "../desktopBridge";
+import BuiltInMonitorPanel from "../components/BuiltInMonitorPanel";
 
 const MANAGER_ROLES = ["superadmin", "admin", "scrum", "team_leader"];
 
 export default function EmployeeMonitorPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [pairingCode, setPairingCode] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
   const [today, setToday] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [agentState, setAgentState] = useState(null);
+  const [monitorBusy, setMonitorBusy] = useState(false);
+  const autoSetupDone = useRef(false);
 
-  const canPair = Boolean(user?.role);
+  const isDesktopApp = isTeamManagerDesktop();
+  const monitorBridge = getMonitorAgentBridge();
   const isManager = MANAGER_ROLES.includes(user?.role);
 
   const loadToday = useCallback(async () => {
@@ -50,84 +34,103 @@ export default function EmployeeMonitorPage() {
   }, []);
 
   useEffect(() => {
-    const saved = loadMonitorPairingSession();
-    const expMs = saved.expiresAt ? new Date(saved.expiresAt).getTime() : 0;
-    if (saved.pairingCode && expMs && expMs <= Date.now()) {
-      clearMonitorPairingSession();
-      setPairingCode("");
-      setExpiresAt("");
-      return;
-    }
-    setPairingCode(saved.pairingCode);
-    setExpiresAt(saved.expiresAt);
-  }, [user?.userId]);
-
-  useEffect(() => {
     loadToday();
     const id = setInterval(loadToday, 10000);
     return () => clearInterval(id);
   }, [loadToday]);
 
-  const generateCode = async () => {
-    setLoading(true);
+  useEffect(() => {
+    if (!monitorBridge) return undefined;
+    let cancelled = false;
+    monitorBridge
+      .getState()
+      .then((s) => {
+        if (!cancelled) setAgentState(s);
+      })
+      .catch(() => {});
+    const off = monitorBridge.onStateUpdate((s) => setAgentState(s));
+    return () => {
+      cancelled = true;
+      off?.();
+    };
+  }, [monitorBridge]);
+
+  const ensureMonitoringReady = useCallback(async () => {
+    if (!monitorBridge) return;
+    setMonitorBusy(true);
     try {
-      const data = await monitorService.createPairingCode();
-      setPairingCode(data.pairing_code);
-      setExpiresAt(data.expires_at);
-      saveMonitorPairingSession(data.pairing_code, data.expires_at);
-      toast({
-        title: "Pairing code created",
-        description:
-          "Enter this code in the desktop agent within 30 minutes. Older codes from this account no longer work.",
-        variant: "success",
-      });
+      let state = await monitorBridge.getState();
+      if (!state.devicePaired) {
+        const data = await monitorService.createPairingCode();
+        await monitorBridge.pairDevice(data.pairing_code);
+        state = await monitorBridge.getState();
+      }
+      if (!state.monitoring) {
+        await monitorBridge.startMonitoring({});
+      }
     } catch (e) {
       toast({
-        title: "Could not create code",
-        description: e.response?.data?.msg || e.message,
+        title: "Could not start tracking",
+        description: e.message || String(e),
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setMonitorBusy(false);
     }
-  };
+  }, [monitorBridge, toast]);
 
-  const copyCode = async () => {
-    if (!pairingCode) return;
+  useEffect(() => {
+    if (!isDesktopApp || !monitorBridge || autoSetupDone.current) return;
+    autoSetupDone.current = true;
+    ensureMonitoringReady();
+  }, [isDesktopApp, monitorBridge, ensureMonitoringReady]);
+
+  const handleStart = async () => {
+    if (!monitorBridge) return;
+    setMonitorBusy(true);
     try {
-      await navigator.clipboard.writeText(pairingCode);
-      toast({ title: "Copied", description: "Pairing code copied to clipboard." });
-    } catch {
-      toast({ title: "Copy failed", description: pairingCode, variant: "destructive" });
+      if (!(await monitorBridge.getState())?.devicePaired) {
+        await ensureMonitoringReady();
+        return;
+      }
+      await monitorBridge.startMonitoring({});
+    } catch (e) {
+      toast({ title: "Start failed", description: e.message, variant: "destructive" });
+    } finally {
+      setMonitorBusy(false);
     }
   };
 
-  const resetAgentPairing = async () => {
+  const handleStop = async () => {
+    if (!monitorBridge) return;
+    setMonitorBusy(true);
+    try {
+      await monitorBridge.stopMonitoring();
+    } finally {
+      setMonitorBusy(false);
+    }
+  };
+
+  const handleStartBreak = async () => {
+    if (!monitorBridge) return;
+    await monitorBridge.startBreak();
+  };
+
+  const handleEndBreak = async () => {
+    if (!monitorBridge) return;
+    await monitorBridge.endBreak();
+  };
+
+  const handleReset = async () => {
     try {
       await monitorService.revokeMyDevices();
     } catch (_) {
-      /* still unpair locally */
+      /* ignore */
     }
-    clearMonitorPairingSession();
-    setPairingCode("");
-    setExpiresAt("");
     signalMonitorAgentUnpair();
-    toast({
-      title: "Agent reset",
-      description: "Desktop agent will ask for a new pairing code. Generate one below.",
-    });
-  };
-
-  const openAgent = () => {
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    iframe.src = PROTOCOL;
-    document.body.appendChild(iframe);
-    setTimeout(() => document.body.removeChild(iframe), 2000);
-    toast({
-      title: "Launching desktop agent",
-      description: "If nothing opens, run Employee Monitor Agent from the Start menu and pair manually.",
-    });
+    autoSetupDone.current = false;
+    toast({ title: "Device reset", description: "Starting fresh pairing…" });
+    await ensureMonitoringReady();
   };
 
   const activeMin = today?.summary ? Math.round(today.summary.active_seconds / 60) : 0;
@@ -138,96 +141,43 @@ export default function EmployeeMonitorPage() {
   return (
     <PageShell
       title="Activity Monitor"
-      description="Pair your PC, run the desktop agent, and view transparent session tracking"
+      description={
+        isDesktopApp
+          ? "Built-in tracking — live timers and session controls in this app"
+          : "Open Team Manager desktop app for built-in activity tracking"
+      }
     >
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          {canPair && (
-            <Card className="shadow-sm border-slate-200 overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-slate-800 via-slate-600 to-slate-400" />
+          {isDesktopApp && monitorBridge ? (
+            <BuiltInMonitorPanel
+              agentState={agentState}
+              onStart={handleStart}
+              onStop={handleStop}
+              onStartBreak={handleStartBreak}
+              onEndBreak={handleEndBreak}
+              onReset={handleReset}
+              busy={monitorBusy}
+            />
+          ) : (
+            <Card className="shadow-sm border-slate-200">
               <CardHeader>
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-lg bg-slate-900 text-white">
-                    <Laptop className="h-5 w-5" />
+                    <Monitor className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle>Desktop agent setup</CardTitle>
+                    <CardTitle>Desktop app required</CardTitle>
                     <CardDescription className="mt-1">
-                      One-time pairing per computer. All roles can track work time (admin, scrum, workers, team
-                      leaders).
+                      Activity tracking runs inside the Team Manager desktop application — not in the browser and not
+                      via a separate agent.
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-5">
-                <ol className="space-y-3 text-sm text-slate-700">
-                  <li className="flex gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
-                      1
-                    </span>
-                    <span>Generate a pairing code below (valid for a short time).</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
-                      2
-                    </span>
-                    <span>Open the agent → enter the code → click Start monitoring.</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
-                      3
-                    </span>
-                    <span>Keep the agent running while you work; idle is detected after ~30 seconds without input.</span>
-                  </li>
-                </ol>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={generateCode} disabled={loading}>
-                    {loading ? "Generating…" : "Generate pairing code"}
-                  </Button>
-                  <Button variant="outline" onClick={openAgent}>
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Open desktop agent
-                  </Button>
-                  <Button variant="secondary" type="button" onClick={resetAgentPairing}>
-                    Pair again / reset agent
-                  </Button>
-                </div>
-
-                {pairingCode && (
-                  <div className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Your code</p>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <p className="text-2xl sm:text-3xl font-mono font-bold tracking-[0.35em] text-slate-900">
-                        {pairingCode}
-                      </p>
-                      <Button type="button" variant="secondary" size="sm" onClick={copyCode}>
-                        <Copy className="h-4 w-4 mr-1" />
-                        Copy
-                      </Button>
-                    </div>
-                    {expiresAt && (
-                      <p className="text-xs text-slate-500 mt-2">
-                        Expires {formatDateTime(expiresAt)}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                <p className="text-xs text-slate-500">
-                  Desktop agent must use the same API as this site (
-                  <code className="bg-slate-100 px-1 rounded text-[11px]">
-                    {import.meta.env.VITE_API_URL || "VITE_API_URL"}
-                  </code>
-                  ). Set <code className="bg-slate-100 px-1 rounded">MONITOR_API_URL</code> in{" "}
-                  <code className="bg-slate-100 px-1 rounded">employee-monitor-agent/.env</code> to match, then
-                  restart the agent.
-                </p>
-
-                <p className="text-xs text-slate-500">
-                  Launch link uses <code className="bg-slate-100 px-1 rounded">{PROTOCOL}</code> — no passwords or
-                  tokens in the URL.
-                </p>
+              <CardContent className="text-sm text-slate-600">
+                Install or run <strong>Team Manager</strong> from your desktop build, then open Activity Monitor here
+                for live timers, break controls, and automatic tracking.
               </CardContent>
             </Card>
           )}
@@ -244,9 +194,8 @@ export default function EmployeeMonitorPage() {
                 We collect session metadata only: active, idle, locked, break, and offline states; timestamps; optional
                 foreground app names.
               </p>
-              <p className="font-medium text-slate-800">We never collect keystrokes, passwords, clipboard, messages, or screen recordings.</p>
-              <p>
-                If the agent stops sending heartbeats, live status shows as unknown — not automatically marked idle.
+              <p className="font-medium text-slate-800">
+                We never collect keystrokes, passwords, clipboard, messages, or screen recordings.
               </p>
             </CardContent>
           </Card>
@@ -257,9 +206,9 @@ export default function EmployeeMonitorPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Timer className="h-4 w-4" />
-                Today
+                Today (server)
               </CardTitle>
-              <CardDescription>From desktop agent heartbeats</CardDescription>
+              <CardDescription>Synced from heartbeats</CardDescription>
             </CardHeader>
             <CardContent>
               {hasToday ? (
@@ -268,24 +217,30 @@ export default function EmployeeMonitorPage() {
                     <span className="flex items-center gap-2 text-sm text-emerald-900">
                       <Zap className="h-4 w-4" /> Active
                     </span>
-                    <span className="font-semibold text-emerald-900">{formatDuration(today.summary.active_seconds)}</span>
+                    <span className="font-semibold text-emerald-900">
+                      {formatDuration(today.summary.active_seconds)}
+                    </span>
                   </li>
                   <li className="flex items-center justify-between rounded-lg bg-amber-50 border border-amber-100 px-3 py-2">
                     <span className="flex items-center gap-2 text-sm text-amber-900">
                       <Moon className="h-4 w-4" /> Idle
                     </span>
-                    <span className="font-semibold text-amber-900">{formatDuration(today.summary.idle_seconds)}</span>
+                    <span className="font-semibold text-amber-900">
+                      {formatDuration(today.summary.idle_seconds)}
+                    </span>
                   </li>
                   <li className="flex items-center justify-between rounded-lg bg-sky-50 border border-sky-100 px-3 py-2">
                     <span className="flex items-center gap-2 text-sm text-sky-900">
                       <Coffee className="h-4 w-4" /> Break
                     </span>
-                    <span className="font-semibold text-sky-900">{formatDuration(today.summary.break_seconds)}</span>
+                    <span className="font-semibold text-sky-900">
+                      {formatDuration(today.summary.break_seconds)}
+                    </span>
                   </li>
                 </ul>
               ) : (
                 <p className="text-sm text-slate-500 py-4 text-center">
-                  No tracked time yet today. Pair the agent and start monitoring.
+                  {isDesktopApp ? "Start monitoring to see totals here." : "Use the desktop app to track time."}
                 </p>
               )}
             </CardContent>
