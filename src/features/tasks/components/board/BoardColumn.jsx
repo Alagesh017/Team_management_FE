@@ -9,6 +9,10 @@ const BoardColumn = ({
   draggedTask,
   canAddEditDelete,
   canMoveCards,
+  canReviewTask,
+  syncingTaskId,
+  reviewActionTaskId,
+  onReviewDecision,
   isAddOpen,
   columnRef,
   user,
@@ -142,6 +146,12 @@ const BoardColumn = ({
             draggedTask={draggedTask}
             canAddEditDelete={canAddEditDelete}
             canMoveCards={canMoveCards}
+            columnIsReview={Boolean(status.is_review)}
+            columnIsCompleted={Boolean(status.is_completed)}
+            canReviewTask={canReviewTask}
+            reviewActionLoading={reviewActionTaskId === task.task_id}
+            isSyncing={syncingTaskId === task.task_id}
+            onReviewDecision={onReviewDecision}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
             onClick={onTaskClick}

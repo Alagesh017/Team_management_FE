@@ -54,6 +54,15 @@ const updateTask = async (id, taskData) => {
   }
 };
 
+const reviewTaskDecision = async (id, action) => {
+  try {
+    const response = await api.put(`/tasks/${id}/review-decision`, { action });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
 const deleteTask = async (id) => {
   try {
     const response = await api.delete(`/tasks/${id}`);
@@ -88,6 +97,7 @@ export const taskService = {
   getTaskById,
   createTask,
   updateTask,
+  reviewTaskDecision,
   deleteTask,
   getDashboardTasks,
   getProjectBacklog,

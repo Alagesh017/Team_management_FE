@@ -29,6 +29,10 @@ const TaskBoardPage = () => {
   draggedTask,
   canAddEditDelete,
   canMoveCards,
+  canReview,
+  reviewActionTaskId,
+  syncingTaskId,
+  handleReviewDecision,
   activeColumn,
   newTaskTitle,
   setNewTaskTitle,
@@ -222,6 +226,10 @@ const TaskBoardPage = () => {
               draggedTask={draggedTask}
               canAddEditDelete={canAddEditDelete}
               canMoveCards={canMoveCards}
+              canReviewTask={canReview}
+              reviewActionTaskId={reviewActionTaskId}
+              syncingTaskId={syncingTaskId}
+              onReviewDecision={handleReviewDecision}
               isAddOpen={activeColumn === status.status_id}
               columnRef={(el) => (columnRefs.current[status.status_id] = el)}
               user={user}

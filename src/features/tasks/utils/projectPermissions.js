@@ -25,6 +25,13 @@ export function isAdminRole(userRole) {
   return role === "superadmin" || role === "admin" || role === "scrum";
 }
 
+/** Approve / send back tasks on sprint review column */
+export function canReviewTask(userRole) {
+  const role = (userRole || "").toLowerCase();
+  if (role === "team_leader") return true;
+  return isAdminRole(userRole);
+}
+
 /** Workers / team leaders use sprint boards only — not the project backlog page. */
 export function canAccessProjectBacklog(userRole) {
   const role = (userRole || "").toLowerCase();

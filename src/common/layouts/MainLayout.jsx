@@ -21,6 +21,10 @@ import { getFullAvatarUrl } from "../../core/utils/utils";
 import { useProfile } from "../../features/profile/contexts/ProfileContext";
 import { projectService } from "../../features/projects/services/projectService";
 import { getPreferredSprintBoardPath } from "../../features/tasks/utils/projectPermissions";
+import { projectGroupService } from "../../features/projects/services/projectGroupService";
+import { useDesktopUpdater } from "../../features/desktop/hooks/useDesktopUpdater";
+import { DesktopUpdateTopBar } from "../../features/desktop/components/DesktopUpdateTopBar";
+import { DesktopUpdateProgressToast } from "../../features/desktop/components/DesktopUpdateProgressToast";
 
 // Icon mapper for menu items
 const iconMap = {
@@ -51,6 +55,12 @@ export function MainLayout({ children }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [groups, setGroups] = useState([]);
   const [projects, setProjects] = useState([]);
+  const {
+    enabled: desktopUpdaterEnabled,
+    state: updaterState,
+    downloadUpdate,
+  } = useDesktopUpdater();
+  const [updateBusy, setUpdateBusy] = useState(false);
 
   // Fetch groups and projects for search
   useEffect(() => {
@@ -144,6 +154,15 @@ export function MainLayout({ children }) {
     }
   };
 
+  const handleDownloadUpdate = async () => {
+    setUpdateBusy(true);
+    try {
+      await downloadUpdate();
+    } finally {
+      setUpdateBusy(false);
+    }
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -201,6 +220,13 @@ export function MainLayout({ children }) {
           </div>
 
           <div className="flex items-center gap-3">
+            {desktopUpdaterEnabled && (
+              <DesktopUpdateTopBar
+                state={updaterState}
+                onDownload={handleDownloadUpdate}
+                downloading={updateBusy || updaterState.phase === "downloading"}
+              />
+            )}
             <Button variant="ghost" size="icon" className="text-slate-500 relative" onClick={() => navigate('/404')}>
               <Bell className="h-5 w-5" />
               <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full border-2 border-white" />
@@ -237,6 +263,7 @@ export function MainLayout({ children }) {
         <div className="flex flex-1 flex-col overflow-y-auto bg-[#f4f7fb] px-3 py-2 md:px-4 md:py-3">
           {page}
         </div>
+        {desktopUpdaterEnabled && <DesktopUpdateProgressToast state={updaterState} />}
       </SidebarInset>
     </SidebarProvider>
   );

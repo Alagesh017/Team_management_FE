@@ -13,6 +13,8 @@ import {
   BarChart3,
   PieChart as PieChartIcon,
   TrendingUp,
+  PauseCircle,
+  Hourglass,
 } from "lucide-react";
 import {
   PieChart,
@@ -28,6 +30,10 @@ import {
   Legend,
 } from "recharts";
 import { taskService } from "../services/taskService";
+import { workerService } from "../../workers/services/workerService";
+import { adminService } from "../../admin/services/adminService";
+import { taskStatusFlags } from "../utils/taskStatusFlags";
+import { cn } from "../../../core/utils/utils";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -100,20 +106,67 @@ const formatDate = (dateString) => {
   });
 };
 
+function buildTasksByEmployeeChart(allTasks, workers = [], admins = []) {
+  const entries = [];
+  const byEmail = {};
+  const byWorkerId = {};
+  const byAdminId = {};
+
+  const pushPerson = (person, roleTag) => {
+    const baseName =
+      [person.first_name, person.last_name].filter(Boolean).join(" ").trim() ||
+      person.email ||
+      roleTag;
+    const name = roleTag === "Admin" ? `${baseName} · Admin` : baseName;
+    const row = { name, value: 0 };
+    entries.push(row);
+    const email = person.email?.toLowerCase();
+    if (email) byEmail[email] = row;
+    if (person.id != null) {
+      if (roleTag === "Admin") byAdminId[person.id] = row;
+      else byWorkerId[person.id] = row;
+    }
+  };
+
+  workers.forEach((w) => pushPerson(w, "Worker"));
+  admins.forEach((a) => pushPerson(a, "Admin"));
+
+  allTasks.forEach((task) => {
+    (task.members || []).forEach((member) => {
+      if (typeof member === "string") return;
+      const email = member.email?.toLowerCase();
+      let row = email ? byEmail[email] : null;
+      const uid = member.user_id ?? member.role_id;
+      if (!row && uid != null) {
+        row = byWorkerId[uid] || byAdminId[uid];
+      }
+      if (row) row.value += 1;
+    });
+  });
+
+  return entries.sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
+}
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-const StatCard = ({ label, value, color, icon: Icon }) => (
-  <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow">
-    <div className="flex items-center justify-between mb-4">
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+const StatCard = ({ label, value, icon: Icon, accent = "text-slate-900", active, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      "text-left bg-white rounded-lg border border-slate-200/90 px-2 py-1.5 shadow-sm transition-all min-w-[68px] flex-1 max-w-[100px]",
+      "hover:border-slate-300",
+      active && "ring-1 ring-indigo-500 border-indigo-200 bg-indigo-50/50"
+    )}
+  >
+    <div className="flex items-center justify-between gap-1 mb-0.5">
+      <span className="text-[8px] font-semibold uppercase tracking-wide text-slate-400 truncate leading-none">
         {label}
       </span>
-      {Icon && <Icon className="h-5 w-5 text-slate-300" />}
+      {Icon && <Icon className={cn("h-3 w-3 shrink-0 opacity-80", accent)} />}
     </div>
-    <span className={`text-3xl font-black ${color || "text-slate-900"}`}>
-      {value}
-    </span>
-  </div>
+    <span className={cn("text-lg font-bold tabular-nums leading-none", accent)}>{value}</span>
+  </button>
 );
 
 const PriorityBadge = ({ priority }) => {
@@ -250,10 +303,12 @@ const MemberPopup = ({ member, onClose }) => {
 
 const TaskDashboardPage = () => {
   const [dashboardData, setDashboardData] = useState(null);
+  const [workforce, setWorkforce] = useState({ workers: [], admins: [] });
   const [loading, setLoading] = useState(true);
   const [activeGroupId, setActiveGroupId] = useState(null);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [filterPriority, setFilterPriority] = useState(null);
+  const [statusFilter, setStatusFilter] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
   const [activeTab, setActiveTab] = useState("tasks"); // 'tasks' or 'reports'
 
@@ -261,11 +316,45 @@ const TaskDashboardPage = () => {
   const activeGroup = dashboardData?.groups?.find((g) => g.id === activeGroupId);
   const activeProject = activeGroup?.projects?.find((p) => p.id === activeProjectId);
 
-  const filteredTasks = filterPriority
-    ? (activeProject?.tasks || []).filter(
-        (t) => t.priority?.toLowerCase() === filterPriority
-      )
-    : activeProject?.tasks || [];
+  const projectTasks = activeProject?.tasks || [];
+
+  const projectStats = useMemo(() => {
+    let pending = 0;
+    let hold = 0;
+    let inProgress = 0;
+    let completed = 0;
+    projectTasks.forEach((t) => {
+      const f = taskStatusFlags(t);
+      if (f.completed) completed += 1;
+      else if (f.hold) hold += 1;
+      else if (f.pending) pending += 1;
+      else if (f.inProgress) inProgress += 1;
+    });
+    return {
+      total: projectTasks.length,
+      pending,
+      hold,
+      inProgress,
+      completed,
+    };
+  }, [projectTasks]);
+
+  const filteredTasks = useMemo(() => {
+    let list = projectTasks;
+    if (filterPriority) {
+      list = list.filter((t) => t.priority?.toLowerCase() === filterPriority);
+    }
+    if (statusFilter === "pending") {
+      list = list.filter((t) => taskStatusFlags(t).pending);
+    } else if (statusFilter === "hold") {
+      list = list.filter((t) => taskStatusFlags(t).hold);
+    } else if (statusFilter === "in_progress") {
+      list = list.filter((t) => taskStatusFlags(t).inProgress);
+    } else if (statusFilter === "completed") {
+      list = list.filter((t) => taskStatusFlags(t).completed);
+    }
+    return list;
+  }, [projectTasks, filterPriority, statusFilter]);
 
   // All tasks across all projects for reports
   const allTasks = useMemo(() => {
@@ -291,21 +380,12 @@ const TaskDashboardPage = () => {
     return Object.values(statusMap);
   }, [allTasks]);
 
-  const tasksByEmployeeData = useMemo(() => {
-    const empMap = {};
-    allTasks.forEach(task => {
-      (task.members || []).forEach(member => {
-        const name = typeof member === "string" 
-          ? member 
-          : `${member.first_name || ''} ${member.last_name || ''}`.trim() || member.email || "Unknown";
-        if (!empMap[name]) {
-          empMap[name] = { name, value: 0 };
-        }
-        empMap[name].value += 1;
-      });
-    });
-    return Object.values(empMap).sort((a, b) => b.value - a.value).slice(0, 8);
-  }, [allTasks]);
+  const tasksByEmployeeData = useMemo(
+    () => buildTasksByEmployeeChart(allTasks, workforce.workers, workforce.admins),
+    [allTasks, workforce.workers, workforce.admins]
+  );
+
+  const employeeChartHeight = Math.max(240, Math.min(520, tasksByEmployeeData.length * 32));
 
   const tasksByProjectData = useMemo(() => {
     const projMap = {};
@@ -328,35 +408,36 @@ const TaskDashboardPage = () => {
     }));
   }, [allTasks]); // Placeholder, real data would use task dates
 
-  // Stats
-  const totalTasks = activeProject?.tasks?.length || 0;
-  const highCount = activeProject?.tasks?.filter(
-    (t) => t.priority?.toLowerCase() === "high"
-  ).length || 0;
-  const mediumCount = activeProject?.tasks?.filter(
-    (t) => t.priority?.toLowerCase() === "medium"
-  ).length || 0;
-  const lowCount = activeProject?.tasks?.filter(
-    (t) => t.priority?.toLowerCase() === "low"
-  ).length || 0;
-
-  // Total Stats for Reports
   const totalAllTasks = allTasks.length;
-  const completedTasks = allTasks.filter(t => 
-    (t.status_name || t.status)?.toLowerCase().includes('done') || 
-    (t.status_name || t.status)?.toLowerCase().includes('complete')
-  ).length;
-  const inProgressTasks = allTasks.filter(t => 
-    (t.status_name || t.status)?.toLowerCase().includes('progress') || 
-    (t.status_name || t.status)?.toLowerCase().includes('doing')
-  ).length;
+  const totalAllStats = useMemo(() => {
+    let completed = 0;
+    let inProgress = 0;
+    let pending = 0;
+    let hold = 0;
+    allTasks.forEach((t) => {
+      const f = taskStatusFlags(t);
+      if (f.completed) completed += 1;
+      else if (f.hold) hold += 1;
+      else if (f.pending) pending += 1;
+      else if (f.inProgress) inProgress += 1;
+    });
+    return { completed, inProgress, pending, hold };
+  }, [allTasks]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await taskService.getDashboardTasks();
+        const [data, workerRes, adminRes] = await Promise.all([
+          taskService.getDashboardTasks(),
+          workerService.getAllWorkers().catch(() => ({ workers: [] })),
+          adminService.getAllAdmins().catch(() => ({ admins: [] })),
+        ]);
         setDashboardData(data);
+        setWorkforce({
+          workers: workerRes?.workers || [],
+          admins: adminRes?.admins || [],
+        });
         if (data?.groups?.length > 0) {
           const firstGroup = data.groups[0];
           setActiveGroupId(firstGroup.id);
@@ -376,6 +457,7 @@ const TaskDashboardPage = () => {
   const handleGroupSelect = (groupId) => {
     setActiveGroupId(groupId);
     setFilterPriority(null);
+    setStatusFilter(null);
     const group = dashboardData?.groups?.find((g) => g.id === groupId);
     setActiveProjectId(group?.projects?.[0]?.id || null);
   };
@@ -383,6 +465,7 @@ const TaskDashboardPage = () => {
   const handleProjectSelect = (projectId) => {
     setActiveProjectId(projectId);
     setFilterPriority(null);
+    setStatusFilter(null);
   };
 
   const togglePriorityFilter = (p) => {
@@ -550,18 +633,34 @@ const TaskDashboardPage = () => {
             // ── Tasks Tab Content ──────────────────────────────────────────────────────
             activeProject ? (
               <>
-                <div className="hidden lg:grid grid-cols-4 gap-3 px-5 py-3 bg-white border-b border-slate-200 shrink-0">
-                  <StatCard label="Total Tasks" value={totalTasks} icon={CheckSquare} />
-                  <StatCard label="High Priority" value={highCount} color="text-red-600" icon={AlertCircle} />
-                  <StatCard label="Medium Priority" value={mediumCount} color="text-amber-600" />
-                  <StatCard label="Low Priority" value={lowCount} color="text-emerald-600" />
+                <div className="shrink-0 bg-white border-b border-slate-200 px-2 py-1.5 overflow-x-auto overscroll-x-contain touch-pan-x">
+                  <div className="flex gap-1.5 min-w-0 sm:min-w-max">
+                    {[
+                      { key: null, label: "All", value: projectStats.total, icon: CheckSquare },
+                      { key: "pending", label: "Pending", value: projectStats.pending, icon: Hourglass, accent: "text-amber-600" },
+                      { key: "hold", label: "On hold", value: projectStats.hold, icon: PauseCircle, accent: "text-orange-600" },
+                      { key: "in_progress", label: "In progress", value: projectStats.inProgress, icon: Clock, accent: "text-indigo-600" },
+                      { key: "completed", label: "Done", value: projectStats.completed, icon: CheckSquare, accent: "text-emerald-600" },
+                    ].map(({ key, label, value, icon, accent }) => (
+                      <StatCard
+                        key={label}
+                        label={label}
+                        value={value}
+                        icon={icon}
+                        accent={accent}
+                        active={statusFilter === key}
+                        onClick={() => setStatusFilter((prev) => (prev === key ? null : key))}
+                      />
+                    ))}
+                  </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-5 py-3 bg-white border-b border-slate-200 shrink-0 gap-4">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-4 py-2 bg-white border-b border-slate-200 shrink-0 gap-3">
                   <div>
-                    <h2 className="text-base font-bold text-slate-900">{activeProject.name}</h2>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {activeGroup?.name} · {totalTasks} task{totalTasks !== 1 ? "s" : ""}
+                    <h2 className="text-sm font-bold text-slate-900">{activeProject.name}</h2>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {activeGroup?.name} · {projectStats.total} task{projectStats.total !== 1 ? "s" : ""}
+                      {statusFilter ? ` · filtered` : ""}
                     </p>
                   </div>
 
@@ -590,7 +689,15 @@ const TaskDashboardPage = () => {
                         onClick={() => setFilterPriority(null)}
                         className="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-slate-400 border border-slate-200 hover:text-slate-600 transition-colors"
                       >
-                        <X className="h-3 w-3" /> Clear
+                        <X className="h-3 w-3" /> Clear priority
+                      </button>
+                    )}
+                    {statusFilter && (
+                      <button
+                        onClick={() => setStatusFilter(null)}
+                        className="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-slate-400 border border-slate-200 hover:text-slate-600 transition-colors"
+                      >
+                        <X className="h-3 w-3" /> Clear status
                       </button>
                     )}
                   </div>
@@ -715,22 +822,26 @@ const TaskDashboardPage = () => {
             )
           ) : (
             // ── Reports Tab Content ──────────────────────────────────────────────────────
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <StatCard label="Total Tasks" value={totalAllTasks} icon={CheckSquare} />
-                <StatCard label="Completed" value={completedTasks} color="text-emerald-600" icon={TrendingUp} />
-                <StatCard label="In Progress" value={inProgressTasks} color="text-indigo-600" icon={BarChart3} />
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="overflow-x-auto overscroll-x-contain touch-pan-x -mx-1 px-1 mb-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 min-w-[480px] lg:min-w-0">
+                  <StatCard label="Total" value={totalAllTasks} icon={CheckSquare} />
+                  <StatCard label="Completed" value={totalAllStats.completed} icon={TrendingUp} accent="text-emerald-600" />
+                  <StatCard label="In progress" value={totalAllStats.inProgress} icon={BarChart3} accent="text-indigo-600" />
+                  <StatCard label="Pending" value={totalAllStats.pending} icon={Hourglass} accent="text-amber-600" />
+                  <StatCard label="On hold" value={totalAllStats.hold} icon={PauseCircle} accent="text-orange-600" />
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                      <PieChartIcon className="h-5 w-5 text-slate-400" />
-                      Tasks by Status
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <PieChartIcon className="h-4 w-4 text-slate-400" />
+                      Tasks by status
                     </h3>
                   </div>
-                  <div className="h-[300px]">
+                  <div className="h-[240px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -755,23 +866,27 @@ const TaskDashboardPage = () => {
                   </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                      <Users className="h-5 w-5 text-slate-400" />
-                      Tasks by Employee
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Users className="h-4 w-4 text-slate-400" />
+                      Tasks by employee
                     </h3>
+                    <span className="text-[10px] text-slate-400">
+                      {tasksByEmployeeData.length} people
+                    </span>
                   </div>
-                  <div className="h-[300px]">
+                  <div className="max-h-[520px] overflow-y-auto overflow-x-hidden pr-1">
+                    <div style={{ height: employeeChartHeight, minHeight: 240 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={tasksByEmployeeData} layout="vertical">
+                      <BarChart data={tasksByEmployeeData} layout="vertical" margin={{ left: 4, right: 8 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
                         <XAxis type="number" hide />
                         <YAxis 
                           dataKey="name" 
                           type="category" 
-                          width={100}
-                          tick={{ fontSize: 12, fill: '#64748b' }}
+                          width={120}
+                          tick={{ fontSize: 10, fill: '#64748b' }}
                           axisLine={false}
                           tickLine={false}
                         />
@@ -782,19 +897,20 @@ const TaskDashboardPage = () => {
                         <Bar dataKey="value" fill="#4F46E5" radius={[0, 4, 4, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                      <Folder className="h-5 w-5 text-slate-400" />
-                      Tasks by Project
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Folder className="h-4 w-4 text-slate-400" />
+                      Tasks by project
                     </h3>
                   </div>
-                  <div className="h-[300px]">
+                  <div className="h-[240px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={tasksByProjectData}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -819,14 +935,14 @@ const TaskDashboardPage = () => {
                   </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-slate-400" />
-                      Team Workload
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-slate-400" />
+                      Team workload
                     </h3>
                   </div>
-                  <div className="h-[300px]">
+                  <div className="h-[240px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={teamWorkloadData}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />

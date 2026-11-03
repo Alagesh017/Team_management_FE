@@ -34,7 +34,7 @@ function loadDesktopEnv() {
   const webRoot = path.join(desktopDir, "..");
   parseEnvFile(path.join(webRoot, ".env"));
   parseEnvFile(path.join(webRoot, ".env.local"));
-  parseEnvFile(path.join(desktopDir, ".env"));
+  parseEnvFile(path.join(desktopDir, ".env"), true);
   parseEnvFile(path.join(getMonitorAgentRoot(), ".env"));
 
   if (!process.env.MONITOR_API_URL && process.env.VITE_API_URL) {

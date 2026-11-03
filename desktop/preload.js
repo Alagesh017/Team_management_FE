@@ -4,6 +4,18 @@ contextBridge.exposeInMainWorld("teamManagerDesktop", {
   isDesktop: true,
 });
 
+contextBridge.exposeInMainWorld("desktopUpdater", {
+  getState: () => ipcRenderer.invoke("desktop:updaterGetState"),
+  checkForUpdates: () => ipcRenderer.invoke("desktop:updaterCheck"),
+  downloadUpdate: () => ipcRenderer.invoke("desktop:updaterDownload"),
+  installUpdate: () => ipcRenderer.invoke("desktop:updaterInstall"),
+  onStateChange: (cb) => {
+    const listener = (_e, next) => cb(next);
+    ipcRenderer.on("desktop:updater-state", listener);
+    return () => ipcRenderer.removeListener("desktop:updater-state", listener);
+  },
+});
+
 contextBridge.exposeInMainWorld("desktopAuth", {
   loadSession: () => ipcRenderer.invoke("desktop:loadAuthSession"),
   saveSession: (user) => ipcRenderer.invoke("desktop:saveAuthSession", user),

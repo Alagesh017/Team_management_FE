@@ -1,17 +1,50 @@
 import React from "react";
-import { Briefcase, ChevronRight, Mail, Phone, User } from "lucide-react";
+import { Briefcase, ChevronRight, DownloadCloud, Mail, Phone, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CircularProgress } from "./CircularProgress";
 import { useProfile } from "../contexts/ProfileContext";
 import { useAuth } from "../../auth/contexts/AuthContext";
 import { UserAvatar } from "../../../common/components/UserAvatar";
 import { getFullAvatarUrl } from "../../../core/utils/utils";
+import { useDesktopUpdater } from "../../desktop/hooks/useDesktopUpdater";
+import { useToast } from "../../../common/hooks/use-toast";
 
 export function ProfileMenuContent({ onNavigateAway }) {
   const { profile, completion, allocations, roleLabel, openOnboarding } = useProfile();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { enabled: desktopUpdaterEnabled, checkForUpdates, state: updaterState } = useDesktopUpdater();
   const percent = completion?.percent ?? user?.completionPercent ?? 0;
+
+  const handleCheckForUpdates = async () => {
+    onNavigateAway?.();
+    const next = await checkForUpdates();
+    if (!next) return;
+    if (next.phase === "available") {
+      toast({
+        title: "Update available",
+        description: next.availableVersion
+          ? `Version ${next.availableVersion} — use Update in the top bar.`
+          : "Use Update in the top bar to download.",
+      });
+      return;
+    }
+    if (next.phase === "not-available") {
+      toast({
+        title: "Up to date",
+        description: next.currentVersion ? `You have v${next.currentVersion}.` : "No updates found.",
+      });
+      return;
+    }
+    if (next.phase === "error") {
+      toast({
+        title: "Update check failed",
+        description: next.message || "Try again later.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const goComplete = () => {
     onNavigateAway?.();
@@ -108,6 +141,18 @@ export function ProfileMenuContent({ onNavigateAway }) {
         <User className="h-4 w-4 text-slate-500" />
         Edit profile details
       </button>
+
+      {desktopUpdaterEnabled && (
+        <button
+          type="button"
+          className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          onClick={handleCheckForUpdates}
+          disabled={updaterState.phase === "checking" || updaterState.phase === "downloading"}
+        >
+          <DownloadCloud className="h-4 w-4 text-slate-500" />
+          {updaterState.phase === "checking" ? "Checking for updates…" : "Check for updates"}
+        </button>
+      )}
     </div>
   );
 }

@@ -116,6 +116,30 @@ const TaskStatusDetails = ({ status, open, onOpenChange }) => {
               </div>
 
               <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Is Pending</p>
+                <div className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full ${status.is_pending ? "bg-amber-500" : "bg-slate-300"}`} />
+                  <p className="text-sm font-bold text-slate-900">{status.is_pending ? "Yes" : "No"}</p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Is Hold</p>
+                <div className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full ${status.is_hold ? "bg-orange-500" : "bg-slate-300"}`} />
+                  <p className="text-sm font-bold text-slate-900">{status.is_hold ? "Yes" : "No"}</p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Is Review</p>
+                <div className="flex items-center gap-2">
+                  <div className={`h-3 w-3 rounded-full ${status.is_review ? "bg-violet-500" : "bg-slate-300"}`} />
+                  <p className="text-sm font-bold text-slate-900">{status.is_review ? "Yes" : "No"}</p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Is Completed</p>
                 <div className="flex items-center gap-2">
                   <div className={`h-3 w-3 rounded-full ${status.is_completed ? 'bg-green-500' : 'bg-slate-300'}`} />

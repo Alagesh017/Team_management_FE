@@ -1,6 +1,6 @@
 {
   "name": "dce-task-manager-desktop",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Dce task manager — desktop app with built-in activity monitoring",
   "main": "main.js",
   "author": "DCE",
@@ -40,14 +40,23 @@
     ],
     "files": [
       "**/*",
+      "!node_modules/electron/**",
+      "!node_modules/electron-builder/**",
+      "!node_modules/app-builder-bin/**",
+      "!node_modules/app-builder-lib/**",
+      "!node_modules/.bin/**",
       "!scripts/**",
+      "!release/**",
       "!installer-output/**",
+      "!installer-output-*/**",
       "!README.md",
       "!.env",
       "!.env.example",
       "!.env.production",
-      "!.builder-output-dir"
+      "!.builder-output-dir",
+      "!package-lock.json"
     ],
+    "asar": true,
     "extraResources": [
       {
         "from": ".env.production",

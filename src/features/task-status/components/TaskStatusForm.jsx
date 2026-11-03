@@ -25,6 +25,9 @@ export const taskStatusFormSchema = z.object({
   is_backlog: z.boolean().default(false),
   is_todo: z.boolean().default(false),
   is_in_progress: z.boolean().default(false),
+  is_pending: z.boolean().default(false),
+  is_hold: z.boolean().default(false),
+  is_review: z.boolean().default(false),
   is_completed: z.boolean().default(false),
 });
 
@@ -46,6 +49,9 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
       is_backlog: false,
       is_todo: false,
       is_in_progress: false,
+      is_pending: false,
+      is_hold: false,
+      is_review: false,
       is_completed: false,
     },
   });
@@ -60,6 +66,9 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
         is_backlog: Boolean(initialData.is_backlog),
         is_todo: Boolean(initialData.is_todo),
         is_in_progress: Boolean(initialData.is_in_progress),
+        is_pending: Boolean(initialData.is_pending),
+        is_hold: Boolean(initialData.is_hold),
+        is_review: Boolean(initialData.is_review),
         is_completed: Boolean(initialData.is_completed),
         color: initialData.color || "#000000",
         remark: initialData.remark || "",
@@ -82,6 +91,9 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
   const watchBacklog = watch("is_backlog");
   const watchTodo = watch("is_todo");
   const watchInProgress = watch("is_in_progress");
+  const watchPending = watch("is_pending");
+  const watchHold = watch("is_hold");
+  const watchReview = watch("is_review");
   const watchCompleted = watch("is_completed");
 
   const handleFlagChange = async (flagName, checked) => {
@@ -100,6 +112,9 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
       if (flagName !== "is_backlog") setValue("is_backlog", false);
       if (flagName !== "is_todo") setValue("is_todo", false);
       if (flagName !== "is_in_progress") setValue("is_in_progress", false);
+      if (flagName !== "is_pending") setValue("is_pending", false);
+      if (flagName !== "is_hold") setValue("is_hold", false);
+      if (flagName !== "is_review") setValue("is_review", false);
       if (flagName !== "is_completed") setValue("is_completed", false);
     }
     setValue(flagName, checked);
@@ -188,6 +203,9 @@ const TaskStatusForm = ({ onSubmit, initialData, submitting, error }) => {
                 ["is_backlog", "Is Backlog", watchBacklog],
                 ["is_todo", "Is Todo", watchTodo],
                 ["is_in_progress", "Is In Progress", watchInProgress],
+                ["is_pending", "Is Pending", watchPending],
+                ["is_hold", "Is Hold", watchHold],
+                ["is_review", "Is Review", watchReview],
                 ["is_completed", "Is Completed", watchCompleted],
               ].map(([flag, label, checked]) => (
                 <div key={flag} className="flex items-center gap-2">

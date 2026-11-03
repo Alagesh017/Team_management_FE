@@ -28,6 +28,17 @@ npm run desktop:app
 
 Uses `desktop/.env` → `WEB_APP_URL=embedded` (full app inside Electron).
 
+**If UI changes don’t show up**
+
+1. **Quit the app fully** — close the window *and* exit from the **system tray** (monitoring keeps one instance running).
+2. Run `npm run desktop:app` again (it rebuilds `dist-desktop` every time).
+3. Or leave the app open and run `npm run desktop:app` again — the second run **reloads** the window after the build (dev only).
+4. **Backend/API changes** (Flask `Team_management`) are **not** included in `build:desktop` — restart the API separately.
+5. For fast UI work, use **`npm run desktop:dev`** (Vite hot reload) instead of rebuilding each time.
+6. The **installed `.exe`** only updates after `npm run desktop:dist` (or auto-update) — not from `desktop:app` alone on another PC.
+
+Do **not** use `npm run desktop` alone after code changes — that skips the Vite build and shows an old `dist-desktop`.
+
 ---
 
 ## Build Windows installer (.exe)
@@ -40,6 +51,10 @@ npm run desktop:dist
 ```
 
 Output: `desktop/installer-output/DceTaskManager-Setup-1.0.0.exe`
+
+Typical **Setup.exe size: ~80–120 MB** (Electron runtime + ~8 MB UI bundle). If you see **500 MB+**, the build accidentally included `desktop/node_modules` — run `npm run desktop:clean-builds` then `npm run desktop:dist` again.
+
+Old failed builds land in `desktop/installer-output-<timestamp>/` and can use **gigabytes on disk**. `predist` tries to delete them; you can also run `npm run desktop:clean-builds` or delete those folders manually.
 
 (Old builds used `desktop/release/` — you can delete that folder after quitting Team Manager.)
 
@@ -82,7 +97,12 @@ On startup the app **restores your session** and **refreshes tokens** automatica
 
 ## Auto-update (GitHub Releases)
 
-The packaged app checks **GitHub Releases** for a newer version (about 20s after launch, then every 12 hours). When an update is downloaded, you get a **Restart now** dialog.
+Updates are **manual** in the app (no background download):
+
+1. Profile menu → **Check for updates**
+2. If a newer version exists, the **top bar** shows **Update available** with an **Update** button
+3. Click **Update** → download progress appears **bottom-right**
+4. When the download finishes, the app **restarts and installs** automatically
 
 Config lives in `desktop/package.json` → `build.publish` (currently `Alagesh017/Team_management_FE`). Change `owner` / `repo` if you use a different releases repo.
 
@@ -94,7 +114,7 @@ Private repos block anonymous downloads — use a public releases repo if your m
 
 ### First time (one manual install)
 
-Users who never had the app must install once from the `.exe`. After that, updates can arrive automatically.
+Users who never had the app must install once from the `.exe`. After that, they can update from **Check for updates** when you publish a newer GitHub Release.
 
 Ship a build that includes `autoUpdater.js` (this repo), then publish **1.0.0** (or your current version).
 

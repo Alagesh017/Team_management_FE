@@ -1,58 +1,97 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Download, Calendar, Users, Folder, CheckSquare, TrendingUp } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Download, FileSpreadsheet } from 'lucide-react';
 import { taskService } from '../../tasks/services/taskService';
+import { workerService } from '../../workers/services/workerService';
+import { adminService } from '../../admin/services/adminService';
+import { allocationService } from '../../project-allocation/services/allocationService';
+import ReportFiltersPanel from '../components/ReportFiltersPanel';
+import ReportStatsBar from '../components/ReportStatsBar';
+import {
+  buildGroupedReportData,
+  buildUserOptions,
+  computeReportStats,
+  exportTasksCsv,
+  filterReportTasks,
+  getQuickDateRange,
+  memberDisplayName,
+} from '../reportUtils';
 
 const ReportPage = () => {
   const [data, setData] = useState(null);
+  const [workforce, setWorkforce] = useState({ workers: [], admins: [] });
+  const [allocations, setAllocations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState('overall');
+  const [exportMode, setExportMode] = useState('overall');
+  const [previewView, setPreviewView] = useState('grouped');
   const [selectedProject, setSelectedProject] = useState('all');
-  const [selectedUser, setSelectedUser] = useState('all');
+  const [selectedUserKey, setSelectedUserKey] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [dateRange, setDateRange] = useState({ start: null, end: null });
-  const [quickDate, setQuickDate] = useState('custom');
+  const [selectedPriority, setSelectedPriority] = useState('all');
+  const [workflowFilter, setWorkflowFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [dateField, setDateField] = useState('span');
+  const [dateRange, setDateRange] = useState(() => getQuickDateRange("today"));
+  const [quickDate, setQuickDate] = useState("today");
 
-  const getDateRange = (type) => {
-    const now = new Date();
-    const start = new Date(now);
-    switch (type) {
-      case 'today':
-        start.setHours(0, 0, 0, 0);
-        return { start: start.toISOString().split('T')[0], end: now.toISOString().split('T')[0] };
-      case 'thisweek': {
-        const day = start.getDay();
-        const diff = start.getDate() - day + (day === 0 ? -6 : 1);
-        start.setDate(diff);
-        start.setHours(0, 0, 0, 0);
-        const weekEnd = new Date(start);
-        weekEnd.setDate(start.getDate() + 6);
-        return { start: start.toISOString().split('T')[0], end: weekEnd.toISOString().split('T')[0] };
-      }
-      case 'thismonth': {
-        start.setDate(1);
-        start.setHours(0, 0, 0, 0);
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        return { start: start.toISOString().split('T')[0], end: monthEnd.toISOString().split('T')[0] };
-      }
-      default:
-        return { start: null, end: null };
-    }
-  };
+  /** Used by Excel export (logic unchanged). */
+  const activeFilter = exportMode === 'overall' ? 'overall' : 'byProject';
+  const selectedUser = 'all';
 
-  const handleQuickDate = (type) => {
+  const handleQuickDate = useCallback((type) => {
     setQuickDate(type);
-    if (type !== 'custom') {
-      const range = getDateRange(type);
-      setDateRange(range);
+    if (type === "custom") {
+      setDateRange((prev) => ({
+        start: prev.start || getQuickDateRange("today").start,
+        end: prev.end || getQuickDateRange("today").end,
+      }));
+      return;
     }
-  };
+    if (type !== "custom") {
+      setDateRange(getQuickDateRange(type));
+    }
+  }, []);
+
+  const handleStartChange = useCallback((v) => {
+    setQuickDate("custom");
+    setDateRange((prev) => {
+      const start = v || null;
+      let end = prev.end;
+      if (start && end && end < start) end = start;
+      return { start, end };
+    });
+  }, []);
+
+  const handleEndChange = useCallback((v) => {
+    setQuickDate("custom");
+    setDateRange((prev) => {
+      let end = v || null;
+      if (end && prev.start && end < prev.start) end = prev.start;
+      return { ...prev, end };
+    });
+  }, []);
+
+  const handleSingleDayChange = useCallback((v) => {
+    setQuickDate("day");
+    const day = v || null;
+    setDateRange({ start: day, end: day });
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [dashboardData] = await Promise.all([taskService.getDashboardTasks()]);
+        const [dashboardData, workerRes, adminRes, allocRes] = await Promise.all([
+          taskService.getDashboardTasks(),
+          workerService.getAllWorkers().catch(() => ({ workers: [] })),
+          adminService.getAllAdmins().catch(() => ({ admins: [] })),
+          allocationService.getAllAllocations().catch(() => ({ allocations: [] })),
+        ]);
         setData(dashboardData);
+        setWorkforce({
+          workers: workerRes?.workers || [],
+          admins: adminRes?.admins || [],
+        });
+        setAllocations(allocRes?.allocations || []);
       } catch (error) {
         console.error('Error fetching report data:', error);
       } finally {
@@ -81,19 +120,33 @@ const ReportPage = () => {
     return data.groups.flatMap((group) => group.projects || []);
   }, [data]);
 
-  const users = useMemo(() => {
-    const userSet = new Set();
-    allTasks.forEach((task) => {
-      (task.members || []).forEach((member) => {
-        const name =
-          typeof member === 'object'
-            ? `${member.first_name || ''} ${member.last_name || ''}`.trim() || member.email
-            : member;
-        if (name) userSet.add(name);
-      });
-    });
-    return Array.from(userSet);
-  }, [allTasks]);
+  const userOptions = useMemo(
+    () =>
+      buildUserOptions({
+        workers: workforce.workers,
+        admins: workforce.admins,
+        projectId: selectedProject,
+        allocations,
+      }),
+    [workforce.workers, workforce.admins, selectedProject, allocations]
+  );
+
+  const peopleScopeHint =
+    selectedProject !== 'all'
+      ? 'Showing people allocated to this project'
+      : null;
+
+  useEffect(() => {
+    if (selectedUserKey === 'all') return;
+    if (!userOptions.some((u) => u.key === selectedUserKey)) {
+      setSelectedUserKey('all');
+    }
+  }, [selectedProject, userOptions, selectedUserKey]);
+
+  const handleProjectChange = (value) => {
+    setSelectedProject(value);
+    setSelectedUserKey('all');
+  };
 
   const statuses = useMemo(() => {
     const statusSet = new Set();
@@ -101,79 +154,37 @@ const ReportPage = () => {
       const status = task.status_name || task.status;
       if (status) statusSet.add(status);
     });
-    return Array.from(statusSet);
+    return Array.from(statusSet).sort();
   }, [allTasks]);
 
-  const filteredTasks = useMemo(() => {
-    let filtered = [...allTasks];
+  const filteredTasks = useMemo(
+    () =>
+      filterReportTasks(allTasks, {
+        dateRange,
+        dateField,
+        projectId: selectedProject,
+        userKey: selectedUserKey,
+        status: selectedStatus,
+        priority: selectedPriority,
+        workflow: workflowFilter,
+        search,
+      }),
+    [
+      allTasks,
+      dateRange,
+      dateField,
+      selectedProject,
+      selectedUserKey,
+      selectedStatus,
+      selectedPriority,
+      workflowFilter,
+      search,
+    ]
+  );
 
-    if (dateRange.start && dateRange.end) {
-      const start = new Date(dateRange.start);
-      const end = new Date(dateRange.end);
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
-      filtered = filtered.filter((task) => {
-        const taskDate = task.start_date ? new Date(task.start_date) : null;
-        if (!taskDate) return false;
-        return taskDate >= start && taskDate <= end;
-      });
-    }
+  const groupedData = useMemo(() => buildGroupedReportData(filteredTasks), [filteredTasks]);
 
-    switch (activeFilter) {
-      case 'byProject':
-        if (selectedProject !== 'all') {
-          filtered = filtered.filter((task) => task.projectId === Number(selectedProject));
-        }
-        break;
-      case 'byUser':
-        if (selectedUser !== 'all') {
-          filtered = filtered.filter((task) =>
-            (task.members || []).some((member) => {
-              const name =
-                typeof member === 'object'
-                  ? `${member.first_name || ''} ${member.last_name || ''}`.trim() || member.email
-                  : member;
-              return name === selectedUser;
-            })
-          );
-        }
-        break;
-      case 'byStatus':
-        if (selectedStatus !== 'all') {
-          filtered = filtered.filter(
-            (task) => (task.status_name || task.status) === selectedStatus
-          );
-        }
-        break;
-    }
-
-    return filtered;
-  }, [allTasks, dateRange, activeFilter, selectedProject, selectedUser, selectedStatus]);
-
-  const groupedData = useMemo(() => {
-    const grouped = {};
-    filteredTasks.forEach((task) => {
-      const projName = task.projectName || 'Unassigned';
-      if (!grouped[projName]) grouped[projName] = {};
-
-      (task.members || []).forEach((member) => {
-        const userName =
-          typeof member === 'object'
-            ? `${member.first_name || ''} ${member.last_name || ''}`.trim() ||
-              member.email ||
-              'Unknown User'
-            : member;
-        if (!grouped[projName][userName]) grouped[projName][userName] = [];
-        grouped[projName][userName].push(task);
-      });
-
-      if ((task.members || []).length === 0) {
-        if (!grouped[projName]['Unassigned']) grouped[projName]['Unassigned'] = [];
-        grouped[projName]['Unassigned'].push(task);
-      }
-    });
-    return grouped;
-  }, [filteredTasks]);
+  const reportStats = useMemo(() => computeReportStats(filteredTasks), [filteredTasks]);
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -186,13 +197,11 @@ const ReportPage = () => {
 
   const getMemberNames = (members) => {
     if (!members?.length) return '-';
-    return members
-      .map((m) =>
-        typeof m === 'object'
-          ? `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email
-          : m
-      )
-      .join(', ');
+    return members.map((m) => memberDisplayName(m) || m).filter(Boolean).join(', ') || '-';
+  };
+
+  const handleExportCsv = () => {
+    exportTasksCsv(filteredTasks, formatDate, getMemberNames);
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -709,212 +718,122 @@ const ReportPage = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-slate-50">
+      <div className="flex items-center justify-center min-h-[200px]">
         <div className="text-center">
-          <div className="h-9 w-9 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600 mx-auto mb-3"></div>
-          <p className="text-slate-500 text-sm font-medium">Loading Reports...</p>
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600 mx-auto mb-2" />
+          <p className="text-slate-500 text-xs font-medium">Loading reports…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-3">
+    <div className="flex flex-col h-full min-h-0 gap-2 p-1 md:p-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Reports</h1>
-          <p className="text-slate-500">Generate detailed task reports and export to Excel</p>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Reports</h1>
+          <p className="text-xs text-slate-500">Filter live, then export Excel or CSV</p>
         </div>
-        <button
-          onClick={generateExcel}
-          className="bg-slate-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg"
-        >
-          <Download className="w-4 h-4" />
-          Generate Report
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-3 md:p-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {/* Quick Date Filters */}
-          <div className="lg:col-span-4">
-            <label className="text-sm font-semibold text-slate-900 mb-2 block">Quick Range</label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: 'today',     label: 'Today'      },
-                { id: 'thisweek',  label: 'This Week'  },
-                { id: 'thismonth', label: 'This Month' },
-                { id: 'custom',    label: 'Custom'     },
-              ].map((range) => (
-                <button
-                  key={range.id}
-                  onClick={() => handleQuickDate(range.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
-                    quickDate === range.id
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400'
-                  }`}
-                >
-                  {range.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Custom Date Range */}
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">Start Date</label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="date"
-                  value={dateRange.start || ''}
-                  onChange={(e) => { setDateRange({ ...dateRange, start: e.target.value }); setQuickDate('custom'); }}
-                  className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">End Date</label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="date"
-                  value={dateRange.end || ''}
-                  onChange={(e) => { setDateRange({ ...dateRange, end: e.target.value }); setQuickDate('custom'); }}
-                  className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="border-b border-slate-200 mb-6">
-          <div className="flex gap-8">
-            {[
-              { id: 'overall',   label: 'Overall',    icon: TrendingUp  },
-              { id: 'byProject', label: 'By Project', icon: Folder      },
-              { id: 'byUser',    label: 'By Users',   icon: Users       },
-              { id: 'byStatus',  label: 'By Status',  icon: CheckSquare },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveFilter(tab.id)}
-                className={`flex items-center gap-2 py-4 border-b-2 text-sm font-bold transition-colors ${
-                  activeFilter === tab.id
-                    ? 'border-slate-900 text-slate-900'
-                    : 'border-transparent text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Tab-specific selects */}
-        <div className="flex flex-wrap gap-4">
-          {activeFilter === 'byProject' && (
-            <div className="w-full md:w-80">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">Select Project</label>
-              <select
-                value={selectedProject}
-                onChange={(e) => setSelectedProject(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-              >
-                <option value="all">All Projects</option>
-                {projects.map((proj) => (
-                  <option key={proj.id} value={proj.id}>{proj.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {activeFilter === 'byUser' && (
-            <div className="w-full md:w-80">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">Select User</label>
-              <select
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-              >
-                <option value="all">All Users</option>
-                {users.map((user, idx) => (
-                  <option key={idx} value={user}>{user}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {activeFilter === 'byStatus' && (
-            <div className="w-full md:w-80">
-              <label className="text-sm font-medium text-slate-700 mb-2 block">Select Status</label>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-              >
-                <option value="all">All Statuses</option>
-                {statuses.map((status, idx) => (
-                  <option key={idx} value={status}>{status}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="flex items-end ml-auto">
-            <p className="text-sm text-slate-500 font-medium">
-              Showing <span className="text-slate-900 font-bold">{filteredTasks.length}</span> tasks
-            </p>
-          </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={!filteredTasks.length}
+            className="border border-slate-200 bg-white text-slate-800 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-50 disabled:opacity-50 flex items-center gap-1.5"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            CSV
+          </button>
+          <button
+            type="button"
+            onClick={generateExcel}
+            disabled={!filteredTasks.length}
+            className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-800 disabled:opacity-50 flex items-center gap-1.5"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Excel
+          </button>
         </div>
       </div>
 
-      {/* Results Table */}
-      <div className="flex-1 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
-        {activeFilter === 'overall' ? (
-          <div className="p-6">
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0 gap-2">
+        <aside className="w-full lg:w-[20%] lg:min-w-[200px] lg:max-w-[300px] shrink-0 max-h-[45vh] lg:max-h-none">
+          <ReportFiltersPanel
+            quickDate={quickDate}
+            onQuickDate={handleQuickDate}
+            dateRange={dateRange}
+            onSingleDayChange={handleSingleDayChange}
+            onStartChange={handleStartChange}
+            onEndChange={handleEndChange}
+            dateField={dateField}
+            onDateFieldChange={setDateField}
+            search={search}
+            onSearchChange={setSearch}
+            projectId={selectedProject}
+            onProjectChange={handleProjectChange}
+            projects={projects}
+            userKey={selectedUserKey}
+            onUserChange={setSelectedUserKey}
+            userOptions={userOptions}
+            peopleScopeHint={peopleScopeHint}
+            status={selectedStatus}
+            onStatusChange={setSelectedStatus}
+            statuses={statuses}
+            priority={selectedPriority}
+            onPriorityChange={setSelectedPriority}
+            workflow={workflowFilter}
+            onWorkflowChange={setWorkflowFilter}
+            exportMode={exportMode}
+            onExportModeChange={setExportMode}
+            previewView={previewView}
+            onPreviewViewChange={setPreviewView}
+            taskCount={filteredTasks.length}
+          />
+        </aside>
+
+        <div className="flex-1 min-w-0 flex flex-col min-h-0 gap-2 lg:w-[80%]">
+          <ReportStatsBar stats={reportStats} />
+
+          <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+        {previewView === 'grouped' ? (
+          <div className="p-3 md:p-4">
             {Object.entries(groupedData).map(([projName, usersData]) => (
-              <div key={projName} className="mb-12 last:mb-0">
-                <h2 className="text-xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">
-                  Project: {projName}
+              <div key={projName} className="mb-8 last:mb-0">
+                <h2 className="text-sm font-bold text-slate-900 mb-2 pb-1 border-b border-slate-100">
+                  {projName}
                 </h2>
 
                 {Object.entries(usersData).map(([userName, tasks]) => (
-                  <div key={userName} className="mb-8 last:mb-0">
-                    <h3 className="text-md font-semibold text-slate-700 mb-4 pl-4 border-l-4 border-slate-300">
+                  <div key={userName} className="mb-4 last:mb-0">
+                    <h3 className="text-xs font-semibold text-slate-600 mb-2 pl-2 border-l-2 border-indigo-300">
                       {userName}
                     </h3>
 
                     <div className="overflow-x-auto rounded-lg border border-slate-100">
-                      <table className="min-w-full text-sm">
+                      <table className="min-w-full text-xs">
                         <thead className="bg-slate-50 border-b border-slate-200">
                           <tr>
-                            {['Task Title', 'Description', 'Status', 'Priority', 'Start Date', 'Due Date', 'Hours', 'Remark'].map((h) => (
-                              <th key={h} className="text-left px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">
+                            {['Task', 'Status', 'Priority', 'Start', 'Due', 'Hours', 'Remark'].map((h) => (
+                              <th key={h} className="text-left px-3 py-2 text-[10px] font-bold uppercase text-slate-400">
                                 {h}
                               </th>
                             ))}
                           </tr>
                         </thead>
-                        <tbody className="bg-white">
+                        <tbody>
                           {tasks.map((task, idx) => (
-                            <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
-                              <td className="px-6 py-4 text-sm font-medium text-slate-900">{task.title || task.name || '-'}</td>
-                              <td className="px-6 py-4 text-sm text-slate-600">{task.description || '-'}</td>
-                              <td className="px-6 py-4 text-xs font-semibold text-slate-700">{task.status_name || task.status || '-'}</td>
-                              <td className="px-6 py-4 text-xs font-semibold text-slate-700">{task.priority || '-'}</td>
-                              <td className="px-6 py-4 text-sm text-slate-600">{formatDate(task.start_date)}</td>
-                              <td className="px-6 py-4 text-sm text-slate-600">{formatDate(task.due_date)}</td>
-                              <td className="px-6 py-4 text-sm text-slate-600">
-                                {task.actual_hours || 0}h / {task.estimated_hours || '-'}h
+                            <tr key={task.id || idx} className="border-b border-slate-50 hover:bg-slate-50/80">
+                              <td className="px-3 py-2 font-medium text-slate-900 max-w-[200px] truncate" title={task.title}>
+                                {task.title || task.name || '-'}
                               </td>
-                              <td className="px-6 py-4 text-sm text-slate-600">{task.remark || '-'}</td>
+                              <td className="px-3 py-2 text-slate-600">{task.status_name || task.status || '-'}</td>
+                              <td className="px-3 py-2 text-slate-600">{task.priority || '-'}</td>
+                              <td className="px-3 py-2 text-slate-600">{formatDate(task.start_date)}</td>
+                              <td className="px-3 py-2 text-slate-600">{formatDate(task.due_date)}</td>
+                              <td className="px-3 py-2 text-slate-600 tabular-nums">
+                                {task.actual_hours || 0}h / {task.estimated_hours ?? '-'}h
+                              </td>
+                              <td className="px-3 py-2 text-slate-500 max-w-[120px] truncate">{task.remark || '-'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -926,39 +845,40 @@ const ReportPage = () => {
             ))}
 
             {Object.keys(groupedData).length === 0 && (
-              <div className="text-center py-12 text-slate-500">
-                No tasks found for the selected filters
-              </div>
+              <div className="text-center py-10 text-sm text-slate-500">No tasks match your filters</div>
             )}
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
+            <table className="min-w-full text-xs">
               <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
                 <tr>
-                  {['Task Title', 'Project', 'Assigned To', 'Status', 'Priority', 'Start Date', 'Due Date'].map((h) => (
-                    <th key={h} className="text-left px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">
+                  {['Task', 'Project', 'Group', 'Assignees', 'Status', 'Priority', 'Start', 'Due'].map((h) => (
+                    <th key={h} className="text-left px-3 py-2 text-[10px] font-bold uppercase text-slate-400">
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100">
                 {filteredTasks.map((task, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{task.title || task.name || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{task.projectName || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{getMemberNames(task.members)}</td>
-                    <td className="px-6 py-4 text-xs font-semibold text-slate-700">{task.status_name || task.status || '-'}</td>
-                    <td className="px-6 py-4 text-xs font-semibold text-slate-700">{task.priority || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{formatDate(task.start_date)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{formatDate(task.due_date)}</td>
+                  <tr key={task.id || idx} className="hover:bg-slate-50/80">
+                    <td className="px-3 py-2 font-medium text-slate-900 max-w-[180px] truncate" title={task.title}>
+                      {task.title || task.name || '-'}
+                    </td>
+                    <td className="px-3 py-2 text-slate-600">{task.projectName || '-'}</td>
+                    <td className="px-3 py-2 text-slate-600">{task.groupName || '-'}</td>
+                    <td className="px-3 py-2 text-slate-600 max-w-[140px] truncate">{getMemberNames(task.members)}</td>
+                    <td className="px-3 py-2 text-slate-600">{task.status_name || task.status || '-'}</td>
+                    <td className="px-3 py-2 text-slate-600">{task.priority || '-'}</td>
+                    <td className="px-3 py-2 text-slate-600">{formatDate(task.start_date)}</td>
+                    <td className="px-3 py-2 text-slate-600">{formatDate(task.due_date)}</td>
                   </tr>
                 ))}
                 {filteredTasks.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
-                      No tasks found
+                    <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
+                      No tasks match your filters
                     </td>
                   </tr>
                 )}
@@ -966,6 +886,8 @@ const ReportPage = () => {
             </table>
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   );

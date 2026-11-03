@@ -1,5 +1,6 @@
 const http = require("http");
 const handler = require("serve-handler");
+const { isPackagedApp } = require("./paths");
 
 /** Fixed port so localStorage origin stays the same between app restarts. */
 const DEFAULT_PORT = 17890;
@@ -21,11 +22,25 @@ function startBundledWebServer(webRoot) {
 
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
-      handler(req, res, { public: webRoot });
+      const devNoCache = !isPackagedApp();
+      handler(req, res, {
+        public: webRoot,
+        headers: devNoCache
+          ? [{ source: "**/*", headers: [{ key: "Cache-Control", value: "no-store" }] }]
+          : [],
+      });
     });
 
     server.on("error", (err) => {
       if (err.code === "EADDRINUSE") {
+        if (!isPackagedApp()) {
+          reject(
+            new Error(
+              `Port ${port} is in use. Quit Dce task manager completely (check the system tray), then run npm run desktop:app again.`
+            )
+          );
+          return;
+        }
         activeUrl = `http://127.0.0.1:${port}/`;
         resolve(activeUrl);
         return;
@@ -41,4 +56,16 @@ function startBundledWebServer(webRoot) {
   });
 }
 
-module.exports = { startBundledWebServer, getBundledWebPort };
+function stopBundledWebServer() {
+  if (activeServer) {
+    try {
+      activeServer.close();
+    } catch (_) {
+      /* ignore */
+    }
+    activeServer = null;
+    activeUrl = null;
+  }
+}
+
+module.exports = { startBundledWebServer, getBundledWebPort, stopBundledWebServer };

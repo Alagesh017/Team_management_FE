@@ -44,6 +44,25 @@ function tryRemoveDir(dir) {
 killWindowsLockingProcesses();
 sleep(600);
 
+function cleanStaleInstallerOutputs() {
+  const desktopDir = path.join(__dirname, "..");
+  let removed = 0;
+  for (const name of fs.readdirSync(desktopDir, { withFileTypes: true })) {
+    if (!name.isDirectory()) continue;
+    if (!name.name.startsWith("installer-output-")) continue;
+    const dir = path.join(desktopDir, name.name);
+    if (tryRemoveDir(dir)) {
+      removed += 1;
+      console.log(`Removed old build folder desktop/${name.name}`);
+    }
+  }
+  if (removed > 0) {
+    console.log(`Freed disk space from ${removed} old installer-output-* folder(s).`);
+  }
+}
+
+cleanStaleInstallerOutputs();
+
 const cleaned = tryRemoveDir(outputDir);
 if (cleaned) {
   console.log(`Cleaned desktop/${OUTPUT_DIR_NAME} for fresh build.`);

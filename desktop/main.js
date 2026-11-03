@@ -1,11 +1,11 @@
 const path = require("path");
 const { app, BrowserWindow, ipcMain } = require("electron");
 const { APP_DISPLAY_NAME } = require("./appBrand");
-const { initAutoUpdater } = require("./autoUpdater");
+const { initAutoUpdater, setUpdaterWindow } = require("./autoUpdater");
 const { loadDesktopEnv } = require("./loadEnv");
 const { getMonitorAgentSrcPath } = require("./paths");
 const { resolveWebAppTarget } = require("./webAppTarget");
-const { startBundledWebServer } = require("./bundledWebServer");
+const { startBundledWebServer, stopBundledWebServer } = require("./bundledWebServer");
 const {
   loadAuthSessionFile,
   saveAuthSessionFile,
@@ -51,7 +51,8 @@ async function loadWebApp(win) {
 
   if (target.mode === "bundle") {
     const url = await startBundledWebServer(target.webRoot);
-    win.loadURL(url);
+    const cacheBust = app.isPackaged ? "" : `?v=${Date.now()}`;
+    win.loadURL(`${url}${cacheBust}`);
     return;
   }
 
@@ -113,6 +114,7 @@ function createTeamManagerWindow() {
   });
 
   loadWebApp(win);
+  setUpdaterWindow(win);
 
   win.on("close", (e) => {
     if (getState().monitoring) {
@@ -128,4 +130,8 @@ startMonitorHost({
   createWindow: createTeamManagerWindow,
   trayTooltip: APP_DISPLAY_NAME,
   requestSingleInstanceLock: true,
+});
+
+app.on("before-quit", () => {
+  stopBundledWebServer();
 });

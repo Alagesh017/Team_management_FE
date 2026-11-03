@@ -9,6 +9,7 @@ import { useToast } from "../../../common/hooks/use-toast";
 import { getMemberKey } from "../components/board/constants";
 import {
   canAddEditDeleteProject,
+  canReviewTask,
   restrictionToastMessage,
 } from "../utils/projectPermissions";
 
@@ -28,6 +29,7 @@ export const useTaskBoard = () => {
   const [allocatedMembers, setAllocatedMembers] = useState([]);
   const [allAdmins, setAllAdmins]           = useState([]);
   const [loading, setLoading]               = useState(true);
+  const [syncingTaskId, setSyncingTaskId]   = useState(null);
   const [draggedTask, setDraggedTask]       = useState(null);
   const columnRefs = { current: {} };
 
@@ -65,6 +67,7 @@ export const useTaskBoard = () => {
   /* ── delete dialog ── */
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete]     = useState(null);
+  const [reviewActionTaskId, setReviewActionTaskId] = useState(null);
 
   /* ── permissions ── */
   const canAddEditDelete = useMemo(
@@ -78,6 +81,11 @@ export const useTaskBoard = () => {
     if (userRole !== "team_leader" && userRole !== "worker") return true;
     return true; // all managed types allow moving
   }, [project, user?.role]);
+
+  const canReview = useMemo(
+    () => canReviewTask(user?.role),
+    [user?.role]
+  );
 
   /* ── derived members ── */
   const availableMembers = useMemo(() => {
@@ -106,9 +114,22 @@ export const useTaskBoard = () => {
     ), [availableMembers, memberSearch]);
 
   /* ── data fetch ── */
-  const fetchData = async () => {
+  const refreshBoard = async () => {
     try {
-      setLoading(true);
+      const projectTaskData = await projectTaskService.getProjectTaskData(
+        currentProjectId,
+        sprintId
+      );
+      setStatuses(projectTaskData.statuses || []);
+      setAllocation(projectTaskData.allocation);
+    } catch (err) {
+      console.error("Failed to refresh board:", err);
+    }
+  };
+
+  const fetchData = async ({ withPageLoader = false } = {}) => {
+    try {
+      if (withPageLoader) setLoading(true);
       const promises = [
         projectService.getProjectById(currentProjectId),
         projectTaskService.getProjectTaskData(currentProjectId, sprintId),
@@ -130,18 +151,19 @@ export const useTaskBoard = () => {
       setAllocation(projectTaskData.allocation);
       setStatuses(projectTaskData.statuses || []);
       
-      // Update available members from the new API
       const availableUsers = availableUsersData.available_users || [];
       setAllocatedMembers(availableUsers.filter(m => m.type === "worker"));
       setAllAdmins(availableUsers.filter(m => m.type === "admin"));
     } catch (err) {
       console.error("Failed to fetch data:", err);
     } finally {
-      setLoading(false);
+      if (withPageLoader) setLoading(false);
     }
   };
 
-  useEffect(() => { if (currentProjectId) fetchData(); }, [currentProjectId, sprintId]);
+  useEffect(() => {
+    if (currentProjectId) fetchData({ withPageLoader: true });
+  }, [currentProjectId, sprintId]);
 
   useEffect(() => {
     if (newTaskEstimatedHours) setNewTaskActualHours(newTaskEstimatedHours);
@@ -200,7 +222,7 @@ export const useTaskBoard = () => {
         actual_hours: newTaskActualHours ? parseFloat(newTaskActualHours) : null,
       });
       closeAddPanel();
-      fetchData();
+      await refreshBoard();
     } catch (err) {
       console.error("Failed to create task:", err);
       toast({
@@ -236,7 +258,7 @@ export const useTaskBoard = () => {
         estimated_hours: editTaskData.estimated_hours ? parseFloat(editTaskData.estimated_hours) : null,
         actual_hours: editTaskData.actual_hours ? parseFloat(editTaskData.actual_hours) : null,
       });
-      await fetchData();
+      await refreshBoard();
       setIsTaskDetailsOpen(false);
     } catch (err) {
       console.error("Failed to update task:", err);
@@ -256,7 +278,7 @@ export const useTaskBoard = () => {
     try {
       setIsSaving(true);
       await taskService.deleteTask(taskToDelete.task_id);
-      await fetchData();
+      await refreshBoard();
       setIsDeleteDialogOpen(false);
       setTaskToDelete(null);
     } catch (err) {
@@ -309,18 +331,21 @@ export const useTaskBoard = () => {
       });
       return;
     }
+    const taskId = draggedTask.task_id;
     setStatuses((prev) => {
       const updated = prev.map((s) => ({
         ...s,
-        tasks: s.tasks ? s.tasks.filter((t) => t.task_id !== draggedTask.task_id) : [],
+        tasks: s.tasks ? s.tasks.filter((t) => t.task_id !== taskId) : [],
       }));
       const target = updated.find((s) => s.status_id === statusId);
       if (target) target.tasks = [...(target.tasks || []), { ...draggedTask, status_id: statusId }];
       return updated;
     });
     setDraggedTask(null);
+    setSyncingTaskId(taskId);
     try {
-      await taskService.updateTask(draggedTask.task_id, { status_id: statusId });
+      await taskService.updateTask(taskId, { status_id: statusId });
+      await refreshBoard();
     } catch (err) {
       console.error("Failed to update task status:", err);
       toast({
@@ -334,7 +359,37 @@ export const useTaskBoard = () => {
             : "Failed to update task status"),
         variant: "destructive",
       });
-      await fetchData();
+      await refreshBoard();
+    } finally {
+      setSyncingTaskId(null);
+    }
+  };
+
+  const handleReviewDecision = async (task, action) => {
+    if (!canReview) return;
+    try {
+      setReviewActionTaskId(task.task_id);
+      await taskService.reviewTaskDecision(task.task_id, action);
+      await refreshBoard();
+      toast({
+        title: action === "approve" ? "Task approved" : "Sent back to in progress",
+        description:
+          action === "approve"
+            ? "The task was moved to completed."
+            : "The task was moved to in progress.",
+      });
+    } catch (err) {
+      toast({
+        title: err?.restricted ? "Restricted" : "Error",
+        description:
+          err?.msg ||
+          err?.message ||
+          err?.error ||
+          "Could not update review status.",
+        variant: "destructive",
+      });
+    } finally {
+      setReviewActionTaskId(null);
     }
   };
 
@@ -379,7 +434,7 @@ export const useTaskBoard = () => {
         actual_hours: editTaskActualHours ? parseFloat(editTaskActualHours) : null,
       });
       cancelInlineEdit();
-      fetchData();
+      await refreshBoard();
     } catch (err) {
       console.error("Failed to update task:", err);
       toast({
@@ -441,9 +496,14 @@ export const useTaskBoard = () => {
     taskToDelete, setTaskToDelete,
     canAddEditDelete,
     canMoveCards,
+    canReview,
+    reviewActionTaskId,
+    syncingTaskId,
+    handleReviewDecision,
     availableMembers,
     filteredMembers,
     fetchData,
+    refreshBoard,
     openAddPanel,
     closeAddPanel,
     handleAddTask,
