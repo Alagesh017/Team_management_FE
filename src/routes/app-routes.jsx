@@ -21,6 +21,10 @@ import TaskExcelEditorPage from '../features/tasks/pages/TaskExcelEditorPage'
 import ProjectBacklogPage from '../features/tasks/pages/ProjectBacklogPage'
 import SprintManagementPage from '../features/sprints/pages/SprintManagementPage'
 import ReportPage from '../features/reports/pages/ReportPage'
+import LearnStackPage from '../features/learn-stack/pages/LearnStackPage'
+import LearnStackDetailPage from '../features/learn-stack/pages/LearnStackDetailPage'
+import LearnStackEditorPage from '../features/learn-stack/pages/LearnStackEditorPage'
+import ProjectCredentialsPage from '../features/project-credentials/pages/ProjectCredentialsPage'
 import LeavePage from '../features/leave/pages/LeavePage'
 import NotFoundPage from '../features/not-found/pages/NotFoundPage'
 import WorkTimeAnalyticsPage from '../features/monitor/pages/WorkTimeAnalyticsPage'
@@ -53,6 +57,7 @@ export default function AppRoutes() {
 				<Route path="/projects/:id" element={<ProjectDetailPage />} />
 				<Route path="/projects/:projectId/sprints" element={<SprintManagementPage />} />
 				<Route path="/project-allocation" element={<ProjectAllocationPage />} />
+				<Route path="/project-credentials" element={<ProjectCredentialsPage />} />
 				<Route path="/project-allocation/:projectId" element={<ProjectAllocationDetailPage />} />
 				<Route path="/tasks" element={<Tasks />} />
 				<Route path="/tasks/project/:projectId" element={<ProjectBacklogPage />} />
@@ -64,6 +69,11 @@ export default function AppRoutes() {
 				<Route path="/tasks/export/:projectId" element={<Navigate to="/tasks/export" replace />} />
 				<Route path="/tasks/editor/:excelId" element={<TaskExcelEditorPage />} />
 				<Route path="/reports" element={<ReportPage />} />
+				<Route path="/learn-stack" element={<LearnStackPage />} />
+				<Route path="/learn-stack/new" element={<LearnStackEditorPage />} />
+				<Route path="/learn-stack/:id/edit" element={<LearnStackEditorPage />} />
+				<Route path="/learn-stack/:id" element={<LearnStackDetailPage />} />
+				<Route path="/assistant" element={<Navigate to="/dashboard" replace />} />
 				<Route path="/meetings" element={<Navigate to="/404" replace />} />
 				<Route path="/permission-request" element={<Navigate to="/404" replace />} />
 				<Route path="/profile/complete" element={<ProfileCompletePage />} />

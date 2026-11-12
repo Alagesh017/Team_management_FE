@@ -114,12 +114,14 @@ export function useDashboardTeamActivity(summaryParams) {
   return { data, loading, error, refetch: fetchData };
 }
 
-export function useDashboardUpcomingDeadlines(deadlineParams) {
+export function useDashboardUpcomingDeadlines(deadlineParams, options = {}) {
+  const { enabled = true } = options;
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetchData = useCallback(async () => {
+    if (!enabled) return;
     setLoading(true);
     setError(null);
     try {
@@ -131,11 +133,15 @@ export function useDashboardUpcomingDeadlines(deadlineParams) {
     } finally {
       setLoading(false);
     }
-  }, [deadlineParams]);
+  }, [deadlineParams, enabled]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, enabled]);
 
   return { data, loading, error, refetch: fetchData };
 }

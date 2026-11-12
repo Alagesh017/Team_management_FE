@@ -15,8 +15,11 @@ import {
   getQuickDateRange,
   memberDisplayName,
 } from '../reportUtils';
+import { downloadBinaryFile } from '../../../core/utils/downloadFile';
+import { useToast } from '../../../common/hooks/use-toast';
 
 const ReportPage = () => {
+  const { toast } = useToast();
   const [data, setData] = useState(null);
   const [workforce, setWorkforce] = useState({ workers: [], admins: [] });
   const [allocations, setAllocations] = useState([]);
@@ -184,7 +187,10 @@ const ReportPage = () => {
 
   const groupedData = useMemo(() => buildGroupedReportData(filteredTasks), [filteredTasks]);
 
-  const reportStats = useMemo(() => computeReportStats(filteredTasks), [filteredTasks]);
+  const reportStats = useMemo(
+    () => computeReportStats(filteredTasks, { dateRange, dateField }),
+    [filteredTasks, dateRange, dateField]
+  );
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -200,15 +206,23 @@ const ReportPage = () => {
     return members.map((m) => memberDisplayName(m) || m).filter(Boolean).join(', ') || '-';
   };
 
-  const handleExportCsv = () => {
-    exportTasksCsv(filteredTasks, formatDate, getMemberNames);
+  const handleExportCsv = async () => {
+    try {
+      await exportTasksCsv(filteredTasks, formatDate, getMemberNames);
+    } catch (e) {
+      toast({
+        title: 'CSV export failed',
+        description: e?.message || 'Could not save file',
+        variant: 'destructive',
+      });
+    }
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
   // EXCEL GENERATION — Professional styled output using sheetjs-style
-  // Install: npm install xlsx-js-style
   // ─────────────────────────────────────────────────────────────────────────────
   const generateExcel = async () => {
+    try {
     const XLSX = await import('xlsx-js-style');
 
     // ── Colour palette ──────────────────────────────────────────────────────────
@@ -710,7 +724,22 @@ const ReportPage = () => {
     }
 
     const fileName = `Task_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(wb, fileName);
+    const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const result = await downloadBinaryFile(
+      fileName,
+      buffer,
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    if (result?.error) {
+      toast({ title: 'Excel export failed', description: result.error, variant: 'destructive' });
+    }
+    } catch (e) {
+      toast({
+        title: 'Excel export failed',
+        description: e?.message || 'Could not generate Excel file',
+        variant: 'destructive',
+      });
+    }
   };
   // ─────────────────────────────────────────────────────────────────────────────
   // END EXCEL GENERATION

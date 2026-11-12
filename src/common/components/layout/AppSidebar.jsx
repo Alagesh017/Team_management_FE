@@ -36,6 +36,8 @@ import {
   FileText,
   Activity,
   Radio,
+  BookOpen,
+  KeyRound,
 } from "lucide-react";
 import SprintForm from "../../../features/sprints/components/SprintForm";
 import { sprintService } from "../../../features/sprints/services/sprintService";
@@ -102,6 +104,7 @@ import { SidebarAmbientDecor } from "./SidebarAmbientDecor";
 const NAV_ACCENTS = {
   Dashboard: "blue",
   Reports: "violet",
+  "Learn Stack": "violet",
   "Work time": "cyan",
   "Activity Monitor": "emerald",
   "Live monitoring": "rose",
@@ -112,6 +115,7 @@ const NAV_ACCENTS = {
   Clients: "sky",
   Projects: "teal",
   "Project Allocation": "orange",
+  Credentials: "amber",
   Admin: "indigo",
   Workers: "amber",
   "Task Status": "fuchsia",
@@ -872,6 +876,8 @@ export function AppSidebar() {
   const menuItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Reports", url: "/reports", icon: FileText },
+    { title: "Learn Stack", url: "/learn-stack", icon: BookOpen },
+    { title: "Credentials", url: "/project-credentials", icon: KeyRound },
     {
       title: "Activity tracker",
       icon: Activity,
@@ -987,10 +993,10 @@ export function AppSidebar() {
                                         navigate(subItem.url);
                                         closeSidebarOnMobile();
                                       }}
-                                      className={`cursor-pointer ${isActive ? 'bg-blue-50 text-blue-600' : ''}`}
+                                      className={`flex cursor-pointer items-center gap-2 ${isActive ? 'bg-blue-50 text-blue-600' : ''}`}
                                     >
-                                      {subItem.icon && <subItem.icon className="h-4 w-4 mr-2" />}
-                                      {subItem.title}
+                                      {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
+                                      <span>{subItem.title}</span>
                                     </DropdownMenuItem>
                                   );
                                 })}
@@ -1015,9 +1021,9 @@ export function AppSidebar() {
                                   return (
                                     <SidebarMenuSubItem key={subItem.title}>
                                       <SidebarMenuSubButton asChild isActive={isActive} className={cn(sidebarSubAccent(subItem.title), "relative pr-6")}>
-                                        <Link to={subItem.url} onClick={closeSidebarOnMobile} className="w-full flex items-center">
-                                          {subItem.icon && <subItem.icon className="h-4 w-4" />}
-                                          <span>{subItem.title}</span>
+                                        <Link to={subItem.url} onClick={closeSidebarOnMobile} className="flex w-full items-center gap-2">
+                                          {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
+                                          <span className="truncate">{subItem.title}</span>
                                           {isActive && (
                                             <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-600">
                                               <ChevronRight className="h-3 w-3" />
@@ -1145,10 +1151,10 @@ export function AppSidebar() {
                                             navigate(subItem.url);
                                             closeSidebarOnMobile();
                                           }}
-                                          className={`cursor-pointer ${isActive ? "bg-blue-50 text-blue-600" : ""}`}
+                                          className={`flex cursor-pointer items-center gap-2 ${isActive ? "bg-blue-50 text-blue-600" : ""}`}
                                         >
-                                          {subItem.icon && <subItem.icon className="h-4 w-4 mr-2" />}
-                                          {subItem.title}
+                                          {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
+                                          <span>{subItem.title}</span>
                                         </DropdownMenuItem>
                                       );
                                     })}
@@ -1186,9 +1192,9 @@ export function AppSidebar() {
                                       return (
                                         <SidebarMenuSubItem key={subItem.title}>
                                           <SidebarMenuSubButton asChild isActive={isActive} className={cn(sidebarSubAccent(subItem.title), "relative pr-6")}>
-                                            <Link to={subItem.url} onClick={closeSidebarOnMobile} className="w-full flex items-center">
-                                              {subItem.icon && <subItem.icon className="h-4 w-4" />}
-                                              <span>{subItem.title}</span>
+                                            <Link to={subItem.url} onClick={closeSidebarOnMobile} className="flex w-full items-center gap-2">
+                                              {subItem.icon && <subItem.icon className="h-4 w-4 shrink-0" />}
+                                              <span className="truncate">{subItem.title}</span>
                                               {isActive && (
                                                 <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-600">
                                                   <ChevronRight className="h-3 w-3" />

@@ -2,6 +2,11 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("teamManagerDesktop", {
   isDesktop: true,
+  saveDownload: (payload) => ipcRenderer.invoke("desktop:saveDownload", payload),
+  /** Clears HTTP cache and reloads UI. keepLogin defaults to true. */
+  clearWebCache: (options) => ipcRenderer.invoke("desktop:clearWebCache", options),
+  /** Clears cache, cookies, site data, saved login; reloads like a fresh install. */
+  clearAppData: () => ipcRenderer.invoke("desktop:clearAppData"),
 });
 
 contextBridge.exposeInMainWorld("desktopUpdater", {

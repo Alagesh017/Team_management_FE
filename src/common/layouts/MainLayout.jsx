@@ -25,6 +25,8 @@ import { projectGroupService } from "../../features/projects/services/projectGro
 import { useDesktopUpdater } from "../../features/desktop/hooks/useDesktopUpdater";
 import { DesktopUpdateTopBar } from "../../features/desktop/components/DesktopUpdateTopBar";
 import { DesktopUpdateProgressToast } from "../../features/desktop/components/DesktopUpdateProgressToast";
+import { DesktopClearCacheDialog } from "../../features/desktop/components/DesktopClearCacheDialog";
+import { canClearDesktopAppData } from "../../features/desktop/desktopAppData";
 
 // Icon mapper for menu items
 const iconMap = {
@@ -61,6 +63,8 @@ export function MainLayout({ children }) {
     downloadUpdate,
   } = useDesktopUpdater();
   const [updateBusy, setUpdateBusy] = useState(false);
+  const [clearCacheOpen, setClearCacheOpen] = useState(false);
+  const desktopClearCacheEnabled = canClearDesktopAppData();
 
   // Fetch groups and projects for search
   useEffect(() => {
@@ -245,7 +249,10 @@ export function MainLayout({ children }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="p-0 shadow-2xl border-slate-100 overflow-hidden">
-                <ProfileMenuContent onNavigateAway={() => {}} />
+                <ProfileMenuContent
+                  onNavigateAway={() => {}}
+                  onOpenClearCache={desktopClearCacheEnabled ? () => setClearCacheOpen(true) : undefined}
+                />
                 <DropdownMenuSeparator className="bg-slate-100 m-0" />
                 <div className="p-2">
                 <DropdownMenuItem 
@@ -264,6 +271,9 @@ export function MainLayout({ children }) {
           {page}
         </div>
         {desktopUpdaterEnabled && <DesktopUpdateProgressToast state={updaterState} />}
+        {desktopClearCacheEnabled && (
+          <DesktopClearCacheDialog open={clearCacheOpen} onOpenChange={setClearCacheOpen} />
+        )}
       </SidebarInset>
     </SidebarProvider>
   );

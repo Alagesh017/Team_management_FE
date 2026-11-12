@@ -1,6 +1,6 @@
 {
   "name": "dce-task-manager-desktop",
-  "version": "1.0.7",
+  "version": "1.0.9",
   "description": "Dce task manager — desktop app with built-in activity monitoring",
   "main": "main.js",
   "author": "DCE",

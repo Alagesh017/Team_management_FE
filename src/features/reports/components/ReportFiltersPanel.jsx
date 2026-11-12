@@ -55,11 +55,16 @@ export default function ReportFiltersPanel({
           onChange={(e) => onDateFieldChange(e.target.value)}
           className={selectClass}
         >
-          <option value="span">Active in period (start → due)</option>
-          <option value="start">Start date in period</option>
-          <option value="due">Due date in period</option>
+          <option value="span">Active in period (start → due, recommended)</option>
+          <option value="start">Start date in period only</option>
+          <option value="due">Due date in period only</option>
           <option value="either">Start or due in period</option>
         </select>
+        {dateField === "span" ? (
+          <p className="text-[9px] text-slate-500 leading-snug mt-1">
+            Multi-day tasks appear on every day from start through due. Hours are split across those days.
+          </p>
+        ) : null}
 
         <span className={cn(labelClass, "mt-1")}>Period</span>
         <div className="flex flex-wrap gap-1">

@@ -1,5 +1,16 @@
 const USER_STORAGE_KEY = "user";
 const LAST_PATH_KEY = "auth_last_path";
+const DEFAULT_AUTH_PATH = "/dashboard";
+
+/** Removed or retired app routes — never restore these after login. */
+const RETIRED_AUTH_PATHS = new Set(["/assistant"]);
+
+function normalizeAuthPath(path) {
+  if (!path || path === "/") return DEFAULT_AUTH_PATH;
+  const base = path.split("?")[0].split("#")[0];
+  if (RETIRED_AUTH_PATHS.has(base)) return DEFAULT_AUTH_PATH;
+  return path;
+}
 
 function desktopAuthApi() {
   if (typeof window === "undefined") return null;
@@ -14,7 +25,7 @@ export async function hydrateAuthFromDesktopDisk() {
     if (!fromDisk || typeof fromDisk !== "object") return null;
     const { lastPath, ...user } = fromDisk;
     if (lastPath) {
-      localStorage.setItem(LAST_PATH_KEY, lastPath);
+      localStorage.setItem(LAST_PATH_KEY, normalizeAuthPath(lastPath));
     }
     if (user.userId || user.accessToken) {
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
@@ -41,15 +52,22 @@ function clearDesktopDisk() {
 
 export function saveAuthLastPath(path) {
   if (!path || path === "/" || path.startsWith("/register")) return;
-  localStorage.setItem(LAST_PATH_KEY, path);
+  const normalized = normalizeAuthPath(path);
+  const base = normalized.split("?")[0].split("#")[0];
+  if (RETIRED_AUTH_PATHS.has(base)) return;
+  localStorage.setItem(LAST_PATH_KEY, normalized);
   const user = loadStoredUser();
   if (user) mirrorToDesktopDisk(user);
 }
 
 export function getAuthLastPath() {
   const path = localStorage.getItem(LAST_PATH_KEY);
-  if (path && path !== "/") return path;
-  return "/dashboard";
+  const normalized = normalizeAuthPath(path);
+  if (path && normalized !== path) {
+    localStorage.setItem(LAST_PATH_KEY, normalized);
+  }
+  if (normalized && normalized !== "/") return normalized;
+  return DEFAULT_AUTH_PATH;
 }
 
 export function loadStoredUser() {

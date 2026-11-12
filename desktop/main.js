@@ -1,5 +1,6 @@
 const path = require("path");
-const { app, BrowserWindow, ipcMain } = require("electron");
+const fs = require("fs");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const { APP_DISPLAY_NAME } = require("./appBrand");
 const { initAutoUpdater, setUpdaterWindow } = require("./autoUpdater");
 const { loadDesktopEnv } = require("./loadEnv");
@@ -29,6 +30,73 @@ function registerDesktopAuthIpc() {
       clearAuthSessionFile();
     }
     return { ok: true };
+  });
+
+  ipcMain.handle("desktop:saveDownload", async (event, payload) => {
+    const fileName = payload?.fileName || "download.bin";
+    const dataBase64 = payload?.dataBase64;
+    if (!dataBase64 || typeof dataBase64 !== "string") {
+      return { ok: false, error: "Missing file data" };
+    }
+
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const ext = path.extname(fileName).replace(/^\./, "") || "bin";
+    const isExcel = ext === "xlsx" || String(payload?.mimeType || "").includes("spreadsheet");
+    const { canceled, filePath } = await dialog.showSaveDialog(win || undefined, {
+      title: "Save file",
+      defaultPath: path.join(app.getPath("downloads"), fileName),
+      filters: isExcel
+        ? [{ name: "Excel workbook", extensions: ["xlsx"] }]
+        : ext === "csv"
+          ? [{ name: "CSV", extensions: ["csv"] }]
+          : [{ name: "All files", extensions: ["*"] }],
+    });
+
+    if (canceled || !filePath) {
+      return { ok: false, canceled: true };
+    }
+
+    try {
+      fs.writeFileSync(filePath, Buffer.from(dataBase64, "base64"));
+      return { ok: true, filePath };
+    } catch (err) {
+      return { ok: false, error: err?.message || String(err) };
+    }
+  });
+
+  ipcMain.handle("desktop:clearWebCache", async (event, options = {}) => {
+    const keepLogin = options?.keepLogin !== false;
+    const wc = event.sender;
+    const ses = wc.session;
+    try {
+      await ses.clearCache();
+      if (!keepLogin) {
+        await ses.clearStorageData();
+        clearAuthSessionFile();
+      }
+      wc.reloadIgnoringCache();
+      return { ok: true, keepLogin };
+    } catch (err) {
+      return { ok: false, error: err?.message || String(err) };
+    }
+  });
+
+  /** Full reset: HTTP cache, cookies, local storage, saved login — then hard reload. */
+  ipcMain.handle("desktop:clearAppData", async (event) => {
+    const wc = event.sender;
+    const ses = wc.session;
+    try {
+      await ses.clearCache();
+      await ses.clearStorageData();
+      if (typeof ses.clearAuthCache === "function") {
+        await ses.clearAuthCache();
+      }
+      clearAuthSessionFile();
+      wc.reloadIgnoringCache();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err?.message || String(err) };
+    }
   });
 }
 

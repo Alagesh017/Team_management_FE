@@ -1,20 +1,22 @@
 import React from "react";
-import { Briefcase, ChevronRight, DownloadCloud, Mail, Phone, User } from "lucide-react";
+import { Briefcase, ChevronRight, DownloadCloud, Mail, Phone, RefreshCw, User } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
 import { CircularProgress } from "./CircularProgress";
 import { useProfile } from "../contexts/ProfileContext";
 import { useAuth } from "../../auth/contexts/AuthContext";
 import { UserAvatar } from "../../../common/components/UserAvatar";
-import { getFullAvatarUrl } from "../../../core/utils/utils";
 import { useDesktopUpdater } from "../../desktop/hooks/useDesktopUpdater";
 import { useToast } from "../../../common/hooks/use-toast";
+import { canClearDesktopAppData } from "../../desktop/desktopAppData";
 
-export function ProfileMenuContent({ onNavigateAway }) {
+export function ProfileMenuContent({ onNavigateAway, onOpenClearCache }) {
   const { profile, completion, allocations, roleLabel, openOnboarding } = useProfile();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { enabled: desktopUpdaterEnabled, checkForUpdates, state: updaterState } = useDesktopUpdater();
+  const desktopClearEnabled = canClearDesktopAppData() && typeof onOpenClearCache === "function";
   const percent = completion?.percent ?? user?.completionPercent ?? 0;
 
   const handleCheckForUpdates = async () => {
@@ -151,6 +153,20 @@ export function ProfileMenuContent({ onNavigateAway }) {
         >
           <DownloadCloud className="h-4 w-4 text-slate-500" />
           {updaterState.phase === "checking" ? "Checking for updates…" : "Check for updates"}
+        </button>
+      )}
+
+      {desktopClearEnabled && (
+        <button
+          type="button"
+          className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-50"
+          onClick={() => {
+            onNavigateAway?.();
+            onOpenClearCache();
+          }}
+        >
+          <RefreshCw className="h-4 w-4 text-amber-600" />
+          Clear cache & cookies
         </button>
       )}
     </div>

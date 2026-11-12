@@ -39,6 +39,19 @@ Uses `desktop/.env` → `WEB_APP_URL=embedded` (full app inside Electron).
 
 Do **not** use `npm run desktop` alone after code changes — that skips the Vite build and shows an old `dist-desktop`.
 
+**Clear cache (stale UI, old JS, weird report/dashboard data in the app)**
+
+| Goal | What to do |
+|------|------------|
+| **Refresh UI, keep login** | Quit from **system tray**, reopen the app. Or after updating the installed `.exe`, open the new version once. |
+| **Desktop: clear browser cache + reload** | Profile menu (avatar) → **Clear cache & cookies** — confirms, then wipes cache/cookies/login and reloads. |
+| **Desktop: clear browser cache + reload (dev)** | DevTools Console: `teamManagerDesktop.clearWebCache()` |
+| **Full reset (logout + cache)** | In the app: **Log out**. Or DevTools: `teamManagerDesktop.clearWebCache({ keepLogin: false })`. |
+| **Browser (web)** | `Ctrl+Shift+R` hard refresh, or clear site data for your Team Manager URL in Chrome/Edge settings. |
+| **Nuclear (desktop)** | Quit app completely → delete folder `%APPDATA%\Dce task manager` (Windows) → reinstall or start app and log in again. |
+
+Installed app UI comes from **`resources/web-app`** inside the `.exe` — clearing cache does **not** replace a new build; run **`npm run desktop:dist`** and install the new Setup.exe when developers ship UI changes.
+
 ---
 
 ## Build Windows installer (.exe)

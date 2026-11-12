@@ -1,5 +1,6 @@
 import { taskStatusFlags } from "../tasks/utils/taskStatusFlags";
 import { localDateInputValue } from "../../core/utils/utils";
+import { downloadTextFile } from "../../core/utils/downloadFile";
 
 function parseLocalDateOnly(isoDate) {
   if (!isoDate) return null;
@@ -9,17 +10,36 @@ function parseLocalDateOnly(isoDate) {
   return new Date(y, m - 1, d);
 }
 
+function readTaskDateField(task, keys) {
+  for (const key of keys) {
+    const v = task?.[key];
+    if (v != null && v !== "") return v;
+  }
+  return null;
+}
+
 function taskLocalCalendarDate(raw) {
-  if (!raw) return null;
-  const d = new Date(raw);
+  if (raw == null || raw === "") return null;
+  const str = String(raw).trim();
+  const iso = str.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (iso) return parseLocalDateOnly(iso[1]);
+  const d = new Date(str);
   if (Number.isNaN(d.getTime())) return null;
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+function daysInclusive(startDate, endDate) {
+  if (!startDate || !endDate) return 1;
+  const msPerDay = 86400000;
+  return Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / msPerDay) + 1);
+}
+
 /** Inclusive calendar span for a task (start_date → due_date). Single date if only one is set. */
 export function getTaskDateSpan(task) {
-  const start = taskLocalCalendarDate(task.start_date);
-  const end = taskLocalCalendarDate(task.due_date);
+  const startRaw = readTaskDateField(task, ["start_date", "startDate"]);
+  const endRaw = readTaskDateField(task, ["due_date", "dueDate", "end_date", "endDate"]);
+  const start = taskLocalCalendarDate(startRaw);
+  const end = taskLocalCalendarDate(endRaw);
   if (start && end) {
     if (start.getTime() > end.getTime()) {
       return { start: end, end: start };
@@ -36,28 +56,50 @@ function rangesOverlap(rangeStart, rangeEnd, spanStart, spanEnd) {
 }
 
 function taskMatchesReportDateFilter(task, reportStart, reportEnd, dateField) {
-  if (dateField === "span") {
+  const mode = dateField || "span";
+
+  if (mode === "span") {
     const span = getTaskDateSpan(task);
     if (!span) return false;
     return rangesOverlap(reportStart, reportEnd, span.start, span.end);
   }
 
-  if (dateField === "due") {
-    const d = taskLocalCalendarDate(task.due_date);
+  if (mode === "due") {
+    const d = taskLocalCalendarDate(readTaskDateField(task, ["due_date", "dueDate", "end_date"]));
     if (!d) return false;
     return d >= reportStart && d <= reportEnd;
   }
 
-  if (dateField === "either") {
-    const startD = taskLocalCalendarDate(task.start_date);
-    const dueD = taskLocalCalendarDate(task.due_date);
+  if (mode === "either") {
+    const startD = taskLocalCalendarDate(readTaskDateField(task, ["start_date", "startDate"]));
+    const dueD = taskLocalCalendarDate(readTaskDateField(task, ["due_date", "dueDate", "end_date"]));
     const inRange = (d) => d && d >= reportStart && d <= reportEnd;
     return inRange(startD) || inRange(dueD);
   }
 
-  const d = taskLocalCalendarDate(task.start_date);
+  const d = taskLocalCalendarDate(readTaskDateField(task, ["start_date", "startDate"]));
   if (!d) return false;
   return d >= reportStart && d <= reportEnd;
+}
+
+/** Split est/act hours across task schedule days that fall inside the report range. */
+export function getTaskHoursForReportPeriod(task, reportStart, reportEnd, dateField = "span") {
+  const est = Number(task.estimated_hours) || 0;
+  const act = Number(task.actual_hours) || 0;
+  if (dateField !== "span" || !reportStart || !reportEnd) {
+    return { est, act };
+  }
+  const span = getTaskDateSpan(task);
+  if (!span) return { est, act };
+
+  const overlapStart = span.start > reportStart ? span.start : reportStart;
+  const overlapEnd = span.end < reportEnd ? span.end : reportEnd;
+  if (overlapStart > overlapEnd) return { est: 0, act: 0 };
+
+  const spanDays = daysInclusive(span.start, span.end);
+  const overlapDays = daysInclusive(overlapStart, overlapEnd);
+  const ratio = overlapDays / spanDays;
+  return { est: est * ratio, act: act * ratio };
 }
 
 export function getQuickDateRange(type) {
@@ -204,7 +246,7 @@ export function filterReportTasks(allTasks, filters) {
       start.setHours(0, 0, 0, 0);
       end.setHours(23, 59, 59, 999);
       list = list.filter((task) =>
-        taskMatchesReportDateFilter(task, start, end, dateField || "span")
+        taskMatchesReportDateFilter(task, start, end, dateField)
       );
     }
   }
@@ -263,20 +305,36 @@ export function buildGroupedReportData(filteredTasks) {
   return grouped;
 }
 
-export function computeReportStats(tasks) {
+export function computeReportStats(tasks, options = {}) {
+  const { dateRange, dateField = "span" } = options;
+  let reportStart = null;
+  let reportEnd = null;
+  if (dateRange?.start && dateRange?.end) {
+    reportStart = parseLocalDateOnly(dateRange.start);
+    reportEnd = parseLocalDateOnly(dateRange.end);
+    if (reportStart && reportEnd) {
+      reportStart.setHours(0, 0, 0, 0);
+      reportEnd.setHours(23, 59, 59, 999);
+    } else {
+      reportStart = null;
+      reportEnd = null;
+    }
+  }
+
   let est = 0;
   let act = 0;
   const byStatus = {};
   tasks.forEach((t) => {
-    est += Number(t.estimated_hours) || 0;
-    act += Number(t.actual_hours) || 0;
+    const hours = getTaskHoursForReportPeriod(t, reportStart, reportEnd, dateField);
+    est += hours.est;
+    act += hours.act;
     const st = t.status_name || t.status || "Unknown";
     byStatus[st] = (byStatus[st] || 0) + 1;
   });
   return { count: tasks.length, est, act, byStatus };
 }
 
-export function exportTasksCsv(tasks, formatDate, getMemberNames) {
+export async function exportTasksCsv(tasks, formatDate, getMemberNames) {
   const headers = [
     "Task Title",
     "Project",
@@ -314,13 +372,10 @@ export function exportTasksCsv(tasks, formatDate, getMemberNames) {
       .map(escape)
       .join(",")
   );
-  const blob = new Blob([[headers.join(","), ...rows].join("\n")], {
-    type: "text/csv;charset=utf-8;",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Task_Report_${new Date().toISOString().split("T")[0]}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const csvBody = [headers.join(","), ...rows].join("\n");
+  await downloadTextFile(
+    `Task_Report_${new Date().toISOString().split("T")[0]}.csv`,
+    csvBody,
+    "text/csv;charset=utf-8"
+  );
 }
