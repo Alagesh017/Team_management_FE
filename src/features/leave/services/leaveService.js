@@ -63,6 +63,24 @@ const deleteLeave = async (id) => {
   }
 };
 
+const getMailRecipients = async () => {
+  try {
+    const response = await api.get("/leave/mail-recipients");
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
+const composeMail = async (data) => {
+  try {
+    const response = await api.post("/leave/compose-mail", data);
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
 const uploadAttachment = async (file) => {
   try {
     const formData = new FormData();
@@ -87,4 +105,6 @@ export const leaveService = {
   cancelLeave,
   deleteLeave,
   uploadAttachment,
+  getMailRecipients,
+  composeMail,
 };

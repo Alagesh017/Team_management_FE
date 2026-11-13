@@ -18,6 +18,7 @@ import {
   FormSheetSection,
 } from "../../../common/components/FormSheet";
 import { useToast } from "../../../common/hooks/use-toast";
+import { useAuth } from "../../auth/contexts/AuthContext";
 
 // Helper to convert 24h to 12h format
 const to12Hour = (time24) => {
@@ -103,7 +104,9 @@ const TimePicker12H = ({ value, onChange, label }) => {
   );
 };
 
-const LeaveForm = ({ onSubmit, submitting, error }) => {
+const LeaveForm = ({ onSubmit, onOpenCompose, composeLoading, submitting, error }) => {
+  const { user } = useAuth();
+  const needsMail = String(user?.role || "").toLowerCase() !== "superadmin";
   const [formData, setFormData] = useState({
     type: "leave",
     leave_subtype: "full_day",
@@ -177,7 +180,11 @@ const LeaveForm = ({ onSubmit, submitting, error }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    if (needsMail && onOpenCompose) {
+      onOpenCompose(formData);
+      return;
+    }
+    onSubmit({ ...formData, send_notification_email: false });
   };
 
   return (
@@ -312,10 +319,10 @@ const LeaveForm = ({ onSubmit, submitting, error }) => {
 
       <FormSheetFooter>
         <FormSheetActions
-          submitting={submitting}
+          submitting={submitting || composeLoading}
           isEdit={false}
-          submitLabel="Submit Request"
-          editSubmitLabel="Submit Request"
+          submitLabel={needsMail ? "Next: compose email" : "Submit Request"}
+          editSubmitLabel={needsMail ? "Next: compose email" : "Submit Request"}
         />
       </FormSheetFooter>
     </form>

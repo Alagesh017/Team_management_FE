@@ -9,7 +9,14 @@ import {
 	isDefinitiveAuthFailure,
 } from '../../features/auth/authStorage'
 
-const API_URL = import.meta.env.VITE_API_URL
+const API_URL =
+	import.meta.env.VITE_API_URL ||
+	(typeof window !== 'undefined' && window.__DCE_API_URL__) ||
+	'http://127.0.0.1:5050/api/v1'
+
+if (!import.meta.env.VITE_API_URL && typeof console !== 'undefined') {
+	console.warn('[api] VITE_API_URL missing; using', API_URL)
+}
 
 const api = axios.create({
 	baseURL: API_URL,

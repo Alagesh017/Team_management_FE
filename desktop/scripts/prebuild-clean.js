@@ -80,6 +80,32 @@ if (cleaned) {
   console.warn(`Build will use desktop/${fallback} instead.`);
   console.warn("Quit Team Manager from the tray when you can, then delete old folders manually.");
   console.warn("");
+  const staleNote = path.join(__dirname, "..", OUTPUT_DIR_NAME, "DO-NOT-USE-STALE-BUILD.txt");
+  try {
+    fs.writeFileSync(
+      staleNote,
+      [
+        "This folder is OUT OF DATE and may be missing resources/monitor-agent and resources/web-app.",
+        "",
+        `Use the installer from: desktop/${fallback}/`,
+        "",
+        `Written: ${new Date().toISOString()}`,
+      ].join("\n"),
+      "utf8"
+    );
+  } catch (_) {
+    /* ignore */
+  }
+  fs.writeFileSync(
+    path.join(__dirname, "..", "LATEST-BUILD.txt"),
+    [
+      `Installer output: desktop/${fallback}/`,
+      `Created: ${new Date().toISOString()}`,
+      "",
+      "Run the Setup .exe from that folder only.",
+    ].join("\n"),
+    "utf8"
+  );
   process.exit(0);
 }
 

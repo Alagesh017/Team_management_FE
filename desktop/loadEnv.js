@@ -26,8 +26,14 @@ function loadDesktopEnv() {
   const desktopDir = __dirname;
 
   if (isPackagedApp()) {
+    // Windows user env often keeps WEB_APP_URL from npm run desktop:dev — that breaks the installer UI.
+    delete process.env.WEB_APP_URL;
+    delete process.env.VITE_DEV_SERVER_URL;
     parseEnvFile(path.join(process.resourcesPath, "app-config.env"), true);
     parseEnvFile(path.join(getMonitorAgentRoot(), ".env"), true);
+    if (!String(process.env.WEB_APP_URL || "").trim()) {
+      process.env.WEB_APP_URL = "embedded";
+    }
     return;
   }
 

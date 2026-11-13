@@ -1,6 +1,6 @@
 {
   "name": "dce-task-manager-desktop",
-  "version": "1.0.9",
+  "version": "1.1.1",
   "description": "Dce task manager — desktop app with built-in activity monitoring",
   "main": "main.js",
   "author": "DCE",
@@ -14,8 +14,8 @@
     "start": "electron .",
     "dev": "electron .",
     "clean": "node scripts/prebuild-clean.js",
-    "predist": "node scripts/prebuild-clean.js",
-    "prepack": "node scripts/prebuild-clean.js",
+    "predist": "node scripts/prebuild-clean.js && node scripts/sync-monitor-agent.js && node scripts/verify-monitor-agent.js",
+    "prepack": "node scripts/prebuild-clean.js && node scripts/sync-monitor-agent.js && node scripts/verify-monitor-agent.js",
     "pack": "node scripts/run-dist.js --dir",
     "dist": "node scripts/run-dist.js",
     "dist:publish": "node scripts/run-dist.js --publish"
@@ -74,14 +74,14 @@
         ]
       },
       {
-        "from": "../../employee-monitor-agent/src",
+        "from": "bundled/monitor-agent/src",
         "to": "monitor-agent/src",
         "filter": [
           "**/*"
         ]
       },
       {
-        "from": "../../employee-monitor-agent/config.default.js",
+        "from": "bundled/monitor-agent/config.default.js",
         "to": "monitor-agent/config.default.js"
       }
     ],

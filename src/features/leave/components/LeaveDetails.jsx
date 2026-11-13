@@ -174,13 +174,47 @@ const LeaveDetails = ({ leave, open, onOpenChange, onUpdate }) => {
           )}
 
           {/* Review Info */}
-          {leave.reviewed_by_person && (
-            <div className="p-4 border border-slate-200 rounded-lg bg-slate-50">
-              <p className="text-sm font-medium text-slate-500 mb-3">
-                {leave.status === "approved" ? "Approved By" : "Rejected By"}
+          {leave.notify_to_admin && leave.status === "pending" && (
+            <div className="p-4 border border-blue-200 rounded-xl bg-blue-50/80">
+              <p className="text-sm font-medium text-blue-900 mb-1">Email sent to</p>
+              <p className="font-semibold text-blue-950">
+                {leave.notify_to_admin.name}{" "}
+                <span className="font-normal text-blue-800">({leave.notify_to_admin.email})</span>
               </p>
+            </div>
+          )}
+
+          {leave.status === "approved" && leave.reviewed_by_person && (
+            <div className="p-5 border-2 border-emerald-200 rounded-xl bg-gradient-to-br from-emerald-50 to-white shadow-sm">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-8 h-8 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
+                    Approved
+                  </p>
+                  <p className="text-lg font-semibold text-slate-900 mt-1">
+                    {leave.reviewed_by_person?.first_name} {leave.reviewed_by_person?.last_name}
+                  </p>
+                  <p className="text-sm text-slate-600 capitalize">
+                    {leave.reviewed_by_role?.replace("_", " ") || "Approver"}
+                    {leave.reviewed_by_person?.email ? ` · ${leave.reviewed_by_person.email}` : ""}
+                  </p>
+                  <p className="text-sm text-slate-500 mt-1">{formatDate(leave.reviewed_at)}</p>
+                  {leave.review_comment && (
+                    <p className="mt-3 p-3 bg-white border border-emerald-100 rounded-lg text-slate-700 text-sm">
+                      {leave.review_comment}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {leave.status === "rejected" && leave.reviewed_by_person && (
+            <div className="p-4 border border-red-200 rounded-xl bg-red-50/80">
+              <p className="text-sm font-medium text-red-800 mb-3">Rejected by</p>
               <div className="flex items-center gap-3">
-                <User className="w-5 h-5 text-slate-400" />
+                <User className="w-5 h-5 text-red-500" />
                 <div>
                   <p className="font-semibold text-slate-900">
                     {leave.reviewed_by_person?.first_name} {leave.reviewed_by_person?.last_name}
@@ -189,7 +223,7 @@ const LeaveDetails = ({ leave, open, onOpenChange, onUpdate }) => {
                 </div>
               </div>
               {leave.review_comment && (
-                <p className="mt-3 p-3 bg-white border border-slate-200 rounded-lg text-slate-700">
+                <p className="mt-3 p-3 bg-white border border-red-100 rounded-lg text-slate-700 text-sm">
                   {leave.review_comment}
                 </p>
               )}

@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { DataTable } from "../../../common/components/DataTable";
 import { ConfirmDialog } from "../../../common/components/ConfirmDialog";
 import { leaveService } from "../services/leaveService";
@@ -16,6 +17,7 @@ import {
 import { MoreHorizontal, Plus, Eye, CheckCircle2, XCircle, Loader2, Calendar, Clock, Trash2, Clock3 } from "lucide-react";
 import LeaveForm from "../components/LeaveForm";
 import LeaveDetails from "../components/LeaveDetails";
+import LeaveMailComposeDialog from "../components/LeaveMailComposeDialog";
 import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
 import { useToast } from "../../../common/hooks/use-toast";
 import { useAuth } from "../../auth/contexts/AuthContext";
@@ -79,35 +81,70 @@ const LeavePage = () => {
   const [leaveToDelete, setLeaveToDelete] = useState(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [mailComposeOpen, setMailComposeOpen] = useState(false);
+  const [leaveDraft, setLeaveDraft] = useState(null);
+  const [composeLoading, setComposeLoading] = useState(false);
+  const [initialCompose, setInitialCompose] = useState(null);
   const [activeTab, setActiveTab] = useState("my");
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const location = useLocation();
 
-  const fetchLeaves = async () => {
+  const fetchLeaves = useCallback(async () => {
+    if (!user?.accessToken) {
+      return;
+    }
     try {
       setLoading(true);
-      let result;
-      if (activeTab === "my") {
-        result = await leaveService.getMyLeaves();
-      } else {
-        result = await leaveService.getAllLeaves();
-      }
-      if (result.status === 1) {
+      const result =
+        activeTab === "my"
+          ? await leaveService.getMyLeaves()
+          : await leaveService.getAllLeaves();
+      if (result?.status === 1) {
         setLeaves(result.leaves || []);
+      } else {
+        setLeaves([]);
+        toast({
+          title: "Could not load leave requests",
+          description: result?.msg || result?.error || "Unexpected server response",
+          variant: "destructive",
+        });
       }
     } catch (err) {
       console.error("Failed to fetch leave requests:", err);
+      setLeaves([]);
+      toast({
+        title: "Could not load leave requests",
+        description:
+          err?.msg || err?.error || err?.message || "Check that the API is running on port 5050",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, user?.accessToken, toast]);
 
   useEffect(() => {
+    if (authLoading || !user) {
+      return;
+    }
+    if (!location.pathname.endsWith("/leave") && location.pathname !== "/leave") {
+      return;
+    }
     fetchLeaves();
-  }, [activeTab]);
+  }, [authLoading, user, location.pathname, location.key, activeTab, fetchLeaves]);
 
-  const handleView = (leave) => {
-    setViewingLeave(leave);
+  const handleView = async (leave) => {
+    try {
+      const res = await leaveService.getLeaveById(leave.id);
+      if (res.status === 1 && res.leave) {
+        setViewingLeave(res.leave);
+      } else {
+        setViewingLeave(leave);
+      }
+    } catch {
+      setViewingLeave(leave);
+    }
     setIsViewDialogOpen(true);
   };
 
@@ -169,6 +206,33 @@ const LeavePage = () => {
     }
   };
 
+  const handleOpenCompose = async (draft) => {
+    setComposeLoading(true);
+    setLeaveDraft(draft);
+    setInitialCompose(null);
+    try {
+      const res = await leaveService.composeMail(draft);
+      if (res.status === 1) {
+        setInitialCompose(res);
+        setMailComposeOpen(true);
+      } else {
+        toast({
+          title: "Could not open email",
+          description: res.msg || res.error || "Server error",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Could not open email",
+        description: err?.msg || err?.error || err?.message || "Check API is running and leave routes are deployed",
+        variant: "destructive",
+      });
+    } finally {
+      setComposeLoading(false);
+    }
+  };
+
   const onSubmit = async (data) => {
     setSubmitting(true);
     setError("");
@@ -176,11 +240,14 @@ const LeavePage = () => {
       const result = await leaveService.createLeave(data);
       if (result.status === 1) {
         setIsSheetOpen(false);
+        setMailComposeOpen(false);
+        setLeaveDraft(null);
+        setInitialCompose(null);
         fetchLeaves();
         toast({
           title: "Success",
           description: result.msg || "Request created successfully",
-          variant: "success"
+          variant: result.mail_warning ? "default" : "success"
         });
       }
     } catch (err) {
@@ -314,6 +381,22 @@ const LeavePage = () => {
       }
     },
     {
+      id: "approved_by",
+      header: "Approved by",
+      cell: ({ row }) => {
+        const leave = row.original;
+        if (leave.status !== "approved" || !leave.reviewed_by_person) {
+          return <span className="text-slate-400 text-xs">—</span>;
+        }
+        const p = leave.reviewed_by_person;
+        return (
+          <span className="text-sm text-slate-800">
+            {p.first_name} {p.last_name}
+          </span>
+        );
+      },
+    },
+    {
       accessorKey: "created_at",
       header: "Created",
       cell: ({ row }) => formatDate(row.getValue("created_at")),
@@ -370,17 +453,34 @@ const LeavePage = () => {
           }}
           icon={Calendar}
           title="New Request"
-          description="Create a new leave or permission request."
+          description="Fill in request details, then compose the email in the popup."
           trigger={
             <Button className="bg-slate-900 text-white hover:bg-slate-800 shadow-md transition-all active:scale-95">
               <Plus className="mr-2 h-4 w-4" /> New Request
             </Button>
           }
         >
-          <LeaveForm onSubmit={onSubmit} submitting={submitting} error={error} />
+          <LeaveForm
+            onSubmit={onSubmit}
+            onOpenCompose={handleOpenCompose}
+            composeLoading={composeLoading}
+            submitting={submitting}
+            error={error}
+          />
         </FormSheet>
       }
     >
+      <LeaveMailComposeDialog
+        open={mailComposeOpen}
+        onOpenChange={(v) => {
+          setMailComposeOpen(v);
+          if (!v) setInitialCompose(null);
+        }}
+        formData={leaveDraft}
+        initialCompose={initialCompose}
+        onSend={onSubmit}
+        submitting={submitting}
+      />
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <Card className="p-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 pb-1">

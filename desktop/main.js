@@ -1,6 +1,6 @@
 const path = require("path");
 const fs = require("fs");
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, session } = require("electron");
 const { APP_DISPLAY_NAME } = require("./appBrand");
 const { initAutoUpdater, setUpdaterWindow } = require("./autoUpdater");
 const { loadDesktopEnv } = require("./loadEnv");
@@ -102,7 +102,42 @@ function registerDesktopAuthIpc() {
 
 registerDesktopAuthIpc();
 
-const { startMonitorHost, getState } = require(path.join(getMonitorAgentSrcPath(), "monitorHost"));
+function loadMonitorHost() {
+  const monitorPath = path.join(getMonitorAgentSrcPath(), "monitorHost.js");
+  if (!fs.existsSync(monitorPath)) {
+    const detail = [
+      "Activity monitor files are missing from this install.",
+      "",
+      `Expected: ${monitorPath}`,
+      "",
+      "Rebuild the desktop app (npm run desktop:dist), then install the new Setup .exe.",
+      "Do not copy win-unpacked from an old installer-output folder.",
+    ].join("\n");
+    console.error(detail);
+    if (app.isPackaged) {
+      dialog.showErrorBox(APP_DISPLAY_NAME, detail);
+    }
+    app.exit(1);
+    return null;
+  }
+  try {
+    return require(monitorPath);
+  } catch (err) {
+    const detail = `${err?.message || err}\n\nWhile loading:\n${monitorPath}`;
+    console.error(detail);
+    if (app.isPackaged) {
+      dialog.showErrorBox(APP_DISPLAY_NAME, detail);
+    }
+    app.exit(1);
+    return null;
+  }
+}
+
+const monitorHost = loadMonitorHost();
+if (!monitorHost) {
+  process.exit(1);
+}
+const { startMonitorHost, getState } = monitorHost;
 
 async function loadWebApp(win) {
   let target;
@@ -118,9 +153,17 @@ async function loadWebApp(win) {
   }
 
   if (target.mode === "bundle") {
-    const url = await startBundledWebServer(target.webRoot);
-    const cacheBust = app.isPackaged ? "" : `?v=${Date.now()}`;
-    win.loadURL(`${url}${cacheBust}`);
+    try {
+      const url = await startBundledWebServer(target.webRoot);
+      const cacheBust = app.isPackaged ? "" : `?v=${Date.now()}`;
+      await win.loadURL(`${url}${cacheBust}`);
+    } catch (e) {
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${APP_DISPLAY_NAME}</title>
+<style>body{font-family:Segoe UI,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0f172a;color:#e2e8f0}
+.box{max-width:480px;padding:2rem}code{background:#1e293b;padding:2px 6px;border-radius:4px}</style></head>
+<body><div class="box"><h1>Could not start app UI</h1><p>${e.message}</p></div></body></html>`;
+      win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    }
     return;
   }
 
@@ -162,13 +205,24 @@ async function loadWebApp(win) {
   tryLoad();
 }
 
+function wantsCacheReset() {
+  return process.argv.some((a) => a === "--reset-cache" || a === "--fresh-start");
+}
+
+async function clearPackagedAppCache() {
+  const ses = session.fromPartition("persist:team-manager");
+  await ses.clearCache();
+  await ses.clearStorageData();
+  clearAuthSessionFile();
+}
+
 function createTeamManagerWindow() {
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1024,
     minHeight: 640,
-    show: true,
+    show: false,
     title: APP_DISPLAY_NAME,
     icon: iconPath,
     autoHideMenuBar: true,
@@ -179,6 +233,11 @@ function createTeamManagerWindow() {
       sandbox: true,
       partition: "persist:team-manager",
     },
+  });
+
+  win.once("ready-to-show", () => {
+    win.show();
+    win.focus();
   });
 
   loadWebApp(win);
@@ -197,7 +256,13 @@ function createTeamManagerWindow() {
 startMonitorHost({
   createWindow: createTeamManagerWindow,
   trayTooltip: APP_DISPLAY_NAME,
+  trayIconPath: iconPath,
   requestSingleInstanceLock: true,
+  onBeforeFirstWindow: async () => {
+    if (wantsCacheReset()) {
+      await clearPackagedAppCache();
+    }
+  },
 });
 
 app.on("before-quit", () => {

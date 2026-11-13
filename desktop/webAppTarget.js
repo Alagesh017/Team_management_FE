@@ -29,8 +29,10 @@ async function resolveWebAppTarget() {
   const fileWebAppUrl = readDesktopEnvValue("WEB_APP_URL").trim();
   const fromEnv = (process.env.WEB_APP_URL || process.env.VITE_DEV_SERVER_URL || "").trim();
 
-  // Dev: desktop/.env wins over Windows user env (often set to production URL → stale UI).
-  const configuredUrl = isPackagedApp() ? fromEnv || fileWebAppUrl : fileWebAppUrl || fromEnv;
+  // Packaged builds always load the bundled UI unless app-config explicitly sets an http(s) URL.
+  const configuredUrl = isPackagedApp()
+    ? fromEnv || fileWebAppUrl || "embedded"
+    : fileWebAppUrl || fromEnv;
 
   const useBundle =
     configuredUrl === "embedded" ||
