@@ -70,7 +70,17 @@ const SprintManagementPage = () => {
   const [sprintToStart, setSprintToStart] = useState(null);
   const [currentActiveSprint, setCurrentActiveSprint] = useState(null);
   const [tasksToMove, setTasksToMove] = useState([]);
+  const [reviewTasksBlocking, setReviewTasksBlocking] = useState([]);
   const [isSubmittingMove, setIsSubmittingMove] = useState(false);
+
+  const partitionSprintTasks = (tasks) => {
+    const list = tasks || [];
+    const review = list.filter((t) => t.status_is_review);
+    const movable = list.filter(
+      (t) => !t.status_is_completed && !t.status_is_review
+    );
+    return { review, movable };
+  };
 
   const fetchData = async () => {
     try {
@@ -129,18 +139,21 @@ const SprintManagementPage = () => {
       setSprintToStart(sprint);
       setCurrentActiveSprint(activeSprint);
       try {
-        // Load tasks from active sprint
         const tasksData = await taskService.getTasksBySprintId(activeSprint.id);
-        const allTasks = tasksData.tasks || [];
-        // Filter out completed tasks
-        const nonCompletedTasks = allTasks.filter(task => {
-          // For now, just show all tasks (we'll filter on backend too)
-          return true;
-        });
-        setTasksToMove(nonCompletedTasks);
+        const { review, movable } = partitionSprintTasks(tasksData.tasks || []);
+        setReviewTasksBlocking(review);
+        setTasksToMove(movable);
+        if (review.length > 0) {
+          toast({
+            title: "Resolve Review tasks first",
+            description: `${review.length} task(s) are still in Review on ${activeSprint.sprint_name}. Approve or send them back before starting the next sprint.`,
+            variant: "destructive",
+          });
+        }
       } catch (err) {
         console.error("Failed to load tasks:", err);
         setTasksToMove([]);
+        setReviewTasksBlocking([]);
       }
       setIsStartConfirmOpen(true);
       return;
@@ -168,7 +181,16 @@ const SprintManagementPage = () => {
 
   const handleConfirmStartSprint = async () => {
     if (!sprintToStart || !currentActiveSprint) return;
-    
+    if (reviewTasksBlocking.length > 0) {
+      toast({
+        title: "Cannot start new sprint",
+        description:
+          "Tasks in Review must be approved or sent back before you can start the next sprint.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmittingMove(true);
       await sprintService.startSprintWithMove(
@@ -466,10 +488,15 @@ const SprintManagementPage = () => {
       
       <StartSprintConfirmDialog
         isOpen={isStartConfirmOpen}
-        onClose={() => setIsStartConfirmOpen(false)}
+        onClose={() => {
+          setIsStartConfirmOpen(false);
+          setReviewTasksBlocking([]);
+          setTasksToMove([]);
+        }}
         currentActiveSprint={currentActiveSprint}
         newSprint={sprintToStart}
         tasks={tasksToMove}
+        reviewTasks={reviewTasksBlocking}
         onConfirm={handleConfirmStartSprint}
         isLoading={isSubmittingMove}
       />

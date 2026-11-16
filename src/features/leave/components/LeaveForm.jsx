@@ -18,7 +18,6 @@ import {
   FormSheetSection,
 } from "../../../common/components/FormSheet";
 import { useToast } from "../../../common/hooks/use-toast";
-import { useAuth } from "../../auth/contexts/AuthContext";
 
 // Helper to convert 24h to 12h format
 const to12Hour = (time24) => {
@@ -105,8 +104,7 @@ const TimePicker12H = ({ value, onChange, label }) => {
 };
 
 const LeaveForm = ({ onSubmit, onOpenCompose, composeLoading, submitting, error }) => {
-  const { user } = useAuth();
-  const needsMail = String(user?.role || "").toLowerCase() !== "superadmin";
+  const needsMail = Boolean(onOpenCompose);
   const [formData, setFormData] = useState({
     type: "leave",
     leave_subtype: "full_day",

@@ -305,6 +305,77 @@ export function buildGroupedReportData(filteredTasks) {
   return grouped;
 }
 
+/** Drop users (and empty projects) that have zero tasks in grouped export/preview. */
+export function pruneGroupedReportData(grouped) {
+  const out = {};
+  Object.entries(grouped || {}).forEach(([projName, usersData]) => {
+    const users = {};
+    Object.entries(usersData || {}).forEach(([userName, tasks]) => {
+      if (Array.isArray(tasks) && tasks.length > 0) {
+        users[userName] = tasks;
+      }
+    });
+    if (Object.keys(users).length > 0) {
+      out[projName] = users;
+    }
+  });
+  return out;
+}
+
+/** Flat list: user → tasks (project name preserved on each task row). */
+export function buildUserTaskSummary(grouped) {
+  const byUser = new Map();
+  Object.entries(pruneGroupedReportData(grouped)).forEach(([projName, usersData]) => {
+    Object.entries(usersData).forEach(([userName, tasks]) => {
+      if (!byUser.has(userName)) byUser.set(userName, []);
+      tasks.forEach((task) => {
+        byUser.get(userName).push({
+          ...task,
+          projectName: task.projectName || projName,
+        });
+      });
+    });
+  });
+  return Array.from(byUser.entries())
+    .map(([userName, tasks]) => ({ userName, tasks }))
+    .sort((a, b) => a.userName.localeCompare(b.userName));
+}
+
+function taskRollupKey(task) {
+  if (task?.id != null) return `id:${task.id}`;
+  return `k:${task.projectId ?? ""}:${task.title || task.name || ""}:${task.due_date || ""}`;
+}
+
+/** Per-project totals (unique tasks — hours not double-counted across assignees). */
+export function buildProjectRollupSummary(grouped) {
+  const pruned = pruneGroupedReportData(grouped);
+  return Object.entries(pruned)
+    .map(([projectName, usersData]) => {
+      const byKey = new Map();
+      let userCount = 0;
+      Object.entries(usersData).forEach(([userName, tasks]) => {
+        if (!tasks?.length) return;
+        userCount += 1;
+        tasks.forEach((task) => {
+          const key = taskRollupKey(task);
+          if (!byKey.has(key)) byKey.set(key, task);
+        });
+      });
+      const uniqueTasks = Array.from(byKey.values());
+      const taskCount = uniqueTasks.length;
+      const estHours = uniqueTasks.reduce(
+        (sum, t) => sum + (Number(t.estimated_hours) || 0),
+        0
+      );
+      const actHours = uniqueTasks.reduce(
+        (sum, t) => sum + (Number(t.actual_hours) || 0),
+        0
+      );
+      return { projectName, taskCount, estHours, actHours, userCount };
+    })
+    .sort((a, b) => a.projectName.localeCompare(b.projectName));
+}
+
 export function computeReportStats(tasks, options = {}) {
   const { dateRange, dateField = "span" } = options;
   let reportStart = null;

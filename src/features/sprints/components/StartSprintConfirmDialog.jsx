@@ -24,9 +24,11 @@ const StartSprintConfirmDialog = ({
   currentActiveSprint,
   newSprint,
   tasks,
+  reviewTasks = [],
   onConfirm,
   isLoading,
 }) => {
+  const blockedByReview = (reviewTasks?.length || 0) > 0;
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[900px] md:max-w-[1000px] lg:max-w-[1200px] max-h-[95vh] overflow-hidden flex flex-col p-0">
@@ -58,6 +60,18 @@ const StartSprintConfirmDialog = ({
             </div>
           </div>
         </div>
+
+        {blockedByReview ? (
+          <div className="mx-6 mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 shrink-0">
+            <p className="font-semibold">Starting the next sprint is blocked</p>
+            <p className="mt-1 text-red-800">
+              {reviewTasks.length} task{reviewTasks.length !== 1 ? "s are" : " is"} still in{" "}
+              <strong>Review</strong> on the active sprint. Finish review (approve or send back)
+              first — completed and review cards will stay on the ended sprint; only in-progress work
+              moves forward.
+            </p>
+          </div>
+        ) : null}
 
         {/* Tasks Table (priority area) */}
         <div className="flex-1 overflow-hidden flex flex-col">
@@ -123,8 +137,8 @@ const StartSprintConfirmDialog = ({
           </Button>
           <Button
             onClick={onConfirm}
-            disabled={isLoading}
-            className="bg-amber-600 hover:bg-amber-700 text-white font-semibold gap-2"
+            disabled={isLoading || blockedByReview}
+            className="bg-amber-600 hover:bg-amber-700 text-white font-semibold gap-2 disabled:opacity-50"
           >
             {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
             Start New Sprint &amp; Move Tasks

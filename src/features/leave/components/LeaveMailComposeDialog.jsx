@@ -1,26 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "../../../common/components/ui/dialog";
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "../../../common/components/ui/button";
-import { Input } from "../../../common/components/ui/input";
-import { Label } from "../../../common/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../../common/components/ui/select";
-import { Checkbox } from "../../../common/components/ui/checkbox";
 import { leaveService } from "../services/leaveService";
-import { Loader2, Mail, Send, X } from "lucide-react";
-import { useAuth } from "../../auth/contexts/AuthContext";
+import { Loader2, X } from "lucide-react";
 import { useToast } from "../../../common/hooks/use-toast";
+import { LeaveRecipientField } from "./LeaveRecipientField";
 
 const LeaveMailComposeDialog = ({
   open,
@@ -30,24 +14,18 @@ const LeaveMailComposeDialog = ({
   onSend,
   submitting,
 }) => {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [admins, setAdmins] = useState(initialCompose?.admins || []);
-  const [toAdminId, setToAdminId] = useState("");
+  const [toIds, setToIds] = useState([]);
   const [ccIds, setCcIds] = useState([]);
-  const [subject, setSubject] = useState(initialCompose?.subject || "");
-  const [body, setBody] = useState(initialCompose?.body || "");
-  const [usesSaved, setUsesSaved] = useState(Boolean(initialCompose?.uses_saved_template));
+  const [showCc, setShowCc] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [usesSaved, setUsesSaved] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const editedRef = useRef(false);
 
-  const requesterFrom = useMemo(() => {
-    const name = [user?.first_name || user?.firstName, user?.last_name || user?.lastName]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
-    return name ? `${name} <${user?.email || ""}>` : user?.email || "";
-  }, [user]);
+  const toAdminId = toIds[0] ?? null;
 
   useEffect(() => {
     if (!open || !initialCompose) return;
@@ -55,8 +33,9 @@ const LeaveMailComposeDialog = ({
     setSubject(initialCompose.subject || "");
     setBody(initialCompose.body || "");
     setUsesSaved(Boolean(initialCompose.uses_saved_template));
-    setToAdminId("");
+    setToIds([]);
     setCcIds([]);
+    setShowCc(false);
     editedRef.current = false;
   }, [open, initialCompose]);
 
@@ -90,15 +69,6 @@ const LeaveMailComposeDialog = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toAdminId]);
 
-  const ccOptions = useMemo(
-    () => admins.filter((a) => String(a.id) !== String(toAdminId)),
-    [admins, toAdminId]
-  );
-
-  const toggleCc = (id) => {
-    setCcIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  };
-
   const handleSend = () => {
     if (!toAdminId || !subject.trim() || !body.trim()) return;
     onSend({
@@ -111,129 +81,128 @@ const LeaveMailComposeDialog = ({
     });
   };
 
-  if (!formData) return null;
+  if (!open || !formData) return null;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-5 py-4 border-b bg-slate-50 shrink-0">
-          <div className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-slate-600" />
-            <div>
-              <DialogTitle className="text-left text-lg">Send leave request email</DialogTitle>
-              <DialogDescription className="text-left text-xs mt-0.5">
-                Edit subject and message. Your version is saved on send for next time.
-                {usesSaved ? " (Your saved template.)" : " (Default template.)"}
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
+  return createPortal(
+  <>
+      <button
+        type="button"
+        aria-label="Close compose"
+        className="fixed inset-0 z-[90] bg-black/20"
+        onClick={() => !submitting && onOpenChange(false)}
+      />
+      <div
+        className="leave-mail-compose-dialog fixed z-[100] bottom-0 right-4 sm:right-6 flex w-[min(560px,calc(100vw-2rem))] max-h-[min(520px,calc(100vh-2rem))] flex-col overflow-hidden rounded-t-xl border border-slate-200 bg-white shadow-2xl"
+        role="dialog"
+        aria-labelledby="leave-compose-title"
+      >
+        <div className="flex items-center justify-between bg-[#404040] px-4 py-2.5 text-white shrink-0">
+          <h2 id="leave-compose-title" className="text-sm font-medium">
+            New Message
+          </h2>
+          <button
+            type="button"
+            onClick={() => !submitting && onOpenChange(false)}
+            className="rounded p-1 hover:bg-white/10"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-white">
+        <div className="flex min-h-0 flex-1 flex-col px-4">
           {!initialCompose ? (
-            <div className="flex items-center justify-center gap-2 py-12 text-slate-500 text-sm">
-              <Loader2 className="h-5 w-5 animate-spin" /> Loading email…
+            <div className="flex flex-1 items-center justify-center gap-2 py-16 text-sm text-slate-500">
+              <Loader2 className="h-5 w-5 animate-spin" /> Loading…
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-[64px_1fr] items-center gap-2 text-sm border-b pb-2">
-                <span className="text-slate-500 font-medium">From</span>
-                <span className="text-slate-800 truncate">{requesterFrom}</span>
+              <div className="relative">
+                <LeaveRecipientField
+                  label="To"
+                  admins={admins}
+                  selectedIds={toIds}
+                  onSelectedIdsChange={setToIds}
+                  multiple={false}
+                  disabled={refreshing || submitting}
+                />
+                {!showCc ? (
+                  <button
+                    type="button"
+                    className="absolute right-0 top-2.5 text-xs text-slate-500 hover:text-slate-800"
+                    onClick={() => setShowCc(true)}
+                  >
+                    Cc
+                  </button>
+                ) : null}
               </div>
 
-              <div className="grid grid-cols-[64px_1fr] items-start gap-2 text-sm">
-                <Label className="text-slate-500 font-medium pt-2">To</Label>
-                <Select value={toAdminId} onValueChange={setToAdminId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select admin (approver)" />
-                  </SelectTrigger>
-                  <SelectContent position="popper" className="z-[300]">
-                    {admins.map((a) => (
-                      <SelectItem key={a.id} value={String(a.id)}>
-                        {a.name} — {a.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {showCc ? (
+                <LeaveRecipientField
+                  label="Cc"
+                  admins={admins}
+                  selectedIds={ccIds}
+                  onSelectedIdsChange={setCcIds}
+                  multiple
+                  excludeIds={toIds}
+                  disabled={refreshing || submitting}
+                />
+              ) : null}
 
-              <div className="grid grid-cols-[64px_1fr] items-start gap-2 text-sm">
-                <span className="text-slate-500 font-medium pt-2">Cc</span>
-                <div className="max-h-24 overflow-y-auto border rounded-md p-2 space-y-1.5">
-                  {ccOptions.length === 0 ? (
-                    <p className="text-xs text-slate-400">Pick To first.</p>
-                  ) : (
-                    ccOptions.map((a) => (
-                      <label key={a.id} className="flex items-center gap-2 cursor-pointer text-xs">
-                        <Checkbox
-                          checked={ccIds.includes(a.id)}
-                          onCheckedChange={() => toggleCc(a.id)}
-                        />
-                        <span>
-                          {a.name} ({a.email})
-                        </span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-[64px_1fr] items-center gap-2 text-sm border-t pt-3">
-                <Label className="text-slate-500 font-medium">Subject</Label>
-                <Input
+              <div className="flex items-center gap-2 border-b border-slate-200 py-2">
+                <span className="w-14 shrink-0 text-slate-500 text-sm">Subject</span>
+                <input
+                  type="text"
                   value={subject}
+                  disabled={refreshing || submitting}
                   onChange={(e) => {
                     editedRef.current = true;
                     setSubject(e.target.value);
                   }}
-                  disabled={refreshing}
-                  className="font-medium"
+                  className="min-w-0 flex-1 border-0 bg-transparent py-1 text-sm outline-none"
+                  placeholder="Subject"
                 />
               </div>
 
-              <div className="pt-1">
-                <textarea
-                  value={body}
-                  onChange={(e) => {
-                    editedRef.current = true;
-                    setBody(e.target.value);
-                  }}
-                  disabled={refreshing}
-                  className="w-full min-h-[220px] rounded-md border border-slate-200 px-3 py-2 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-slate-400"
-                  placeholder="Email body…"
-                />
-                {refreshing ? (
-                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Updating greeting for selected admin…
-                  </p>
-                ) : null}
-              </div>
+              <textarea
+                value={body}
+                disabled={refreshing || submitting}
+                onChange={(e) => {
+                  editedRef.current = true;
+                  setBody(e.target.value);
+                }}
+                className="min-h-[200px] flex-1 resize-none border-0 py-3 text-sm leading-relaxed outline-none"
+                placeholder=""
+              />
             </>
           )}
         </div>
 
-        <div className="shrink-0 flex items-center justify-end gap-2 px-5 py-3 border-t bg-slate-50">
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
-            <X className="h-4 w-4 mr-1" /> Cancel
-          </Button>
+        <div className="flex items-center gap-3 border-t border-slate-100 px-4 py-3 shrink-0">
           <Button
             type="button"
             onClick={handleSend}
             disabled={
-              submitting || refreshing || !initialCompose || !toAdminId || !subject.trim() || !body.trim()
+              submitting ||
+              refreshing ||
+              !initialCompose ||
+              !toAdminId ||
+              !subject.trim() ||
+              !body.trim()
             }
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="rounded-full bg-[#0b57d0] hover:bg-[#0948ad] px-6 text-white"
           >
-            {submitting ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4 mr-2" />
-            )}
-            Send &amp; submit request
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send"}
           </Button>
+          {refreshing ? (
+            <span className="text-xs text-slate-500 flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" /> Updating template…
+            </span>
+          ) : null}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </>,
+    document.body
   );
 };
 

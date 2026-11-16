@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Leave mail compose: bottom-right panel above app chrome */
+.leave-mail-compose-dialog {
+  z-index: 100;
+}
+
 @theme {
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));

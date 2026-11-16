@@ -206,31 +206,91 @@ const LeavePage = () => {
     }
   };
 
+  const buildFallbackCompose = (draft, admins = []) => {
+    const typeLabel =
+      draft.type === "permission"
+        ? "Permission"
+        : draft.leave_subtype === "half_day"
+          ? "Half Day Leave"
+          : "Full Day Leave";
+    const dates =
+      draft.start_date === draft.end_date
+        ? draft.start_date
+        : `${draft.start_date} to ${draft.end_date}`;
+    return {
+      status: 1,
+      admins,
+      subject: `Leave / Permission Request — (${typeLabel})`,
+      body: [
+        "Dear Sir/Madam,",
+        "",
+        `I would like to submit a ${typeLabel} request for your approval.`,
+        "",
+        `Request type: ${typeLabel}`,
+        `Date / time: ${dates}`,
+        `Reason: ${draft.reason || ""}`,
+        draft.remark ? `Remark: ${draft.remark}` : null,
+        "",
+        "Please review this request in Dce Task Manager (Leave & Permissions).",
+        "",
+        "Regards,",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      uses_saved_template: false,
+    };
+  };
+
   const handleOpenCompose = async (draft) => {
+    if (!draft?.reason?.trim()) {
+      toast({
+        title: "Reason required",
+        description: "Enter a reason before composing the email.",
+        variant: "destructive",
+      });
+      return;
+    }
     setComposeLoading(true);
     setLeaveDraft(draft);
     setInitialCompose(null);
+    setIsSheetOpen(false);
     try {
       const res = await leaveService.composeMail(draft);
       if (res.status === 1) {
         setInitialCompose(res);
-        setMailComposeOpen(true);
       } else {
+        const rec = await leaveService.getMailRecipients().catch(() => ({ admins: [] }));
+        setInitialCompose(buildFallbackCompose(draft, rec.admins || []));
         toast({
-          title: "Could not open email",
-          description: res.msg || res.error || "Server error",
-          variant: "destructive",
+          title: "Using default email template",
+          description: res.msg || res.error || "Could not load saved template from server",
+          variant: "default",
         });
       }
     } catch (err) {
-      toast({
-        title: "Could not open email",
-        description: err?.msg || err?.error || err?.message || "Check API is running and leave routes are deployed",
-        variant: "destructive",
-      });
-    } finally {
-      setComposeLoading(false);
+      try {
+        const rec = await leaveService.getMailRecipients();
+        setInitialCompose(buildFallbackCompose(draft, rec.admins || []));
+        toast({
+          title: "Using default email template",
+          description:
+            err?.msg || err?.error || err?.message || "Compose API unavailable — check Flask is restarted",
+          variant: "default",
+        });
+      } catch {
+        toast({
+          title: "Could not open email",
+          description:
+            err?.msg || err?.error || err?.message || "Check API is running and leave routes are deployed",
+          variant: "destructive",
+        });
+        setComposeLoading(false);
+        setIsSheetOpen(true);
+        return;
+      }
     }
+    setMailComposeOpen(true);
+    setComposeLoading(false);
   };
 
   const onSubmit = async (data) => {
@@ -244,11 +304,19 @@ const LeavePage = () => {
         setLeaveDraft(null);
         setInitialCompose(null);
         fetchLeaves();
-        toast({
-          title: "Success",
-          description: result.msg || "Request created successfully",
-          variant: result.mail_warning ? "default" : "success"
-        });
+        if (result.mail_warning) {
+          toast({
+            title: "Request saved — email not sent",
+            description: result.mail_warning,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Success",
+            description: result.msg || "Request created successfully",
+            variant: "success",
+          });
+        }
       }
     } catch (err) {
       setError(err.msg || err.error || "Operation failed. Please try again.");
@@ -474,7 +542,13 @@ const LeavePage = () => {
         open={mailComposeOpen}
         onOpenChange={(v) => {
           setMailComposeOpen(v);
-          if (!v) setInitialCompose(null);
+          if (!v) {
+            setInitialCompose(null);
+            if (!submitting) {
+              setLeaveDraft(null);
+              setIsSheetOpen(true);
+            }
+          }
         }}
         formData={leaveDraft}
         initialCompose={initialCompose}

@@ -9,11 +9,14 @@ import ReportStatsBar from '../components/ReportStatsBar';
 import {
   buildGroupedReportData,
   buildUserOptions,
+  buildProjectRollupSummary,
+  buildUserTaskSummary,
   computeReportStats,
   exportTasksCsv,
   filterReportTasks,
   getQuickDateRange,
   memberDisplayName,
+  pruneGroupedReportData,
 } from '../reportUtils';
 import { downloadBinaryFile } from '../../../core/utils/downloadFile';
 import { useToast } from '../../../common/hooks/use-toast';
@@ -185,7 +188,13 @@ const ReportPage = () => {
     ]
   );
 
-  const groupedData = useMemo(() => buildGroupedReportData(filteredTasks), [filteredTasks]);
+  const groupedDataRaw = useMemo(() => buildGroupedReportData(filteredTasks), [filteredTasks]);
+  const groupedData = useMemo(() => pruneGroupedReportData(groupedDataRaw), [groupedDataRaw]);
+  const userTaskSummary = useMemo(() => buildUserTaskSummary(groupedDataRaw), [groupedDataRaw]);
+  const projectRollupSummary = useMemo(
+    () => buildProjectRollupSummary(groupedDataRaw),
+    [groupedDataRaw]
+  );
 
   const reportStats = useMemo(
     () => computeReportStats(filteredTasks, { dateRange, dateField }),
@@ -427,8 +436,9 @@ const ReportPage = () => {
 
       r++; // spacer row
 
-      // Per-user tables
+      // Per-user tables (only users with tasks)
       Object.entries(usersData).forEach(([userName, tasks]) => {
+        if (!tasks?.length) return;
         // User header
         ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell(`  ${userName}`, s.userHeader);
         merge(ws, r, 0, r, COLS - 1);
@@ -522,6 +532,7 @@ const ReportPage = () => {
       // Summary rows
       let grandTasks = 0, grandEst = 0, grandActual = 0;
       Object.entries(usersData).forEach(([userName, tasks]) => {
+        if (!tasks?.length) return;
         const est    = tasks.reduce((sum, t) => sum + (Number(t.estimated_hours) || 0), 0);
         const actual = tasks.reduce((sum, t) => sum + (Number(t.actual_hours)    || 0), 0);
         grandTasks  += tasks.length;
@@ -552,16 +563,21 @@ const ReportPage = () => {
       return ws;
     };
 
-    // ── Build Summary (overview) sheet ──────────────────────────────────────────
+    // ── Build Summary sheet — overall project summary, then per-user task detail ──
     const buildSummarySheet = () => {
+      const SCOLS = 9;
+      const SUM_HEADERS = [
+        'Task Title', 'Project', 'Status', 'Priority',
+        'Start Date', 'Due Date', 'Est. Hours', 'Act. Hours', 'Remark',
+      ];
       const ws = {};
-      ws['!cols'] = [{ wch: 36 }, { wch: 10 }, { wch: 16 }, { wch: 16 }];
+      ws['!cols'] = [28, 22, 14, 10, 12, 12, 10, 10, 24].map((w) => ({ wch: w }));
       let r = 0;
 
-      ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell('  TASK REPORT — ALL PROJECTS SUMMARY', s.projHeader);
-      merge(ws, r, 0, r, 3);
-      fillMerge(ws, r, 1, 3, s.projHeader);
-      ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell('  TASK REPORT — ALL PROJECTS SUMMARY', s.projHeader);
+      ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell('  TASK REPORT — SUMMARY', s.projHeader);
+      merge(ws, r, 0, r, SCOLS - 1);
+      fillMerge(ws, r, 1, SCOLS - 1, s.projHeader);
+      ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell('  TASK REPORT — SUMMARY', s.projHeader);
       r++;
 
       const periodLabel =
@@ -569,48 +585,152 @@ const ReportPage = () => {
           ? `  Period: ${formatDate(dateRange.start)}  →  ${formatDate(dateRange.end)}     |     Generated: ${new Date().toLocaleString()}`
           : `  Generated: ${new Date().toLocaleString()}`;
       ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell(periodLabel, s.metaCell);
-      merge(ws, r, 0, r, 3);
-      fillMerge(ws, r, 1, 3, s.metaCell);
+      merge(ws, r, 0, r, SCOLS - 1);
+      fillMerge(ws, r, 1, SCOLS - 1, s.metaCell);
       ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell(periodLabel, s.metaCell);
       r++;
-      r++; // spacer
+      r++;
 
-      ['Project Name', 'Total Tasks', 'Est. Hours', 'Act. Hours'].forEach((h, ci) => {
-        ws[XLSX.utils.encode_cell({ r, c: ci })] = cell(h, ci === 0 ? s.colHeaderLeft : s.colHeader);
+      // ── Overall project summary (top) ─────────────────────────────────────
+      ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell('  OVERALL PROJECT SUMMARY', s.summaryHeader);
+      merge(ws, r, 0, r, SCOLS - 1);
+      fillMerge(ws, r, 1, SCOLS - 1, s.summaryHeader);
+      ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell('  OVERALL PROJECT SUMMARY', s.summaryHeader);
+      r++;
+
+      [
+        { label: 'Project', col: 0, span: 4 },
+        { label: 'Users', col: 4, span: 1 },
+        { label: 'Tasks', col: 5, span: 1 },
+        { label: 'Est. Hours', col: 6, span: 1 },
+        { label: 'Act. Hours', col: 7, span: 1 },
+      ].forEach(({ label, col, span }) => {
+        ws[XLSX.utils.encode_cell({ r, c: col })] = cell(label, s.summaryColHeader);
+        if (span > 1) {
+          merge(ws, r, col, r, col + span - 1);
+          fillMerge(ws, r, col + 1, col + span - 1, s.summaryColHeader);
+        }
       });
       r++;
 
-      let grandTasks = 0, grandEst = 0, grandActual = 0;
-      Object.entries(groupedData).forEach(([projName, usersData], idx) => {
-        const isEven  = idx % 2 === 0;
-        const dStyle  = isEven ? s.dataEven       : s.dataOdd;
-        const dcStyle = isEven ? s.dataEvenCenter  : s.dataOddCenter;
+      let rollupTasks = 0;
+      let rollupEst = 0;
+      let rollupActual = 0;
 
-        let totalTasks = 0, totalEst = 0, totalActual = 0;
-        Object.values(usersData).forEach((tasks) => {
-          totalTasks  += tasks.length;
-          totalEst    += tasks.reduce((sum, t) => sum + (Number(t.estimated_hours) || 0), 0);
-          totalActual += tasks.reduce((sum, t) => sum + (Number(t.actual_hours)    || 0), 0);
-        });
-        grandTasks  += totalTasks;
-        grandEst    += totalEst;
-        grandActual += totalActual;
+      projectRollupSummary.forEach((row) => {
+        rollupTasks += row.taskCount;
+        rollupEst += row.estHours;
+        rollupActual += row.actHours;
 
-        ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell(projName,    dStyle);
-        ws[XLSX.utils.encode_cell({ r, c: 1 })] = cell(totalTasks,  dcStyle, 'n');
-        ws[XLSX.utils.encode_cell({ r, c: 2 })] = cell(totalEst,    dcStyle, 'n');
-        ws[XLSX.utils.encode_cell({ r, c: 3 })] = cell(totalActual, dcStyle, 'n');
+        ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell(row.projectName, s.summaryRow);
+        merge(ws, r, 0, r, 3);
+        fillMerge(ws, r, 1, 3, s.summaryRow);
+        ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell(row.projectName, s.summaryRow);
+        ws[XLSX.utils.encode_cell({ r, c: 4 })] = cell(row.userCount, s.summaryRowCenter, 'n');
+        ws[XLSX.utils.encode_cell({ r, c: 5 })] = cell(row.taskCount, s.summaryRowCenter, 'n');
+        ws[XLSX.utils.encode_cell({ r, c: 6 })] = cell(row.estHours, s.summaryRowCenter, 'n');
+        ws[XLSX.utils.encode_cell({ r, c: 7 })] = cell(row.actHours, s.summaryRowCenter, 'n');
         r++;
       });
 
-      r++; // spacer before grand total
-      ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell('GRAND TOTAL', s.summaryTotalLabel);
-      ws[XLSX.utils.encode_cell({ r, c: 1 })] = cell(grandTasks,  s.summaryTotal, 'n');
-      ws[XLSX.utils.encode_cell({ r, c: 2 })] = cell(grandEst,    s.summaryTotal, 'n');
-      ws[XLSX.utils.encode_cell({ r, c: 3 })] = cell(grandActual, s.summaryTotal, 'n');
+      ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell('TOTAL (projects)', s.summaryTotalLabel);
+      merge(ws, r, 0, r, 4);
+      fillMerge(ws, r, 1, 4, s.summaryTotal);
+      ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell('TOTAL (projects)', s.summaryTotalLabel);
+      ws[XLSX.utils.encode_cell({ r, c: 5 })] = cell(rollupTasks, s.summaryTotal, 'n');
+      ws[XLSX.utils.encode_cell({ r, c: 6 })] = cell(rollupEst, s.summaryTotal, 'n');
+      ws[XLSX.utils.encode_cell({ r, c: 7 })] = cell(rollupActual, s.summaryTotal, 'n');
+      r += 2;
+
+      // ── Individual report (per user, each task row) ─────────────────────────
+      ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell('  INDIVIDUAL REPORT', s.summaryHeader);
+      merge(ws, r, 0, r, SCOLS - 1);
+      fillMerge(ws, r, 1, SCOLS - 1, s.summaryHeader);
+      ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell('  INDIVIDUAL REPORT', s.summaryHeader);
+      r++;
       r++;
 
-      ws['!ref'] = XLSX.utils.encode_range({ r: 0, c: 0 }, { r: r - 1, c: 3 });
+      let grandTasks = 0;
+      let grandEst = 0;
+      let grandActual = 0;
+
+      userTaskSummary.forEach(({ userName, tasks }) => {
+        if (!tasks.length) return;
+
+        ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell(`  ${userName}`, s.userHeader);
+        merge(ws, r, 0, r, SCOLS - 1);
+        fillMerge(ws, r, 1, SCOLS - 1, s.userHeader);
+        ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell(`  ${userName}`, s.userHeader);
+        r++;
+
+        SUM_HEADERS.forEach((h, ci) => {
+          ws[XLSX.utils.encode_cell({ r, c: ci })] = cell(h, ci === 0 ? s.colHeaderLeft : s.colHeader);
+        });
+        r++;
+
+        tasks.forEach((task, idx) => {
+          const isEven = idx % 2 === 0;
+          const dStyle = isEven ? s.dataEven : s.dataOdd;
+          const dcStyle = isEven ? s.dataEvenCenter : s.dataOddCenter;
+
+          [
+            { v: task.title || task.name || '-', s: dStyle },
+            { v: task.projectName || '-', s: dStyle },
+            { v: task.status_name || task.status || '-', s: dcStyle },
+            { v: task.priority || '-', s: dcStyle },
+            { v: formatDate(task.start_date), s: dcStyle },
+            { v: formatDate(task.due_date), s: dcStyle },
+            {
+              v: task.estimated_hours != null ? Number(task.estimated_hours) : '-',
+              s: dcStyle,
+              t: task.estimated_hours != null ? 'n' : 's',
+            },
+            { v: Number(task.actual_hours) || 0, s: dcStyle, t: 'n' },
+            { v: task.remark || '-', s: dStyle },
+          ].forEach((cd, ci) => {
+            ws[XLSX.utils.encode_cell({ r, c: ci })] = {
+              v: cd.v,
+              t: cd.t ?? (typeof cd.v === 'number' ? 'n' : 's'),
+              s: cd.s,
+            };
+          });
+          r++;
+        });
+
+        const userEst = tasks.reduce((sum, t) => sum + (Number(t.estimated_hours) || 0), 0);
+        const userActual = tasks.reduce((sum, t) => sum + (Number(t.actual_hours) || 0), 0);
+        grandTasks += tasks.length;
+        grandEst += userEst;
+        grandActual += userActual;
+
+        for (let ci = 0; ci < SCOLS; ci++) {
+          ws[XLSX.utils.encode_cell({ r, c: ci })] = cell('', s.totalsEmpty);
+        }
+        ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell(
+          `Subtotal — ${tasks.length} task${tasks.length !== 1 ? 's' : ''}`,
+          s.totalsLabel
+        );
+        merge(ws, r, 0, r, SCOLS - 4);
+        fillMerge(ws, r, 1, SCOLS - 4, s.totalsEmpty);
+        ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell(
+          `Subtotal — ${tasks.length} task${tasks.length !== 1 ? 's' : ''}`,
+          s.totalsLabel
+        );
+        ws[XLSX.utils.encode_cell({ r, c: SCOLS - 3 })] = cell(userEst, s.totalsValue, 'n');
+        ws[XLSX.utils.encode_cell({ r, c: SCOLS - 2 })] = cell(userActual, s.totalsValue, 'n');
+        r += 2;
+      });
+
+      ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell('GRAND TOTAL', s.summaryTotalLabel);
+      merge(ws, r, 0, r, SCOLS - 4);
+      fillMerge(ws, r, 1, SCOLS - 4, s.summaryTotal);
+      ws[XLSX.utils.encode_cell({ r, c: 0 })] = cell('GRAND TOTAL', s.summaryTotalLabel);
+      ws[XLSX.utils.encode_cell({ r, c: SCOLS - 3 })] = cell(grandEst, s.summaryTotal, 'n');
+      ws[XLSX.utils.encode_cell({ r, c: SCOLS - 2 })] = cell(grandActual, s.summaryTotal, 'n');
+      ws[XLSX.utils.encode_cell({ r, c: SCOLS - 5 })] = cell(grandTasks, s.summaryTotal, 'n');
+      r++;
+
+      ws['!ref'] = XLSX.utils.encode_range({ r: 0, c: 0 }, { r: r - 1, c: SCOLS - 1 });
       return ws;
     };
 
@@ -832,7 +952,9 @@ const ReportPage = () => {
                   {projName}
                 </h2>
 
-                {Object.entries(usersData).map(([userName, tasks]) => (
+                {Object.entries(usersData)
+                  .filter(([, tasks]) => tasks?.length > 0)
+                  .map(([userName, tasks]) => (
                   <div key={userName} className="mb-4 last:mb-0">
                     <h3 className="text-xs font-semibold text-slate-600 mb-2 pl-2 border-l-2 border-indigo-300">
                       {userName}
