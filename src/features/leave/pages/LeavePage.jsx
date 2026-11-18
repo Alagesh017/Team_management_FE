@@ -17,6 +17,8 @@ import {
 import { MoreHorizontal, Plus, Eye, CheckCircle2, XCircle, Loader2, Calendar, Clock, Trash2, Clock3 } from "lucide-react";
 import LeaveForm from "../components/LeaveForm";
 import LeaveDetails from "../components/LeaveDetails";
+import LeaveDashboardPanel from "../components/LeaveDashboardPanel";
+import { Link } from "react-router-dom";
 import LeaveMailComposeDialog from "../components/LeaveMailComposeDialog";
 import { getFullAvatarUrl, formatDate } from "../../../core/utils/utils";
 import { useToast } from "../../../common/hooks/use-toast";
@@ -25,7 +27,9 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
+  TabsContent,
 } from "../../../common/components/ui/tabs";
+import { LayoutGrid, List } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../common/components/ui/card";
 
 const UserAvatar = ({ url, email, firstName, className = "h-10 w-10" }) => {
@@ -62,9 +66,11 @@ const getStatusBadge = (status) => {
   }
 };
 
-const getTypeDisplay = (type, subtype) => {
+const getTypeDisplay = (type, subtype, category) => {
   if (type === "leave") {
-    return subtype === "full_day" ? "Full Day Leave" : "Half Day Leave";
+    const base =
+      subtype === "full_day" ? "Full Day Leave" : "Half Day Leave";
+    return category === "religious" ? `Religious · ${base}` : base;
   }
   return "Permission";
 };
@@ -85,10 +91,37 @@ const LeavePage = () => {
   const [leaveDraft, setLeaveDraft] = useState(null);
   const [composeLoading, setComposeLoading] = useState(false);
   const [initialCompose, setInitialCompose] = useState(null);
-  const [activeTab, setActiveTab] = useState("my");
+  const [pageTab, setPageTab] = useState("dashboard");
+  const [requestTab, setRequestTab] = useState("my");
+  const [dashYear, setDashYear] = useState(() => new Date().getFullYear());
+  const [dashMonth, setDashMonth] = useState(() => new Date().getMonth() + 1);
+  const [dashboard, setDashboard] = useState(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();
+
+  const fetchDashboard = useCallback(
+    async (year, month) => {
+      if (!user?.accessToken) return;
+      const y = year ?? dashYear;
+      const m = month ?? dashMonth;
+      try {
+        setDashboardLoading(true);
+        const res = await leaveService.getDashboard({ year: y, month: m });
+        if (res.status === 1) {
+          setDashboard(res);
+          setDashYear(res.year);
+          setDashMonth(res.month);
+        }
+      } catch (err) {
+        console.error("Leave dashboard:", err);
+      } finally {
+        setDashboardLoading(false);
+      }
+    },
+    [user?.accessToken, dashYear, dashMonth]
+  );
 
   const fetchLeaves = useCallback(async () => {
     if (!user?.accessToken) {
@@ -97,7 +130,7 @@ const LeavePage = () => {
     try {
       setLoading(true);
       const result =
-        activeTab === "my"
+        requestTab === "my"
           ? await leaveService.getMyLeaves()
           : await leaveService.getAllLeaves();
       if (result?.status === 1) {
@@ -122,7 +155,7 @@ const LeavePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, user?.accessToken, toast]);
+  }, [requestTab, user?.accessToken, toast]);
 
   useEffect(() => {
     if (authLoading || !user) {
@@ -131,8 +164,22 @@ const LeavePage = () => {
     if (!location.pathname.endsWith("/leave") && location.pathname !== "/leave") {
       return;
     }
-    fetchLeaves();
-  }, [authLoading, user, location.pathname, location.key, activeTab, fetchLeaves]);
+    if (pageTab === "requests") {
+      fetchLeaves();
+    }
+    if (pageTab === "dashboard") {
+      fetchDashboard();
+    }
+  }, [
+    authLoading,
+    user,
+    location.pathname,
+    location.key,
+    pageTab,
+    requestTab,
+    fetchLeaves,
+    fetchDashboard,
+  ]);
 
   const handleView = async (leave) => {
     try {
@@ -304,11 +351,22 @@ const LeavePage = () => {
         setLeaveDraft(null);
         setInitialCompose(null);
         fetchLeaves();
+        fetchDashboard();
+        const quotaNotes = result.quota_warnings?.length
+          ? result.quota_warnings.join(" ")
+          : null;
+
         if (result.mail_warning) {
           toast({
             title: "Request saved — email not sent",
-            description: result.mail_warning,
+            description: [result.mail_warning, quotaNotes].filter(Boolean).join(" "),
             variant: "destructive",
+          });
+        } else if (quotaNotes) {
+          toast({
+            title: "Request submitted",
+            description: quotaNotes,
+            variant: "default",
           });
         } else {
           toast({
@@ -392,7 +450,11 @@ const LeavePage = () => {
       accessorKey: "type",
       header: "Type",
       cell: ({ row }) => {
-        return getTypeDisplay(row.original.type, row.original.leave_subtype);
+        return getTypeDisplay(
+          row.original.type,
+          row.original.leave_subtype,
+          row.original.leave_category
+        );
       }
     },
     {
@@ -555,7 +617,55 @@ const LeavePage = () => {
         onSend={onSubmit}
         submitting={submitting}
       />
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+
+      <Tabs value={pageTab} onValueChange={setPageTab} className="min-h-0 flex flex-col gap-4">
+        <TabsList className="shrink-0 w-fit rounded-lg border border-slate-200 bg-slate-50/80 p-1">
+          <TabsTrigger value="dashboard" className="gap-1.5 rounded-md px-4 data-[active]:bg-white">
+            <LayoutGrid className="h-3.5 w-3.5" />
+            Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="requests" className="gap-1.5 rounded-md px-4 data-[active]:bg-white">
+            <List className="h-3.5 w-3.5" />
+            Requests
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="mt-0 min-h-0">
+          <LeaveDashboardPanel
+            dashboard={dashboard}
+            loading={dashboardLoading}
+            year={dashYear}
+            month={dashMonth}
+            onMonthChange={(y, m) => fetchDashboard(y, m)}
+            personLabel={[user?.first_name || user?.firstName, user?.last_name || user?.lastName]
+              .filter(Boolean)
+              .join(" ")}
+            adminPolicyLink={
+              ["superadmin", "admin", "scrum"].includes(user?.role) ? (
+                <p className="text-xs text-slate-500 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-3 py-2.5">
+                  Configure quota &amp; holidays in{" "}
+                  <Link to="/leave-policy" className="font-semibold text-indigo-600 hover:underline">
+                    Leave policy master
+                  </Link>
+                </p>
+              ) : null
+            }
+          />
+        </TabsContent>
+
+        <TabsContent value="requests" className="mt-0 flex min-h-0 flex-col gap-4">
+          {canViewAll() ? (
+            <Tabs value={requestTab} onValueChange={setRequestTab}>
+              <TabsList className="w-fit">
+                <TabsTrigger value="my">My Requests</TabsTrigger>
+                <TabsTrigger value="all">All Requests</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          ) : (
+            <p className="text-sm font-semibold text-slate-800">My requests</p>
+          )}
+
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <Card className="p-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 pb-1">
             <CardTitle className="text-xs font-medium text-slate-500">Total</CardTitle>
@@ -610,26 +720,19 @@ const LeavePage = () => {
             <div className="text-lg font-bold text-blue-700">{stats.permissions}</div>
           </CardContent>
         </Card>
-      </div>
+          </div>
 
-      {canViewAll() && (
-        <Tabs defaultValue="my" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="my">My Requests</TabsTrigger>
-            <TabsTrigger value="all">All Requests</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
-
-      <DataTableCard loading={loading}>
-        <DataTable
-          columns={columns}
-          data={leaves}
-          filterColumn="reason"
-          filterPlaceholder="Search by reason…"
-          embedded
-        />
-      </DataTableCard>
+          <DataTableCard loading={loading} className="min-h-0 flex-1">
+            <DataTable
+              columns={columns}
+              data={leaves}
+              filterColumn="reason"
+              filterPlaceholder="Search by reason…"
+              embedded
+            />
+          </DataTableCard>
+        </TabsContent>
+      </Tabs>
 
       <LeaveDetails 
         leave={viewingLeave} 

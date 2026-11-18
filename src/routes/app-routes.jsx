@@ -26,6 +26,7 @@ import LearnStackDetailPage from '../features/learn-stack/pages/LearnStackDetail
 import LearnStackEditorPage from '../features/learn-stack/pages/LearnStackEditorPage'
 import ProjectCredentialsPage from '../features/project-credentials/pages/ProjectCredentialsPage'
 import LeavePage from '../features/leave/pages/LeavePage'
+import LeavePolicyPage from '../features/leave/pages/LeavePolicyPage'
 import NotFoundPage from '../features/not-found/pages/NotFoundPage'
 import WorkTimeAnalyticsPage from '../features/monitor/pages/WorkTimeAnalyticsPage'
 import UserWorkTimeInsightPage from '../features/monitor/pages/UserWorkTimeInsightPage'
@@ -46,6 +47,7 @@ export default function AppRoutes() {
 			<Route element={<ProtectedRoute />}>
 				<Route path="/dashboard" element={<Dashboard />} />
 				<Route path="/leave" element={<LeavePage />} />
+				<Route path="/leave-policy" element={<LeavePolicyPage />} />
 				<Route path="/admin" element={<AdminPage />} />
 				<Route path="/workers" element={<WorkerPage />} />
 				<Route path="/task-status" element={<TaskStatusPage />} />

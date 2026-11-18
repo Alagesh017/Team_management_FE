@@ -892,6 +892,7 @@ export function AppSidebar() {
           { title: "Admin", url: "/admin", icon: UserCog },
           { title: "Workers", url: "/workers", icon: HardHat },
           { title: "Task Status", url: "/task-status", icon: ClipboardList },
+          { title: "Leave policy", url: "/leave-policy", icon: Calendar },
           { title: "Project Grouping", url: "/project-grouping", icon: LayoutGrid },
         ],
       },
@@ -971,6 +972,7 @@ export function AppSidebar() {
                           { title: "Admin", url: "/admin", icon: UserCog },
                           { title: "Workers", url: "/workers", icon: HardHat },
                           { title: "Task Status", url: "/task-status", icon: ClipboardList },
+                          { title: "Leave policy", url: "/leave-policy", icon: Calendar },
                           { title: "Project Grouping", url: "/project-grouping", icon: LayoutGrid },
                         ];
                         

@@ -81,6 +81,62 @@ const composeMail = async (data) => {
   }
 };
 
+const getDashboard = async (params = {}) => {
+  try {
+    const response = await api.get("/leave/dashboard", { params });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
+const getPolicy = async () => {
+  try {
+    const response = await api.get("/leave/policy");
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
+const updatePolicy = async (data) => {
+  try {
+    const response = await api.put("/leave/policy", data);
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
+const getHolidays = async (year) => {
+  try {
+    const response = await api.get("/leave/holidays", {
+      params: year ? { year } : undefined,
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
+const createHoliday = async (data) => {
+  try {
+    const response = await api.post("/leave/holidays", data);
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
+const deleteHoliday = async (id) => {
+  try {
+    const response = await api.delete(`/leave/holidays/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network error");
+  }
+};
+
 const uploadAttachment = async (file) => {
   try {
     const formData = new FormData();
@@ -107,4 +163,10 @@ export const leaveService = {
   uploadAttachment,
   getMailRecipients,
   composeMail,
+  getDashboard,
+  getPolicy,
+  updatePolicy,
+  getHolidays,
+  createHoliday,
+  deleteHoliday,
 };

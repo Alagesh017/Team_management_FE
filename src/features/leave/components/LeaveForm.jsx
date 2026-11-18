@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "../../../common/components/ui/button";
 import { Input } from "../../../common/components/ui/input";
 import { Label } from "../../../common/components/ui/label";
@@ -10,7 +10,22 @@ import {
   SelectValue,
 } from "../../../common/components/ui/select";
 import { leaveService } from "../services/leaveService";
-import { Loader2, UploadCloud, X, Clock, Shield } from "lucide-react";
+import { Loader2, Shield } from "lucide-react";
+import LeaveTimeField, {
+  addMinutesToTime,
+  formatTime12h,
+  nowTime24,
+  parseTimeToMinutes,
+} from "./LeaveTimeField";
+import { cn } from "../../../core/utils/utils";
+
+const DURATION_OPTIONS = [
+  { label: "10 min", minutes: 10 },
+  { label: "30 min", minutes: 30 },
+  { label: "1 hour", minutes: 60 },
+  { label: "2 hours", minutes: 120 },
+  { label: "3 hours", minutes: 180 },
+];
 import {
   FormSheetActions,
   FormSheetBody,
@@ -19,95 +34,12 @@ import {
 } from "../../../common/components/FormSheet";
 import { useToast } from "../../../common/hooks/use-toast";
 
-// Helper to convert 24h to 12h format
-const to12Hour = (time24) => {
-  if (!time24) return { hours: "12", minutes: "00", period: "AM" };
-  const [hours, minutes] = time24.split(":");
-  let h = parseInt(hours);
-  const period = h >= 12 ? "PM" : "AM";
-  h = h % 12;
-  h = h ? h : 12;
-  return {
-    hours: h.toString().padStart(2, "0"),
-    minutes: minutes,
-    period
-  };
-};
-
-// Helper to convert 12h to 24h format
-const to24Hour = (hours, minutes, period) => {
-  let h = parseInt(hours);
-  if (period === "PM" && h !== 12) h += 12;
-  if (period === "AM" && h === 12) h = 0;
-  return `${h.toString().padStart(2, "0")}:${minutes}`;
-};
-
-const TimePicker12H = ({ value, onChange, label }) => {
-  const time12 = to12Hour(value);
-  const [hours, setHours] = useState(time12.hours);
-  const [minutes, setMinutes] = useState(time12.minutes);
-  const [period, setPeriod] = useState(time12.period);
-
-  useEffect(() => {
-    const newTime = to24Hour(hours, minutes, period);
-    onChange(newTime);
-  }, [hours, minutes, period]);
-
-  // Generate hour options (1-12)
-  const hourOptions = Array.from({ length: 12 }, (_, i) => 
-    (i + 1).toString().padStart(2, "0")
-  );
-
-  // Generate minute options (00, 15, 30, 45 or every 5 mins)
-  const minuteOptions = Array.from({ length: 12 }, (_, i) => 
-    (i * 5).toString().padStart(2, "0")
-  );
-
-  return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="flex items-center gap-2">
-        <Clock className="h-4 w-4 text-slate-400" />
-        <Select value={hours} onValueChange={setHours}>
-          <SelectTrigger className="w-16">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="max-h-[200px]">
-            {hourOptions.map(h => (
-              <SelectItem key={h} value={h}>{h}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <span className="text-slate-400 font-bold">:</span>
-        <Select value={minutes} onValueChange={setMinutes}>
-          <SelectTrigger className="w-16">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="max-h-[200px]">
-            {minuteOptions.map(m => (
-              <SelectItem key={m} value={m}>{m}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-16">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="AM">AM</SelectItem>
-            <SelectItem value="PM">PM</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  );
-};
-
 const LeaveForm = ({ onSubmit, onOpenCompose, composeLoading, submitting, error }) => {
   const needsMail = Boolean(onOpenCompose);
   const [formData, setFormData] = useState({
     type: "leave",
     leave_subtype: "full_day",
+    leave_category: "normal",
     reason: "",
     start_date: "",
     end_date: "",
@@ -118,7 +50,38 @@ const LeaveForm = ({ onSubmit, onOpenCompose, composeLoading, submitting, error 
   });
   const [uploadingFile, setUploadingFile] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [timeError, setTimeError] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState(60);
   const { toast } = useToast();
+
+  const needsTimeRange =
+    formData.type === "permission" || formData.leave_subtype === "half_day";
+
+  const applyDuration = (minutes, startTime) => {
+    const start = startTime || formData.start_time || nowTime24();
+    setDurationMinutes(minutes);
+    setTimeError("");
+    setFormData((prev) => ({
+      ...prev,
+      start_time: start,
+      end_time: addMinutesToTime(start, minutes),
+    }));
+  };
+
+  const hadTimeRangeRef = useRef(false);
+
+  useEffect(() => {
+    if (needsTimeRange && !hadTimeRangeRef.current) {
+      const start = nowTime24();
+      setDurationMinutes(60);
+      setFormData((prev) => ({
+        ...prev,
+        start_time: start,
+        end_time: addMinutesToTime(start, 60),
+      }));
+    }
+    hadTimeRangeRef.current = needsTimeRange;
+  }, [needsTimeRange]);
 
   // Set today's date as default
   useEffect(() => {
@@ -176,8 +139,48 @@ const LeaveForm = ({ onSubmit, onOpenCompose, composeLoading, submitting, error 
     }
   };
 
+  const handleStartTimeChange = (time) => {
+    if (!time) return;
+    applyDuration(durationMinutes, time);
+  };
+
+  const validateTimeRange = () => {
+    if (!needsTimeRange) {
+      setTimeError("");
+      return null;
+    }
+    if (!durationMinutes || durationMinutes <= 0) {
+      const msg = "Choose how long you need (10 min to 3 hours).";
+      setTimeError(msg);
+      return msg;
+    }
+    if (!formData.start_time || !formData.end_time) {
+      const msg = "Set a start time and pick a duration.";
+      setTimeError(msg);
+      return msg;
+    }
+    const startM = parseTimeToMinutes(formData.start_time);
+    const endM = parseTimeToMinutes(formData.end_time);
+    if (startM == null || endM == null || endM <= startM) {
+      const msg = "End time must be later than start time.";
+      setTimeError(msg);
+      return msg;
+    }
+    setTimeError("");
+    return null;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    const timeMsg = validateTimeRange();
+    if (timeMsg) {
+      toast({
+        title: "Check your times",
+        description: timeMsg,
+        variant: "destructive",
+      });
+      return;
+    }
     if (needsMail && onOpenCompose) {
       onOpenCompose(formData);
       return;
@@ -212,23 +215,53 @@ const LeaveForm = ({ onSubmit, onOpenCompose, composeLoading, submitting, error 
         </div>
 
       {formData.type === "leave" && (
-        <div className="space-y-2">
-          <Label htmlFor="leave_subtype">Leave Type</Label>
-          <Select
-            value={formData.leave_subtype}
-            onValueChange={(val) =>
-              setFormData((prev) => ({ ...prev, leave_subtype: val }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="full_day">Full Day Leave</SelectItem>
-              <SelectItem value="half_day">Half Day Leave</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="leave_subtype">Duration</Label>
+            <Select
+              value={formData.leave_subtype}
+              onValueChange={(val) =>
+                setFormData((prev) => ({ ...prev, leave_subtype: val }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="full_day">Full Day Leave</SelectItem>
+                <SelectItem value="half_day">Half Day Leave</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="leave_category">Leave category</Label>
+            <Select
+              value={formData.leave_category}
+              onValueChange={(val) =>
+                setFormData((prev) => ({ ...prev, leave_category: val }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal">
+                  Normal (counts toward annual quota)
+                </SelectItem>
+                <SelectItem value="religious">
+                  Religious (unlimited, not counted in annual quota)
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </>
+      )}
+
+      {formData.type === "permission" && (
+        <p className="text-xs text-slate-500 rounded-lg bg-slate-50 border border-slate-100 px-3 py-2">
+          Permission is up to <strong>1 hour</strong>. Longer than 1 hour is saved as{" "}
+          <strong>half-day leave</strong> automatically.
+        </p>
       )}
 
       <div className="space-y-2">
@@ -285,20 +318,49 @@ const LeaveForm = ({ onSubmit, onOpenCompose, composeLoading, submitting, error 
         </div>
       )}
 
-      {(formData.type === "permission" || formData.leave_subtype === "half_day") && (
-        <div className="grid grid-cols-2 gap-4">
-          <TimePicker12H
-            label="From Time"
+      {needsTimeRange ? (
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+          <LeaveTimeField
+            id="leave_start_time"
+            label="Start time"
             value={formData.start_time}
-            onChange={(time) => setFormData(prev => ({ ...prev, start_time: time }))}
+            onChange={handleStartTimeChange}
+            required
+            hint="Defaults to current time — tap the clock or edit"
           />
-          <TimePicker12H
-            label="To Time"
-            value={formData.end_time}
-            onChange={(time) => setFormData(prev => ({ ...prev, end_time: time }))}
-          />
+
+          <div className="space-y-2">
+            <Label>How long?</Label>
+            <div className="flex flex-wrap gap-2">
+              {DURATION_OPTIONS.map((opt) => (
+                <Button
+                  key={opt.minutes}
+                  type="button"
+                  variant={durationMinutes === opt.minutes ? "default" : "outline"}
+                  size="sm"
+                  className={cn(
+                    "rounded-full px-4",
+                    durationMinutes === opt.minutes && "bg-slate-900 hover:bg-slate-800"
+                  )}
+                  onClick={() => applyDuration(opt.minutes)}
+                >
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
+            {timeError ? (
+              <p className="text-xs font-medium text-red-600">{timeError}</p>
+            ) : (
+              <p className="text-sm text-slate-700">
+                Ends at{" "}
+                <span className="font-semibold text-slate-900">
+                  {formatTime12h(formData.end_time)}
+                </span>
+              </p>
+            )}
+          </div>
         </div>
-      )}
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor="remark">Remark (Optional)</Label>
